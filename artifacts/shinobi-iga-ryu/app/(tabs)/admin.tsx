@@ -36,11 +36,6 @@ const SUB_LABELS: Record<string, string> = {
   personalizado: "Personalizado",
 };
 
-const DISCIPLINE_ICONS: Record<string, string> = {
-  ninjutsu: "🥷",
-  jiujitsu: "🪶",
-};
-
 const DISCIPLINE_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
   jiujitsu: "Jiujitsu",
@@ -401,7 +396,12 @@ function BeltCatalogPanel() {
                 onPress={() => setExpandedDisc(isDiscOpen ? null : disc.discipline)}
               >
                 <View style={styles.catalogDiscLeft}>
-                  <Text style={{ fontSize: 16 }}>{DISCIPLINE_ICONS[disc.discipline] ?? "🥋"}</Text>
+                  <MaterialCommunityIcons
+                    name={disc.discipline === "ninjutsu" ? "star-four-points" : "feather"}
+                    size={16}
+                    color="#D4AF37"
+                    style={{ marginRight: 4 }}
+                  />
                   <Text style={styles.catalogDiscTitle}>{discLabel}</Text>
                   <View style={styles.catalogBeltCount}>
                     <Text style={styles.catalogBeltCountText}>{disc.belts.length}</Text>
