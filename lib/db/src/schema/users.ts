@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex, boolean, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,8 +12,28 @@ export const usersTable = pgTable("users", {
   displayName: varchar("display_name", { length: 255 }).notNull(),
   avatarUrl: text("avatar_url"),
   subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico").notNull(),
+  isFighter: boolean("is_fighter").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const fightResultEnum = pgEnum("fight_result", ["victoria", "derrota", "empate"]);
+export const fightMethodEnum = pgEnum("fight_method", ["ko", "tko", "sumision", "decision", "decision_unanime", "decision_dividida", "descalificacion", "no_contest"]);
+export const fightDisciplineEnum = pgEnum("fight_discipline", ["mma", "box", "jiujitsu", "muay_thai", "ninjutsu", "otro"]);
+
+export const fightsTable = pgTable("fights", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  opponentName: varchar("opponent_name", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }),
+  fightDate: date("fight_date").notNull(),
+  result: fightResultEnum("result").notNull(),
+  method: fightMethodEnum("method"),
+  discipline: fightDisciplineEnum("discipline").notNull(),
+  rounds: integer("rounds"),
+  notes: text("notes"),
+  registeredBy: integer("registered_by").references(() => usersTable.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const userRolesTable = pgTable("user_roles", {
@@ -28,6 +48,7 @@ export const userRolesTable = pgTable("user_roles", {
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;
+export type Fight = typeof fightsTable.$inferSelect;
 
 export const profesorStudentsTable = pgTable("profesor_students", {
   id: serial("id").primaryKey(),

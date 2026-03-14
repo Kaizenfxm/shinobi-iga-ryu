@@ -87,10 +87,22 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - `POST /api/admin/belts/initialize` - Initialize white belts for student (admin only)
 - `GET /api/admin/belts/users/:userId/history` - Belt history for a student (admin only)
 - `GET /api/admin/belts/unlocks/:userId` - Unlock audit records for a student (admin only)
+- `PUT /api/admin/users/:userId/fighter` - Toggle fighter mode for user (admin only)
+- `POST /api/fights` - Register a fight (admin/profesor only)
+- `GET /api/fights/me` - Get current user's fight history + stats (requires auth)
+- `GET /api/fights/user/:userId` - Get a fighter's fight history + stats (requires auth)
+- `DELETE /api/fights/:fightId` - Delete a fight record (admin/profesor only)
 - `GET /api/healthz` - Health check
 
+### Features (Fase 4)
+- Fighter Mode: admin can toggle `isFighter` flag per user via admin panel "Peleas" tab
+- Fight history: fights table stores opponent, event, date, result (victoria/derrota/empate), method (ko/tko/sumision/decision/etc), discipline (mma/box/jiujitsu/muay_thai/ninjutsu/otro), rounds, notes
+- Student fight screen: "Peleas" tab visible only when fighter mode active; shows V-D-E record with win percentage bar, full fight history cards
+- Admin/Profesor fight management: register fights for fighters, view fight history, delete fights
+- Profile fighter badge: gold "Peleador" pill shown on profile when fighter mode active
+- API endpoints: toggle fighter mode, add fight, get my fights, get user fights, delete fight
+
 ### Planned Features (Future Phases)
-- Fighter Mode & Fight History (Fase 4)
 - Instagram-style Profile with belts and fight record (Fase 5)
 
 ## Structure
@@ -100,12 +112,12 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server
 │   │   ├── src/app.ts      # Express setup with session middleware
-│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts, profesor.ts, belts.ts
+│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts, profesor.ts, belts.ts, fights.ts
 │   │   └── src/middlewares/ # auth.ts (requireAuth, requireAdmin, requireProfesor)
 │   └── shinobi-iga-ryu/    # Expo mobile app
 │       ├── app/_layout.tsx  # Root layout with AuthProvider
 │       ├── app/auth.tsx     # Welcome/login/register screen
-│       ├── app/(tabs)/      # Tab screens (index, belts, profile, admin, alumnos)
+│       ├── app/(tabs)/      # Tab screens (index, belts, fights, profile, admin, alumnos)
 │       ├── contexts/        # AuthContext.tsx
 │       └── lib/api.ts       # API client with fetch wrapper
 ├── lib/
@@ -151,7 +163,7 @@ Express 5 API server with session-based auth.
 
 Database layer using Drizzle ORM with PostgreSQL.
 
-- `src/schema/users.ts` — users, user_roles, profesor_students tables with enums
+- `src/schema/users.ts` — users (with isFighter), user_roles, profesor_students, fights tables with enums
 - `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements, belt_exams, student_belt_unlocks tables
 - `src/seed-belts.ts` — Deterministic seed for belt catalog, requirements, and exams
 - Production migrations handled by Replit. Dev: `pnpm --filter @workspace/db run push`

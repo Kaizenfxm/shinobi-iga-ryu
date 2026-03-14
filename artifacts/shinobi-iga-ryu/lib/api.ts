@@ -73,6 +73,7 @@ export interface UserData {
   displayName: string;
   avatarUrl: string | null;
   subscriptionLevel: string;
+  isFighter: boolean;
   roles: string[];
 }
 
@@ -214,3 +215,60 @@ export interface UnlockRecord {
   beltColor: string;
   unlockedByName: string;
 }
+
+export interface FightData {
+  id: number;
+  userId: number;
+  opponentName: string;
+  eventName: string | null;
+  fightDate: string;
+  result: "victoria" | "derrota" | "empate";
+  method: string | null;
+  discipline: string;
+  rounds: number | null;
+  notes: string | null;
+  registeredBy: number;
+  createdAt: string;
+}
+
+export interface FightStats {
+  total: number;
+  victorias: number;
+  derrotas: number;
+  empates: number;
+  winPercentage: number;
+}
+
+export interface AddFightData {
+  userId: number;
+  opponentName: string;
+  eventName?: string;
+  fightDate: string;
+  result: string;
+  method?: string;
+  discipline: string;
+  rounds?: number;
+  notes?: string;
+}
+
+export const fightsApi = {
+  getMyFights: () =>
+    apiFetch<{ isFighter: boolean; fights: FightData[]; stats: FightStats | null }>("/fights/me"),
+
+  getUserFights: (userId: number) =>
+    apiFetch<{ fighter: { id: number; displayName: string }; fights: FightData[]; stats: FightStats }>(
+      `/fights/user/${userId}`
+    ),
+
+  addFight: (data: AddFightData) =>
+    apiFetch<{ fight: FightData }>("/fights", { method: "POST", body: data }),
+
+  deleteFight: (fightId: number) =>
+    apiFetch<{ success: boolean }>(`/fights/${fightId}`, { method: "DELETE" }),
+
+  toggleFighterMode: (userId: number, isFighter: boolean) =>
+    apiFetch<{ success: boolean; isFighter: boolean }>(`/admin/users/${userId}/fighter`, {
+      method: "PUT",
+      body: { isFighter },
+    }),
+};

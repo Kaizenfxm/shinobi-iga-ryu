@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, type UserData, type AdminBeltUser, type BeltHistoryItem } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, type UserData, type AdminBeltUser, type BeltHistoryItem, type FightData, type FightStats, type AddFightData } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -41,7 +41,34 @@ const DISCIPLINE_LABELS: Record<string, string> = {
   jiujitsu: "Jiujitsu",
 };
 
-type AdminTab = "usuarios" | "cinturones";
+type AdminTab = "usuarios" | "cinturones" | "peleas";
+
+const FIGHT_RESULT_LABELS: Record<string, string> = {
+  victoria: "Victoria",
+  derrota: "Derrota",
+  empate: "Empate",
+};
+
+const FIGHT_DISCIPLINE_OPTIONS = [
+  { value: "mma", label: "MMA" },
+  { value: "box", label: "Box" },
+  { value: "jiujitsu", label: "Jiujitsu" },
+  { value: "muay_thai", label: "Muay Thai" },
+  { value: "ninjutsu", label: "Ninjutsu" },
+  { value: "otro", label: "Otro" },
+];
+
+const FIGHT_METHOD_OPTIONS = [
+  { value: "", label: "Sin especificar" },
+  { value: "ko", label: "KO" },
+  { value: "tko", label: "TKO" },
+  { value: "sumision", label: "Sumisión" },
+  { value: "decision", label: "Decisión" },
+  { value: "decision_unanime", label: "Dec. Unánime" },
+  { value: "decision_dividida", label: "Dec. Dividida" },
+  { value: "descalificacion", label: "Descalificación" },
+  { value: "no_contest", label: "Sin Resultado" },
+];
 
 function UsersPanel({
   users,
@@ -557,6 +584,384 @@ function BeltsPanel({
   );
 }
 
+function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUsers: () => Promise<void> }) {
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [fights, setFights] = useState<FightData[]>([]);
+  const [stats, setStats] = useState<FightStats | null>(null);
+  const [fighterName, setFighterName] = useState("");
+  const [loadingFights, setLoadingFights] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const [formOpponent, setFormOpponent] = useState("");
+  const [formEvent, setFormEvent] = useState("");
+  const [formDate, setFormDate] = useState("");
+  const [formResult, setFormResult] = useState("victoria");
+  const [formMethod, setFormMethod] = useState("");
+  const [formDiscipline, setFormDiscipline] = useState("mma");
+  const [formRounds, setFormRounds] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+
+  const fighters = users.filter((u) => u.isFighter);
+
+  const loadFights = async (userId: number) => {
+    setLoadingFights(true);
+    try {
+      const data = await fightsApi.getUserFights(userId);
+      setFights(data.fights);
+      setStats(data.stats);
+      setFighterName(data.fighter.displayName);
+    } catch {
+      Alert.alert("Error", "No se pudo cargar el historial");
+    } finally {
+      setLoadingFights(false);
+    }
+  };
+
+  const toggleFighterMode = async (userId: number, enable: boolean) => {
+    const key = `fighter-${userId}`;
+    setActionLoading(key);
+    try {
+      await fightsApi.toggleFighterMode(userId, enable);
+      await onRefreshUsers();
+      if (!enable && selectedUserId === userId) {
+        setSelectedUserId(null);
+        setFights([]);
+        setStats(null);
+      }
+      Alert.alert("Éxito", enable ? "Modo peleador activado" : "Modo peleador desactivado");
+    } catch {
+      Alert.alert("Error", "No se pudo cambiar el modo peleador");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const resetForm = () => {
+    setFormOpponent("");
+    setFormEvent("");
+    setFormDate("");
+    setFormResult("victoria");
+    setFormMethod("");
+    setFormDiscipline("mma");
+    setFormRounds("");
+    setFormNotes("");
+    setShowForm(false);
+  };
+
+  const handleAddFight = async () => {
+    if (!selectedUserId || !formOpponent.trim() || !formDate.trim()) {
+      Alert.alert("Error", "Se requiere oponente y fecha");
+      return;
+    }
+    setActionLoading("add-fight");
+    try {
+      const data: AddFightData = {
+        userId: selectedUserId,
+        opponentName: formOpponent.trim(),
+        fightDate: formDate.trim(),
+        result: formResult,
+        discipline: formDiscipline,
+      };
+      if (formEvent.trim()) data.eventName = formEvent.trim();
+      if (formMethod) data.method = formMethod;
+      if (formRounds.trim()) data.rounds = parseInt(formRounds, 10);
+      if (formNotes.trim()) data.notes = formNotes.trim();
+
+      await fightsApi.addFight(data);
+      resetForm();
+      await loadFights(selectedUserId);
+      Alert.alert("Éxito", "Pelea registrada");
+    } catch {
+      Alert.alert("Error", "No se pudo registrar la pelea");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteFight = async (fightId: number) => {
+    Alert.alert("Confirmar", "¿Eliminar esta pelea del registro?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          setActionLoading(`del-${fightId}`);
+          try {
+            await fightsApi.deleteFight(fightId);
+            if (selectedUserId) await loadFights(selectedUserId);
+          } catch {
+            Alert.alert("Error", "No se pudo eliminar la pelea");
+          } finally {
+            setActionLoading(null);
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View>
+      <Text style={styles.sectionLabel}>ACTIVAR MODO PELEADOR</Text>
+      {users.map((u) => (
+        <View key={u.id} style={styles.fighterToggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.userName}>{u.displayName}</Text>
+            <Text style={styles.userEmail}>{u.email}</Text>
+          </View>
+          <Pressable
+            style={[
+              styles.toggleButton,
+              u.isFighter && styles.toggleButtonGold,
+            ]}
+            onPress={() => toggleFighterMode(u.id, !u.isFighter)}
+            disabled={actionLoading === `fighter-${u.id}`}
+          >
+            {actionLoading === `fighter-${u.id}` ? (
+              <ActivityIndicator size="small" color={u.isFighter ? "#000" : "#888"} />
+            ) : (
+              <Text style={[styles.toggleText, u.isFighter && styles.toggleTextActive]}>
+                {u.isFighter ? "Activo" : "Inactivo"}
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      ))}
+
+      <View style={styles.sectionDivider} />
+      <Text style={styles.sectionLabel}>HISTORIAL DE PELEAS</Text>
+
+      {fighters.length === 0 ? (
+        <Text style={styles.noHistoryText}>No hay peleadores activos</Text>
+      ) : (
+        <>
+          <View style={styles.toggleGroup}>
+            {fighters.map((f) => (
+              <Pressable
+                key={f.id}
+                style={[
+                  styles.toggleButton,
+                  selectedUserId === f.id && styles.toggleButtonActive,
+                ]}
+                onPress={() => {
+                  setSelectedUserId(f.id);
+                  loadFights(f.id);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.toggleText,
+                    selectedUserId === f.id && styles.toggleTextActive,
+                  ]}
+                >
+                  {f.displayName}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {selectedUserId && loadingFights && (
+            <ActivityIndicator color="#D4AF37" style={{ marginVertical: 20 }} />
+          )}
+
+          {selectedUserId && !loadingFights && stats && (
+            <>
+              <View style={styles.fighterStatsRow}>
+                <View style={styles.fighterStatBox}>
+                  <Text style={[styles.fighterStatNum, { color: "#22C55E" }]}>{stats.victorias}</Text>
+                  <Text style={styles.fighterStatLabel}>V</Text>
+                </View>
+                <View style={styles.fighterStatBox}>
+                  <Text style={[styles.fighterStatNum, { color: "#EF4444" }]}>{stats.derrotas}</Text>
+                  <Text style={styles.fighterStatLabel}>D</Text>
+                </View>
+                <View style={styles.fighterStatBox}>
+                  <Text style={[styles.fighterStatNum, { color: "#F59E0B" }]}>{stats.empates}</Text>
+                  <Text style={styles.fighterStatLabel}>E</Text>
+                </View>
+              </View>
+
+              <Pressable
+                style={styles.beltActionButton}
+                onPress={() => setShowForm(!showForm)}
+              >
+                <MaterialCommunityIcons
+                  name={showForm ? "close" : "plus-circle"}
+                  size={14}
+                  color="#D4AF37"
+                />
+                <Text style={styles.beltActionText}>
+                  {showForm ? "Cancelar" : "Registrar Pelea"}
+                </Text>
+              </Pressable>
+
+              {showForm && (
+                <View style={styles.fightFormContainer}>
+                  <TextInput
+                    style={styles.fightFormInput}
+                    placeholder="Nombre del oponente *"
+                    placeholderTextColor="#555"
+                    value={formOpponent}
+                    onChangeText={setFormOpponent}
+                  />
+                  <TextInput
+                    style={styles.fightFormInput}
+                    placeholder="Nombre del evento"
+                    placeholderTextColor="#555"
+                    value={formEvent}
+                    onChangeText={setFormEvent}
+                  />
+                  <TextInput
+                    style={styles.fightFormInput}
+                    placeholder="Fecha (YYYY-MM-DD) *"
+                    placeholderTextColor="#555"
+                    value={formDate}
+                    onChangeText={setFormDate}
+                  />
+                  <Text style={styles.fightFormLabel}>Resultado</Text>
+                  <View style={styles.toggleGroup}>
+                    {(["victoria", "derrota", "empate"] as const).map((r) => (
+                      <Pressable
+                        key={r}
+                        style={[
+                          styles.toggleButton,
+                          formResult === r && styles.toggleButtonActive,
+                        ]}
+                        onPress={() => setFormResult(r)}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            formResult === r && styles.toggleTextActive,
+                          ]}
+                        >
+                          {FIGHT_RESULT_LABELS[r]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.fightFormLabel}>Disciplina</Text>
+                  <View style={styles.toggleGroup}>
+                    {FIGHT_DISCIPLINE_OPTIONS.map((d) => (
+                      <Pressable
+                        key={d.value}
+                        style={[
+                          styles.toggleButton,
+                          formDiscipline === d.value && styles.toggleButtonActive,
+                        ]}
+                        onPress={() => setFormDiscipline(d.value)}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            formDiscipline === d.value && styles.toggleTextActive,
+                          ]}
+                        >
+                          {d.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.fightFormLabel}>Método</Text>
+                  <View style={styles.toggleGroup}>
+                    {FIGHT_METHOD_OPTIONS.map((m) => (
+                      <Pressable
+                        key={m.value}
+                        style={[
+                          styles.toggleButton,
+                          formMethod === m.value && styles.toggleButtonActive,
+                        ]}
+                        onPress={() => setFormMethod(m.value)}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            formMethod === m.value && styles.toggleTextActive,
+                          ]}
+                        >
+                          {m.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <TextInput
+                    style={styles.fightFormInput}
+                    placeholder="Rounds"
+                    placeholderTextColor="#555"
+                    value={formRounds}
+                    onChangeText={setFormRounds}
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={[styles.fightFormInput, { height: 60 }]}
+                    placeholder="Notas"
+                    placeholderTextColor="#555"
+                    value={formNotes}
+                    onChangeText={setFormNotes}
+                    multiline
+                  />
+                  <Pressable
+                    style={[styles.beltPromoteButton, { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: "center", marginTop: 8 }]}
+                    onPress={handleAddFight}
+                    disabled={actionLoading === "add-fight"}
+                  >
+                    {actionLoading === "add-fight" ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <Text style={styles.beltPromoteText}>Registrar Pelea</Text>
+                    )}
+                  </Pressable>
+                </View>
+              )}
+
+              <View style={styles.sectionDivider} />
+              {fights.length === 0 ? (
+                <Text style={styles.noHistoryText}>Sin peleas registradas</Text>
+              ) : (
+                fights.map((fight) => {
+                  const resultColor =
+                    fight.result === "victoria" ? "#22C55E" :
+                    fight.result === "derrota" ? "#EF4444" : "#F59E0B";
+                  const dateStr = new Date(fight.fightDate).toLocaleDateString("es-MX", {
+                    year: "numeric", month: "short", day: "numeric",
+                  });
+                  return (
+                    <View key={fight.id} style={styles.fightAdminCard}>
+                      <View style={styles.fightAdminHeader}>
+                        <View style={[styles.fightResultDot, { backgroundColor: resultColor }]} />
+                        <Text style={styles.fightAdminResult}>
+                          {FIGHT_RESULT_LABELS[fight.result]} vs {fight.opponentName}
+                        </Text>
+                        <Pressable
+                          onPress={() => handleDeleteFight(fight.id)}
+                          disabled={actionLoading === `del-${fight.id}`}
+                        >
+                          {actionLoading === `del-${fight.id}` ? (
+                            <ActivityIndicator size="small" color="#FF4444" />
+                          ) : (
+                            <Ionicons name="trash-outline" size={16} color="#555" />
+                          )}
+                        </Pressable>
+                      </View>
+                      <Text style={styles.historyDate}>
+                        {dateStr} · {FIGHT_DISCIPLINE_OPTIONS.find((d) => d.value === fight.discipline)?.label || fight.discipline}
+                        {fight.method ? ` · ${FIGHT_METHOD_OPTIONS.find((m) => m.value === fight.method)?.label || fight.method}` : ""}
+                      </Text>
+                      {fight.eventName && (
+                        <Text style={styles.historyNotes}>{fight.eventName}</Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -661,6 +1066,24 @@ export default function AdminScreen() {
               Cinturones
             </Text>
           </Pressable>
+          <Pressable
+            style={[styles.tabButton, activeTab === "peleas" && styles.tabButtonActive]}
+            onPress={() => setActiveTab("peleas")}
+          >
+            <MaterialCommunityIcons
+              name="sword-cross"
+              size={16}
+              color={activeTab === "peleas" ? "#000" : "#666"}
+            />
+            <Text
+              style={[
+                styles.tabButtonText,
+                activeTab === "peleas" && styles.tabButtonTextActive,
+              ]}
+            >
+              Peleas
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.divider} />
@@ -673,8 +1096,13 @@ export default function AdminScreen() {
             setExpandedUser={setExpandedUser}
             setUsers={setUsers}
           />
-        ) : (
+        ) : activeTab === "cinturones" ? (
           <BeltsPanel beltUsers={beltUsers} onRefresh={refreshBelts} />
+        ) : (
+          <FightsPanel users={users} onRefreshUsers={async () => {
+            const res = await adminApi.getUsers();
+            setUsers(res.users);
+          }} />
         )}
       </ScrollView>
     </View>
@@ -1020,5 +1448,86 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#555",
     fontStyle: "italic",
+  },
+  fighterToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  fighterStatsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24,
+    marginVertical: 16,
+  },
+  fighterStatBox: {
+    alignItems: "center",
+  },
+  fighterStatNum: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 24,
+  },
+  fighterStatLabel: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#666",
+    marginTop: 2,
+  },
+  fightFormContainer: {
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    gap: 10,
+  },
+  fightFormInput: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    color: "#FFFFFF",
+  },
+  fightFormLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 11,
+    color: "#888",
+    letterSpacing: 2,
+    marginTop: 4,
+  },
+  fightAdminCard: {
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  fightAdminHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  fightResultDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  fightAdminResult: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#DDD",
+    flex: 1,
   },
 });
