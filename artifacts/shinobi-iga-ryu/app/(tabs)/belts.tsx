@@ -20,6 +20,11 @@ const DISCIPLINE_LABELS: Record<string, string> = {
   jiujitsu: "JIUJITSU",
 };
 
+const DISCIPLINE_ICONS: Record<string, string> = {
+  ninjutsu: "🥷",
+  jiujitsu: "🪶",
+};
+
 const DISCIPLINE_KANJI: Record<string, string> = {
   ninjutsu: "忍術",
   jiujitsu: "柔術",
@@ -90,10 +95,12 @@ const beltStyles = StyleSheet.create({
 function DisciplineCard({ belt }: { belt: MyBelt }) {
   const disciplineLabel = DISCIPLINE_LABELS[belt.discipline] || belt.discipline;
   const kanji = DISCIPLINE_KANJI[belt.discipline] || "";
+  const disciplineIcon = DISCIPLINE_ICONS[belt.discipline] || "🥋";
 
   return (
     <View style={styles.disciplineCard}>
       <View style={styles.disciplineHeader}>
+        <Text style={{ fontSize: 20, marginRight: 6 }}>{disciplineIcon}</Text>
         <Text style={styles.disciplineKanji}>{kanji}</Text>
         <Text style={styles.disciplineTitle}>{disciplineLabel}</Text>
       </View>
@@ -210,6 +217,7 @@ function HistorySection({ history }: { history: BeltHistoryItem[] }) {
           year: "numeric",
         });
         const disciplineLabel = DISCIPLINE_LABELS[item.discipline] || item.discipline;
+        const disciplineIcon = DISCIPLINE_ICONS[item.discipline] || "🥋";
 
         return (
           <View key={item.id} style={styles.historyItem}>
@@ -217,7 +225,7 @@ function HistorySection({ history }: { history: BeltHistoryItem[] }) {
             <View style={styles.historyContent}>
               <View style={styles.historyRow}>
                 <Text style={styles.historyBeltName}>{item.beltName}</Text>
-                <Text style={styles.historyDiscipline}>{disciplineLabel}</Text>
+                <Text style={styles.historyDiscipline}>{disciplineIcon} {disciplineLabel}</Text>
               </View>
               <Text style={styles.historyDate}>{dateStr}</Text>
               {item.notes && <Text style={styles.historyNotes}>{item.notes}</Text>}
@@ -287,7 +295,7 @@ export default function BeltsScreen() {
         }
       >
         <View style={styles.header}>
-          <MaterialCommunityIcons name="karate" size={24} color="#D4AF37" />
+          <Text style={{ fontSize: 26 }}>🥋</Text>
           <View>
             <Text style={styles.headerTitle}>Cinturones</Text>
             <Text style={styles.headerKanji}>帯 · Progresión</Text>
@@ -298,7 +306,7 @@ export default function BeltsScreen() {
 
         {belts.length === 0 ? (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="karate" size={48} color="#333" />
+            <Text style={{ fontSize: 48 }}>🥋</Text>
             <Text style={styles.emptyText}>Aún no tienes cinturones asignados</Text>
             <Text style={styles.emptySubtext}>Tu sensei te asignará tus disciplinas</Text>
           </View>
