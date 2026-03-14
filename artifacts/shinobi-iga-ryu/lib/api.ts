@@ -166,11 +166,31 @@ export interface BeltExam {
   passingScore: number | null;
 }
 
+export interface LadderBeltRequirement {
+  id: number;
+  title: string;
+  description: string | null;
+  orderIndex: number;
+  checked: boolean;
+}
+
+export interface LadderBelt {
+  id: number;
+  name: string;
+  color: string;
+  orderIndex: number;
+  description: string | null;
+  status: "earned" | "current" | "available" | "applied" | "locked";
+  requirements: LadderBeltRequirement[];
+}
+
 export interface MyBelt {
   discipline: string;
   currentBelt: BeltDefinition;
   nextUnlocked: boolean;
   unlockedAt: string | null;
+  applied: boolean;
+  ladder: LadderBelt[];
   nextBelt: BeltDefinition | null;
   nextRequirements: BeltRequirement[];
   nextExam: BeltExam | null;
@@ -228,6 +248,17 @@ export interface CatalogDiscipline {
 
 export const beltsApi = {
   getMyBelts: () => apiFetch<{ belts: MyBelt[]; history: BeltHistoryItem[] }>("/belts/me"),
+
+  apply: (discipline: string) =>
+    apiFetch<{ success: boolean; alreadyApplied: boolean }>("/belts/apply", {
+      method: "POST",
+      body: { discipline },
+    }),
+
+  toggleRequirementCheck: (requirementId: number) =>
+    apiFetch<{ checked: boolean }>(`/belts/requirements/${requirementId}/toggle`, {
+      method: "POST",
+    }),
 
   getDefinitions: () => apiFetch<{ definitions: BeltDefinition[] }>("/belts/definitions"),
 

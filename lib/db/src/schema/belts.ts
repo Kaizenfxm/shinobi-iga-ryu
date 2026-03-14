@@ -65,9 +65,32 @@ export const studentBeltUnlocksTable = pgTable("student_belt_unlocks", {
   notes: text("notes"),
 });
 
+export const beltApplicationsTable = pgTable("belt_applications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  discipline: disciplineEnum("discipline").notNull(),
+  targetBeltId: integer("target_belt_id").references(() => beltDefinitionsTable.id).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("belt_apps_user_disc_belt_idx").on(table.userId, table.discipline, table.targetBeltId),
+]);
+
+export const studentRequirementChecksTable = pgTable("student_requirement_checks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
+  requirementId: integer("requirement_id").references(() => beltRequirementsTable.id).notNull(),
+  checkedAt: timestamp("checked_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("student_req_checks_user_req_idx").on(table.userId, table.requirementId),
+]);
+
 export type BeltDefinition = typeof beltDefinitionsTable.$inferSelect;
 export type StudentBelt = typeof studentBeltsTable.$inferSelect;
 export type BeltHistory = typeof beltHistoryTable.$inferSelect;
 export type BeltRequirement = typeof beltRequirementsTable.$inferSelect;
 export type BeltExam = typeof beltExamsTable.$inferSelect;
 export type StudentBeltUnlock = typeof studentBeltUnlocksTable.$inferSelect;
+export type BeltApplication = typeof beltApplicationsTable.$inferSelect;
+export type StudentRequirementCheck = typeof studentRequirementChecksTable.$inferSelect;
