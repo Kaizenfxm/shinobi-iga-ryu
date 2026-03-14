@@ -700,11 +700,11 @@ export default function BeltsScreen() {
 
         <View style={styles.divider} />
 
-        {belts.length === 0 ? (
+        {belts.every((b) => b.ladder.length === 0) ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyKanji}>帯</Text>
-            <Text style={styles.emptyText}>Aún no tienes cinturones asignados</Text>
-            <Text style={styles.emptySubtext}>Tu sensei te asignará tus disciplinas</Text>
+            <Text style={styles.emptyText}>No hay cinturones definidos aún</Text>
+            <Text style={styles.emptySubtext}>El catálogo está siendo configurado</Text>
           </View>
         ) : (
           belts.map((belt) => (

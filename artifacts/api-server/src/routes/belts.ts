@@ -84,11 +84,44 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
       applicationsByDiscipline.set(app.discipline, app);
     }
 
+    const validDisciplines = ["ninjutsu", "jiujitsu"] as const;
+
     const beltsWithNext = await Promise.all(
-      myBelts.map(async (belt) => {
-        const disciplineDefs = allDefinitions.filter((d) => d.discipline === belt.discipline);
+      validDisciplines.map(async (discipline) => {
+        const belt = myBelts.find((b) => b.discipline === discipline);
+        const disciplineDefs = allDefinitions.filter((d) => d.discipline === discipline);
+
+        if (!belt || disciplineDefs.length === 0) {
+          const ladder = disciplineDefs.map((def) => ({
+            id: def.id,
+            name: def.name,
+            color: def.color,
+            orderIndex: def.orderIndex,
+            description: def.description,
+            status: "locked" as const,
+            requirements: (reqsByBeltId.get(def.id) ?? []).map((r) => ({
+              id: r.id,
+              title: r.title,
+              description: r.description,
+              orderIndex: r.orderIndex,
+              checked: false,
+            })),
+          }));
+          return {
+            discipline,
+            currentBelt: null,
+            nextUnlocked: false,
+            unlockedAt: null,
+            applied: false,
+            ladder,
+            nextBelt: null,
+            nextRequirements: [],
+            nextExam: null,
+          };
+        }
+
         const nextBelt = disciplineDefs.find((d) => d.orderIndex === belt.beltOrder + 1);
-        const existingApp = applicationsByDiscipline.get(belt.discipline);
+        const existingApp = applicationsByDiscipline.get(discipline);
         const applied = !!existingApp && existingApp.targetBeltId === nextBelt?.id;
 
         let nextRequirements: { id: number; title: string; description: string | null; orderIndex: number }[] = [];
@@ -156,7 +189,7 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
         });
 
         return {
-          discipline: belt.discipline,
+          discipline,
           currentBelt: {
             id: belt.currentBeltId,
             name: belt.beltName,

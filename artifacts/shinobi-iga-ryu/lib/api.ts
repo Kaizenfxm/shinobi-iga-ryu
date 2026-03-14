@@ -186,7 +186,7 @@ export interface LadderBelt {
 
 export interface MyBelt {
   discipline: string;
-  currentBelt: BeltDefinition;
+  currentBelt: BeltDefinition | null;
   nextUnlocked: boolean;
   unlockedAt: string | null;
   applied: boolean;
