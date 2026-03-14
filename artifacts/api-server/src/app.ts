@@ -40,8 +40,8 @@ app.use(
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: isProduction || !!process.env.REPLIT_DEV_DOMAIN,
-      sameSite: process.env.REPLIT_DEV_DOMAIN ? "none" : "lax",
+      secure: isProduction,
+      sameSite: "lax",
     },
   })
 );
