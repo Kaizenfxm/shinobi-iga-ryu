@@ -16,6 +16,7 @@ adminRouter.get("/admin/users", async (_req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        isFighter: usersTable.isFighter,
         createdAt: usersTable.createdAt,
       })
       .from(usersTable);

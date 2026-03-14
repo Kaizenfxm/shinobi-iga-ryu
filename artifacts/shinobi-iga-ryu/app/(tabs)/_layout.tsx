@@ -6,12 +6,13 @@ import { Platform, StyleSheet, View } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TabLayout() {
-  const { hasRole, isAuthenticated } = useAuth();
+  const { hasRole, isAuthenticated, user } = useAuth();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
 
   const showAdmin = isAuthenticated && hasRole("admin");
   const showAlumnos = isAuthenticated && hasRole("profesor");
+  const showFights = isAuthenticated && user?.isFighter;
 
   return (
     <Tabs
@@ -76,6 +77,16 @@ export default function TabLayout() {
           title: "Cinturones",
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="karate" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="fights"
+        options={{
+          title: "Peleas",
+          href: showFights ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="sword-cross" size={22} color={color} />
           ),
         }}
       />

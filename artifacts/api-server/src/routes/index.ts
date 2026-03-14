@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import adminRouter from "./admin";
 import profesorRouter from "./profesor";
 import beltsRouter from "./belts";
+import fightsRouter from "./fights";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(adminRouter);
 router.use(profesorRouter);
 router.use(beltsRouter);
+router.use(fightsRouter);
 
 export default router;

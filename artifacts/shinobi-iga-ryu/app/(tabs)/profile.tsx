@@ -112,6 +112,12 @@ export default function ProfileScreen() {
               </Text>
             </View>
           ))}
+          {user.isFighter && (
+            <View style={styles.fighterPill}>
+              <MaterialCommunityIcons name="sword-cross" size={14} color="#D4AF37" />
+              <Text style={styles.fighterPillText}>Peleador</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.divider} />
@@ -292,6 +298,23 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 14,
     color: "#FF4444",
+    letterSpacing: 1,
+  },
+  fighterPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#1A1500",
+    borderWidth: 1,
+    borderColor: "#332A00",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  fighterPillText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#D4AF37",
     letterSpacing: 1,
   },
 });

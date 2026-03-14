@@ -44,7 +44,9 @@ authRouter.post("/auth/register", async (req, res) => {
         id: usersTable.id,
         email: usersTable.email,
         displayName: usersTable.displayName,
+        avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        isFighter: usersTable.isFighter,
       });
 
     await db.insert(userRolesTable).values({
@@ -143,6 +145,7 @@ authRouter.post("/auth/login", async (req, res) => {
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
         subscriptionLevel: user.subscriptionLevel,
+        isFighter: user.isFighter,
         roles: roles.map((r) => r.role),
       },
     });
@@ -161,6 +164,7 @@ authRouter.get("/auth/me", requireAuth, async (req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        isFighter: usersTable.isFighter,
       })
       .from(usersTable)
       .where(eq(usersTable.id, req.session.userId!))
