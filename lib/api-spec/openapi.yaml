@@ -18,6 +18,8 @@ tags:
     description: Professor operations
   - name: belts
     description: Belt progression operations
+  - name: fights
+    description: Fighter mode and fight history operations
 paths:
   /healthz:
     get:
@@ -457,6 +459,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /admin/users/{userId}/fighter:
+    put:
+      operationId: adminToggleFighterMode
+      tags: [admin]
+      summary: Toggle fighter mode for a user (admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToggleFighterRequest"
+      responses:
+        "200":
+          description: Fighter mode toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToggleFighterResponse"
+  /fights:
+    post:
+      operationId: addFight
+      tags: [fights]
+      summary: Register a fight (admin/profesor only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddFightRequest"
+      responses:
+        "201":
+          description: Fight registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FightResponse"
+  /fights/me:
+    get:
+      operationId: getMyFights
+      tags: [fights]
+      summary: Get current user fight history and stats
+      responses:
+        "200":
+          description: Fighter history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyFightsResponse"
+  /fights/user/{userId}:
+    get:
+      operationId: getUserFights
+      tags: [fights]
+      summary: Get a fighter's history and stats (admin/profesor only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fighter history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserFightsResponse"
+  /fights/{fightId}:
+    delete:
+      operationId: deleteFight
+      tags: [fights]
+      summary: Delete a fight record (admin/profesor only)
+      parameters:
+        - name: fightId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fight deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 components:
   schemas:
     HealthStatus:
@@ -521,6 +613,8 @@ components:
         subscriptionLevel:
           type: string
           enum: [basico, medio, avanzado, personalizado]
+        isFighter:
+          type: boolean
         roles:
           type: array
           items:
@@ -531,6 +625,7 @@ components:
         - email
         - displayName
         - subscriptionLevel
+        - isFighter
         - roles
     AuthResponse:
       type: object
@@ -894,3 +989,159 @@ components:
             $ref: "#/components/schemas/AdminUnlockRecordData"
       required:
         - unlocks
+    ToggleFighterRequest:
+      type: object
+      properties:
+        isFighter:
+          type: boolean
+      required:
+        - isFighter
+    ToggleFighterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        isFighter:
+          type: boolean
+      required:
+        - success
+        - isFighter
+    FightData:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        opponentName:
+          type: string
+        eventName:
+          type: string
+          nullable: true
+        fightDate:
+          type: string
+        result:
+          type: string
+          enum: [victoria, derrota, empate]
+        method:
+          type: string
+          nullable: true
+          enum: [ko, tko, sumision, decision, decision_unanime, decision_dividida, descalificacion, no_contest]
+        discipline:
+          type: string
+          enum: [mma, box, jiujitsu, muay_thai, ninjutsu, otro]
+        rounds:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        registeredBy:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - opponentName
+        - fightDate
+        - result
+        - discipline
+        - registeredBy
+        - createdAt
+    FightStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        victorias:
+          type: integer
+        derrotas:
+          type: integer
+        empates:
+          type: integer
+        winPercentage:
+          type: integer
+      required:
+        - total
+        - victorias
+        - derrotas
+        - empates
+        - winPercentage
+    AddFightRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        opponentName:
+          type: string
+        eventName:
+          type: string
+        fightDate:
+          type: string
+        result:
+          type: string
+          enum: [victoria, derrota, empate]
+        method:
+          type: string
+          enum: [ko, tko, sumision, decision, decision_unanime, decision_dividida, descalificacion, no_contest]
+        discipline:
+          type: string
+          enum: [mma, box, jiujitsu, muay_thai, ninjutsu, otro]
+        rounds:
+          type: integer
+        notes:
+          type: string
+      required:
+        - userId
+        - opponentName
+        - fightDate
+        - result
+        - discipline
+    FightResponse:
+      type: object
+      properties:
+        fight:
+          $ref: "#/components/schemas/FightData"
+      required:
+        - fight
+    MyFightsResponse:
+      type: object
+      properties:
+        isFighter:
+          type: boolean
+        fights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FightData"
+        stats:
+          $ref: "#/components/schemas/FightStats"
+          nullable: true
+      required:
+        - isFighter
+        - fights
+    FighterInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+      required:
+        - id
+        - displayName
+    UserFightsResponse:
+      type: object
+      properties:
+        fighter:
+          $ref: "#/components/schemas/FighterInfo"
+        fights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FightData"
+        stats:
+          $ref: "#/components/schemas/FightStats"
+      required:
+        - fighter
+        - fights
+        - stats
