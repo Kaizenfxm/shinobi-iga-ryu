@@ -147,6 +147,14 @@ export interface BeltRequirementData {
   orderIndex: number;
 }
 
+export interface BeltExamData {
+  id: number;
+  title: string;
+  description?: string | null;
+  durationMinutes?: number | null;
+  passingScore?: number | null;
+}
+
 export interface MyBeltData {
   discipline: string;
   currentBelt: BeltDefinitionData;
@@ -154,6 +162,7 @@ export interface MyBeltData {
   unlockedAt?: string | null;
   nextBelt?: BeltDefinitionData | null;
   nextRequirements: BeltRequirementData[];
+  nextExam?: BeltExamData | null;
 }
 
 export interface BeltHistoryData {
@@ -215,3 +224,27 @@ export interface BeltPromoteResponse {
   success: boolean;
   newBelt: BeltDefinitionData;
 }
+
+export interface AdminUnlockRecordData {
+  id: number;
+  discipline: string;
+  targetBeltId: number;
+  unlockedAt: string;
+  notes?: string | null;
+  beltName: string;
+  beltColor: string;
+  unlockedByName: string;
+}
+
+export interface AdminUnlockRecordsResponse {
+  unlocks: AdminUnlockRecordData[];
+}
+
+export type AdminInitializeBeltsBody = {
+  userId: number;
+};
+
+export type AdminInitializeBelts200 = {
+  success: boolean;
+  initialized: string[];
+};

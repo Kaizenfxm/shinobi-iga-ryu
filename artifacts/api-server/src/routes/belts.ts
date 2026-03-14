@@ -7,6 +7,8 @@ import {
   studentBeltsTable,
   beltHistoryTable,
   beltRequirementsTable,
+  beltExamsTable,
+  studentBeltUnlocksTable,
 } from "@workspace/db";
 import { eq, and, asc, inArray, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
@@ -59,6 +61,7 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
         );
 
         let nextRequirements: { id: number; title: string; description: string | null; orderIndex: number }[] = [];
+        let nextExam: { id: number; title: string; description: string | null; durationMinutes: number | null; passingScore: number | null } | null = null;
         if (belt.nextUnlocked && nextBelt) {
           nextRequirements = await db
             .select({
@@ -70,6 +73,20 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
             .from(beltRequirementsTable)
             .where(eq(beltRequirementsTable.beltId, nextBelt.id))
             .orderBy(asc(beltRequirementsTable.orderIndex));
+
+          const [exam] = await db
+            .select({
+              id: beltExamsTable.id,
+              title: beltExamsTable.title,
+              description: beltExamsTable.description,
+              durationMinutes: beltExamsTable.durationMinutes,
+              passingScore: beltExamsTable.passingScore,
+            })
+            .from(beltExamsTable)
+            .where(eq(beltExamsTable.beltId, nextBelt.id))
+            .limit(1);
+
+          nextExam = exam || null;
         }
 
         return {
@@ -93,6 +110,7 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
               }
             : null,
           nextRequirements,
+          nextExam,
         };
       })
     );
@@ -277,10 +295,20 @@ beltsRouter.post("/admin/belts/unlock", requireAdmin, async (req, res) => {
       return;
     }
 
+    const adminId = req.session.userId!;
+
     await db
       .update(studentBeltsTable)
       .set({ nextUnlocked: true, unlockedAt: new Date() })
       .where(eq(studentBeltsTable.id, studentBelt.id));
+
+    await db.insert(studentBeltUnlocksTable).values({
+      userId: parsedUserId,
+      discipline: discipline as typeof validDisciplines[number],
+      targetBeltId: nextBelt[0].id,
+      unlockedBy: adminId,
+      notes: `Desbloqueado nivel ${nextBelt[0].name}`,
+    });
 
     res.json({ success: true, nextBelt: nextBelt[0] });
   } catch (error) {
@@ -384,6 +412,109 @@ beltsRouter.post("/admin/belts/promote", requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error("Admin promote belt error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.post("/admin/belts/initialize", requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      res.status(400).json({ error: "Se requiere userId" });
+      return;
+    }
+
+    const parsedUserId = parseInt(userId, 10);
+    if (isNaN(parsedUserId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const disciplines = ["ninjutsu", "jiujitsu"] as const;
+    const initialized: string[] = [];
+
+    for (const discipline of disciplines) {
+      const existing = await db
+        .select()
+        .from(studentBeltsTable)
+        .where(
+          and(
+            eq(studentBeltsTable.userId, parsedUserId),
+            eq(studentBeltsTable.discipline, discipline)
+          )
+        )
+        .limit(1);
+
+      if (existing.length === 0) {
+        const [whiteBelt] = await db
+          .select()
+          .from(beltDefinitionsTable)
+          .where(
+            and(
+              eq(beltDefinitionsTable.discipline, discipline),
+              eq(beltDefinitionsTable.orderIndex, 0)
+            )
+          )
+          .limit(1);
+
+        if (whiteBelt) {
+          await db.insert(studentBeltsTable).values({
+            userId: parsedUserId,
+            discipline,
+            currentBeltId: whiteBelt.id,
+            nextUnlocked: false,
+          });
+
+          await db.insert(beltHistoryTable).values({
+            userId: parsedUserId,
+            discipline,
+            beltId: whiteBelt.id,
+            promotedBy: req.session.userId!,
+            notes: "Cinturón inicial asignado por administrador",
+          });
+
+          initialized.push(discipline);
+        }
+      }
+    }
+
+    res.json({ success: true, initialized });
+  } catch (error) {
+    console.error("Admin initialize belts error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.get("/admin/belts/unlocks/:userId", requireAdmin, async (req, res) => {
+  try {
+    const userIdParam = req.params.userId;
+    const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam, 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const unlocks = await db
+      .select({
+        id: studentBeltUnlocksTable.id,
+        discipline: studentBeltUnlocksTable.discipline,
+        targetBeltId: studentBeltUnlocksTable.targetBeltId,
+        unlockedAt: studentBeltUnlocksTable.unlockedAt,
+        notes: studentBeltUnlocksTable.notes,
+        beltName: beltDefinitionsTable.name,
+        beltColor: beltDefinitionsTable.color,
+        unlockedByName: usersTable.displayName,
+      })
+      .from(studentBeltUnlocksTable)
+      .innerJoin(beltDefinitionsTable, eq(studentBeltUnlocksTable.targetBeltId, beltDefinitionsTable.id))
+      .innerJoin(usersTable, eq(studentBeltUnlocksTable.unlockedBy, usersTable.id))
+      .where(eq(studentBeltUnlocksTable.userId, userId))
+      .orderBy(desc(studentBeltUnlocksTable.unlockedAt));
+
+    res.json({ unlocks });
+  } catch (error) {
+    console.error("Admin get unlock records error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

@@ -403,6 +403,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /admin/belts/initialize:
+    post:
+      operationId: adminInitializeBelts
+      tags: [admin]
+      summary: Initialize white belts for a student (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: integer
+              required:
+                - userId
+      responses:
+        "200":
+          description: Belts initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  initialized:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - success
+                  - initialized
+  /admin/belts/unlocks/{userId}:
+    get:
+      operationId: adminGetUnlockRecords
+      tags: [admin]
+      summary: Get unlock records for a student (admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unlock records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUnlockRecordsResponse"
   /profesor/alumnos:
     get:
       operationId: profesorGetAlumnos
@@ -657,6 +708,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BeltRequirementData"
+        nextExam:
+          $ref: "#/components/schemas/BeltExamData"
+          nullable: true
       required:
         - discipline
         - currentBelt
@@ -780,3 +834,59 @@ components:
       required:
         - success
         - newBelt
+    BeltExamData:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        durationMinutes:
+          type: integer
+          nullable: true
+        passingScore:
+          type: integer
+          nullable: true
+      required:
+        - id
+        - title
+    AdminUnlockRecordData:
+      type: object
+      properties:
+        id:
+          type: integer
+        discipline:
+          type: string
+        targetBeltId:
+          type: integer
+        unlockedAt:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        beltName:
+          type: string
+        beltColor:
+          type: string
+        unlockedByName:
+          type: string
+      required:
+        - id
+        - discipline
+        - targetBeltId
+        - unlockedAt
+        - beltName
+        - beltColor
+        - unlockedByName
+    AdminUnlockRecordsResponse:
+      type: object
+      properties:
+        unlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUnlockRecordData"
+      required:
+        - unlocks

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BeltDefinitionData } from "./beltDefinitionData";
+import type { BeltExamData } from "./beltExamData";
 import type { BeltRequirementData } from "./beltRequirementData";
 
 export interface MyBeltData {
@@ -15,4 +16,5 @@ export interface MyBeltData {
   unlockedAt?: string | null;
   nextBelt?: BeltDefinitionData | null;
   nextRequirements: BeltRequirementData[];
+  nextExam?: BeltExamData | null;
 }

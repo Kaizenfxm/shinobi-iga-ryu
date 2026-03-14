@@ -130,6 +130,29 @@ function DisciplineCard({ belt }: { belt: MyBelt }) {
                 <BeltVisual color={belt.nextBelt.color} name={belt.nextBelt.name} size={50} />
               </View>
 
+              {belt.nextExam && (
+                <View style={styles.examSection}>
+                  <Text style={styles.examTitle}>{belt.nextExam.title}</Text>
+                  {belt.nextExam.description && (
+                    <Text style={styles.examDesc}>{belt.nextExam.description}</Text>
+                  )}
+                  <View style={styles.examMeta}>
+                    {belt.nextExam.durationMinutes && (
+                      <View style={styles.examMetaItem}>
+                        <MaterialCommunityIcons name="clock-outline" size={14} color="#D4AF37" />
+                        <Text style={styles.examMetaText}>{belt.nextExam.durationMinutes} min</Text>
+                      </View>
+                    )}
+                    {belt.nextExam.passingScore && (
+                      <View style={styles.examMetaItem}>
+                        <MaterialCommunityIcons name="check-circle-outline" size={14} color="#D4AF37" />
+                        <Text style={styles.examMetaText}>Aprobación: {belt.nextExam.passingScore}%</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
               {belt.nextRequirements.length > 0 && (
                 <View style={styles.requirementsList}>
                   <Text style={styles.requirementsTitle}>REQUISITOS DEL EXAMEN</Text>
@@ -446,6 +469,40 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 12,
     color: "#666",
+  },
+  examSection: {
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#332A00",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  examTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#D4AF37",
+    marginBottom: 4,
+  },
+  examDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#999",
+    marginBottom: 8,
+  },
+  examMeta: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  examMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  examMetaText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#D4AF37",
   },
   lockedContent: {
     paddingVertical: 16,

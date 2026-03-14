@@ -127,6 +127,14 @@ export interface BeltRequirement {
   orderIndex: number;
 }
 
+export interface BeltExam {
+  id: number;
+  title: string;
+  description: string | null;
+  durationMinutes: number | null;
+  passingScore: number | null;
+}
+
 export interface MyBelt {
   discipline: string;
   currentBelt: BeltDefinition;
@@ -134,6 +142,7 @@ export interface MyBelt {
   unlockedAt: string | null;
   nextBelt: BeltDefinition | null;
   nextRequirements: BeltRequirement[];
+  nextExam: BeltExam | null;
 }
 
 export interface BeltHistoryItem {
@@ -184,4 +193,24 @@ export const beltsApi = {
       method: "POST",
       body: { userId, discipline },
     }),
+
+  adminInitialize: (userId: number) =>
+    apiFetch<{ success: boolean; initialized: string[] }>("/admin/belts/initialize", {
+      method: "POST",
+      body: { userId },
+    }),
+
+  adminGetUnlocks: (userId: number) =>
+    apiFetch<{ unlocks: UnlockRecord[] }>(`/admin/belts/unlocks/${userId}`),
 };
+
+export interface UnlockRecord {
+  id: number;
+  discipline: string;
+  targetBeltId: number;
+  unlockedAt: string;
+  notes: string | null;
+  beltName: string;
+  beltColor: string;
+  unlockedByName: string;
+}
