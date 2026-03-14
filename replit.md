@@ -92,6 +92,7 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - `GET /api/fights/me` - Get current user's fight history + stats (requires auth)
 - `GET /api/fights/user/:userId` - Get a fighter's fight history + stats (requires auth)
 - `DELETE /api/fights/:fightId` - Delete a fight record (admin/profesor only)
+- `GET /api/profile/me` - Get current user's profile with belts and fight stats (requires auth)
 - `GET /api/healthz` - Health check
 
 ### Features (Fase 4)
@@ -102,8 +103,14 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Profile fighter badge: gold "Peleador" pill shown on profile when fighter mode active
 - API endpoints: toggle fighter mode, add fight, get my fights, get user fights, delete fight
 
-### Planned Features (Future Phases)
-- Instagram-style Profile with belts and fight record (Fase 5)
+### Features (Fase 5)
+- Instagram-style Profile screen with Japanese premium design (black/white/gold)
+- Profile shows academy branding, avatar, name, roles, fighter badge
+- Belt section: visual belt cards for Ninjutsu and/or Jiujitsu with real belt color, kanji, and name
+- Fighter record section: large V-D-E record with win percentage bar (only shown when fighter mode active)
+- Each section is conditional: belts only shown if student has belt progression, fight record only when fighter
+- Share profile button: captures the profile as an image (react-native-view-shot) and shares via expo-sharing
+- API endpoint: `GET /api/profile/me` returns combined user info, belt data, and fight stats
 
 ## Structure
 
@@ -112,7 +119,7 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server
 │   │   ├── src/app.ts      # Express setup with session middleware
-│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts, profesor.ts, belts.ts, fights.ts
+│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts, profesor.ts, belts.ts, fights.ts, profile.ts
 │   │   └── src/middlewares/ # auth.ts (requireAuth, requireAdmin, requireProfesor)
 │   └── shinobi-iga-ryu/    # Expo mobile app
 │       ├── app/_layout.tsx  # Root layout with AuthProvider

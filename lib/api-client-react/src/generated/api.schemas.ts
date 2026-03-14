@@ -385,3 +385,53 @@ export interface UserFightsResponse {
   fights: FightData[];
   stats: FightStats;
 }
+
+export type ProfileBeltDiscipline =
+  (typeof ProfileBeltDiscipline)[keyof typeof ProfileBeltDiscipline];
+
+export const ProfileBeltDiscipline = {
+  ninjutsu: "ninjutsu",
+  jiujitsu: "jiujitsu",
+} as const;
+
+export interface ProfileBelt {
+  discipline: ProfileBeltDiscipline;
+  beltName: string;
+  beltColor: string;
+  beltOrder: number;
+}
+
+export type ProfileDataSubscriptionLevel =
+  (typeof ProfileDataSubscriptionLevel)[keyof typeof ProfileDataSubscriptionLevel];
+
+export const ProfileDataSubscriptionLevel = {
+  basico: "basico",
+  medio: "medio",
+  avanzado: "avanzado",
+  personalizado: "personalizado",
+} as const;
+
+export type ProfileDataRolesItem =
+  (typeof ProfileDataRolesItem)[keyof typeof ProfileDataRolesItem];
+
+export const ProfileDataRolesItem = {
+  admin: "admin",
+  profesor: "profesor",
+  alumno: "alumno",
+} as const;
+
+export interface ProfileData {
+  id: number;
+  email: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  subscriptionLevel: ProfileDataSubscriptionLevel;
+  isFighter: boolean;
+  roles: ProfileDataRolesItem[];
+  belts: ProfileBelt[];
+  fightStats?: FightStats | null;
+}
+
+export interface ProfileResponse {
+  profile: ProfileData;
+}

@@ -251,6 +251,29 @@ export interface AddFightData {
   notes?: string;
 }
 
+export interface ProfileBelt {
+  discipline: string;
+  beltName: string;
+  beltColor: string;
+  beltOrder: number;
+}
+
+export interface ProfileData {
+  id: number;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  subscriptionLevel: string;
+  isFighter: boolean;
+  roles: string[];
+  belts: ProfileBelt[];
+  fightStats: FightStats | null;
+}
+
+export const profileApi = {
+  getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
+};
+
 export const fightsApi = {
   getMyFights: () =>
     apiFetch<{ isFighter: boolean; fights: FightData[]; stats: FightStats | null }>("/fights/me"),
