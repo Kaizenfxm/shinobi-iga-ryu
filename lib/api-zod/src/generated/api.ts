@@ -207,6 +207,15 @@ export const GetMyBeltsResponse = zod.object({
           orderIndex: zod.number(),
         }),
       ),
+      nextExam: zod
+        .object({
+          id: zod.number(),
+          title: zod.string(),
+          description: zod.string().nullish(),
+          durationMinutes: zod.number().nullish(),
+          passingScore: zod.number().nullish(),
+        })
+        .nullish(),
     }),
   ),
   history: zod.array(
@@ -311,6 +320,40 @@ export const AdminPromoteBeltResponse = zod.object({
     description: zod.string().nullish(),
     discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
   }),
+});
+
+/**
+ * @summary Initialize white belts for a student (admin only)
+ */
+export const AdminInitializeBeltsBody = zod.object({
+  userId: zod.number(),
+});
+
+export const AdminInitializeBeltsResponse = zod.object({
+  success: zod.boolean(),
+  initialized: zod.array(zod.string()),
+});
+
+/**
+ * @summary Get unlock records for a student (admin only)
+ */
+export const AdminGetUnlockRecordsParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const AdminGetUnlockRecordsResponse = zod.object({
+  unlocks: zod.array(
+    zod.object({
+      id: zod.number(),
+      discipline: zod.string(),
+      targetBeltId: zod.number(),
+      unlockedAt: zod.string(),
+      notes: zod.string().nullish(),
+      beltName: zod.string(),
+      beltColor: zod.string(),
+      unlockedByName: zod.string(),
+    }),
+  ),
 });
 
 /**

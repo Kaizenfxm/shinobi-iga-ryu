@@ -19,6 +19,9 @@ import type {
 import type {
   AdminBeltHistoryResponse,
   AdminBeltUsersResponse,
+  AdminInitializeBelts200,
+  AdminInitializeBeltsBody,
+  AdminUnlockRecordsResponse,
   AdminUsersResponse,
   AuthResponse,
   BeltActionRequest,
@@ -1369,6 +1372,185 @@ export const useAdminPromoteBelt = <
 > => {
   return useMutation(getAdminPromoteBeltMutationOptions(options));
 };
+
+/**
+ * @summary Initialize white belts for a student (admin only)
+ */
+export const getAdminInitializeBeltsUrl = () => {
+  return `/api/admin/belts/initialize`;
+};
+
+export const adminInitializeBelts = async (
+  adminInitializeBeltsBody: AdminInitializeBeltsBody,
+  options?: RequestInit,
+): Promise<AdminInitializeBelts200> => {
+  return customFetch<AdminInitializeBelts200>(getAdminInitializeBeltsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminInitializeBeltsBody),
+  });
+};
+
+export const getAdminInitializeBeltsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminInitializeBelts>>,
+    TError,
+    { data: BodyType<AdminInitializeBeltsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminInitializeBelts>>,
+  TError,
+  { data: BodyType<AdminInitializeBeltsBody> },
+  TContext
+> => {
+  const mutationKey = ["adminInitializeBelts"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminInitializeBelts>>,
+    { data: BodyType<AdminInitializeBeltsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminInitializeBelts(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminInitializeBeltsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminInitializeBelts>>
+>;
+export type AdminInitializeBeltsMutationBody =
+  BodyType<AdminInitializeBeltsBody>;
+export type AdminInitializeBeltsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Initialize white belts for a student (admin only)
+ */
+export const useAdminInitializeBelts = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminInitializeBelts>>,
+    TError,
+    { data: BodyType<AdminInitializeBeltsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminInitializeBelts>>,
+  TError,
+  { data: BodyType<AdminInitializeBeltsBody> },
+  TContext
+> => {
+  return useMutation(getAdminInitializeBeltsMutationOptions(options));
+};
+
+/**
+ * @summary Get unlock records for a student (admin only)
+ */
+export const getAdminGetUnlockRecordsUrl = (userId: number) => {
+  return `/api/admin/belts/unlocks/${userId}`;
+};
+
+export const adminGetUnlockRecords = async (
+  userId: number,
+  options?: RequestInit,
+): Promise<AdminUnlockRecordsResponse> => {
+  return customFetch<AdminUnlockRecordsResponse>(
+    getAdminGetUnlockRecordsUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminGetUnlockRecordsQueryKey = (userId: number) => {
+  return [`/api/admin/belts/unlocks/${userId}`] as const;
+};
+
+export const getAdminGetUnlockRecordsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetUnlockRecords>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetUnlockRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminGetUnlockRecordsQueryKey(userId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetUnlockRecords>>
+  > = ({ signal }) =>
+    adminGetUnlockRecords(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetUnlockRecords>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetUnlockRecordsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetUnlockRecords>>
+>;
+export type AdminGetUnlockRecordsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get unlock records for a student (admin only)
+ */
+
+export function useAdminGetUnlockRecords<
+  TData = Awaited<ReturnType<typeof adminGetUnlockRecords>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetUnlockRecords>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetUnlockRecordsQueryOptions(userId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List students (professor only)

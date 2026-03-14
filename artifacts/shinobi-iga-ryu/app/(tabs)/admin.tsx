@@ -257,16 +257,16 @@ function BeltsPanel({
     setActionLoading(key);
     try {
       const result = await beltsApi.adminUnlock(userId, discipline);
+      await onRefresh();
+      setActionLoading(null);
       Alert.alert(
         "Nivel Desbloqueado",
         `Se desbloqueó el acceso al cinturón ${result.nextBelt.name}`
       );
-      await onRefresh();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al desbloquear";
-      Alert.alert("Error", msg);
-    } finally {
       setActionLoading(null);
+      Alert.alert("Error", msg);
     }
   };
 
@@ -390,6 +390,37 @@ function BeltsPanel({
               {isExpanded && (
                 <View style={styles.expandedContent}>
                   <View style={styles.sectionDivider} />
+
+                  {u.belts.length === 0 && (
+                    <View style={styles.noBeltsContainer}>
+                      <Text style={styles.noBeltsText}>Sin cinturones asignados</Text>
+                      <Pressable
+                        style={styles.beltActionButton}
+                        onPress={async () => {
+                          try {
+                            setActionLoading(`init-${u.id}`);
+                            await beltsApi.adminInitialize(u.id);
+                            Alert.alert("Éxito", "Cinturones iniciales asignados");
+                            onRefresh();
+                          } catch (e: any) {
+                            Alert.alert("Error", e.message || "Error al asignar cinturones");
+                          } finally {
+                            setActionLoading(null);
+                          }
+                        }}
+                        disabled={actionLoading === `init-${u.id}`}
+                      >
+                        {actionLoading === `init-${u.id}` ? (
+                          <ActivityIndicator size="small" color="#D4AF37" />
+                        ) : (
+                          <>
+                            <MaterialCommunityIcons name="plus-circle" size={14} color="#D4AF37" />
+                            <Text style={styles.beltActionText}>Asignar Cinturones</Text>
+                          </>
+                        )}
+                      </Pressable>
+                    </View>
+                  )}
 
                   {u.belts.map((b) => {
                     const unlockKey = `unlock-${u.id}-${b.discipline}`;
@@ -977,5 +1008,16 @@ const styles = StyleSheet.create({
     color: "#444",
     fontStyle: "italic",
     paddingVertical: 8,
+  },
+  noBeltsContainer: {
+    alignItems: "center",
+    paddingVertical: 16,
+    gap: 12,
+  },
+  noBeltsText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#555",
+    fontStyle: "italic",
   },
 });
