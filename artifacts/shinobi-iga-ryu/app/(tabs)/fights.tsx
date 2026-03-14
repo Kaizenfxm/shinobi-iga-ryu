@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { fightsApi, type FightData, type FightStats } from "@/lib/api";
+import FightRecord from "@/components/FightRecord";
 
 const RESULT_COLORS: Record<string, string> = {
   victoria: "#22C55E",
@@ -44,34 +45,6 @@ const DISCIPLINE_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
   otro: "Otro",
 };
-
-function StatsCard({ stats }: { stats: FightStats }) {
-  return (
-    <View style={styles.statsCard}>
-      <Text style={styles.statsTitle}>記録 · {stats.victorias}-{stats.derrotas}-{stats.empates}</Text>
-      <View style={styles.recordRow}>
-        <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#22C55E" }]}>{stats.victorias}</Text>
-          <Text style={styles.recordLabel}>勝</Text>
-        </View>
-        <Text style={styles.recordSeparator}>·</Text>
-        <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#EF4444" }]}>{stats.derrotas}</Text>
-          <Text style={styles.recordLabel}>敗</Text>
-        </View>
-        <Text style={styles.recordSeparator}>·</Text>
-        <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#F59E0B" }]}>{stats.empates}</Text>
-          <Text style={styles.recordLabel}>分</Text>
-        </View>
-      </View>
-      <View style={styles.winRateBarBg}>
-        <View style={[styles.winRateBarFill, { width: `${stats.winPercentage}%` as unknown as number }]} />
-      </View>
-      <Text style={styles.winRateText}>{stats.winPercentage}% victorias · {stats.total} peleas</Text>
-    </View>
-  );
-}
 
 function FightCard({ fight }: { fight: FightData }) {
   const resultColor = RESULT_COLORS[fight.result] || "#888";
@@ -202,7 +175,7 @@ export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: 
           <Text style={styles.headerTitle}>Modo Peleador</Text>
         </View>
 
-        {stats && <StatsCard stats={stats} />}
+        {stats && <FightRecord stats={stats} />}
 
         <Text style={styles.sectionTitle}>Historial de Peleas</Text>
 
@@ -246,67 +219,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#D4AF37",
     letterSpacing: 3,
-  },
-  statsCard: {
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderTopWidth: 2,
-    borderTopColor: "#D4AF37",
-    borderRadius: 2,
-    padding: 14,
-    marginBottom: 18,
-  },
-  statsTitle: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 11,
-    color: "#D4AF37",
-    letterSpacing: 3,
-    textTransform: "uppercase",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  recordRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 12,
-  },
-  recordItem: {
-    alignItems: "center",
-  },
-  recordNumber: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 28,
-  },
-  recordLabel: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 13,
-    color: "#555",
-    marginTop: 1,
-  },
-  recordSeparator: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 18,
-    color: "#222",
-  },
-  winRateBarBg: {
-    height: 2,
-    backgroundColor: "#1A1A1A",
-    overflow: "hidden",
-    marginBottom: 5,
-  },
-  winRateBarFill: {
-    height: "100%",
-    backgroundColor: "#D4AF37",
-  },
-  winRateText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 10,
-    color: "#555",
-    textAlign: "right",
-    letterSpacing: 1,
   },
   sectionTitle: {
     fontFamily: "NotoSansJP_500Medium",
