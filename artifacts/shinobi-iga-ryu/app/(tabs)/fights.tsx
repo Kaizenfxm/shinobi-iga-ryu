@@ -48,7 +48,7 @@ const DISCIPLINE_LABELS: Record<string, string> = {
 function StatsCard({ stats }: { stats: FightStats }) {
   return (
     <View style={styles.statsCard}>
-      <Text style={styles.statsTitle}>Record</Text>
+      <Text style={styles.statsTitle}>Record ({stats.total} peleas)</Text>
       <View style={styles.recordRow}>
         <View style={styles.recordItem}>
           <Text style={[styles.recordNumber, { color: "#22C55E" }]}>
