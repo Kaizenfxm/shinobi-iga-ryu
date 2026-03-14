@@ -10,6 +10,9 @@ import {
   Alert,
   RefreshControl,
   TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Switch,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -70,6 +73,345 @@ const FIGHT_METHOD_OPTIONS = [
   { value: "no_contest", label: "Sin Resultado" },
 ];
 
+const INIT_USER_FORM = {
+  displayName: "",
+  email: "",
+  password: "",
+  phone: "",
+  roles: ["alumno"] as string[],
+  subscriptionLevel: "basico",
+  isFighter: false,
+};
+
+function UserFormModal({
+  visible,
+  mode,
+  initialData,
+  onClose,
+  onSaved,
+}: {
+  visible: boolean;
+  mode: "create" | "edit";
+  initialData?: UserData | null;
+  onClose: () => void;
+  onSaved: (user: UserData & { roles: string[] }) => void;
+}) {
+  const [form, setForm] = useState(INIT_USER_FORM);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      if (mode === "edit" && initialData) {
+        setForm({
+          displayName: initialData.displayName,
+          email: initialData.email,
+          password: "",
+          phone: initialData.phone || "",
+          roles: initialData.roles || ["alumno"],
+          subscriptionLevel: initialData.subscriptionLevel,
+          isFighter: initialData.isFighter,
+        });
+      } else {
+        setForm(INIT_USER_FORM);
+      }
+    }
+  }, [visible, mode, initialData]);
+
+  const toggleRole = (role: string) => {
+    setForm((prev) => {
+      const has = prev.roles.includes(role);
+      if (has && prev.roles.length === 1) return prev;
+      return { ...prev, roles: has ? prev.roles.filter((r) => r !== role) : [...prev.roles, role] };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!form.displayName.trim()) {
+      Alert.alert("Error", "El nombre es obligatorio");
+      return;
+    }
+    if (!form.email.trim()) {
+      Alert.alert("Error", "El email es obligatorio");
+      return;
+    }
+    if (mode === "create" && !form.password) {
+      Alert.alert("Error", "La contraseña es obligatoria");
+      return;
+    }
+    if (form.password && form.password.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (mode === "create") {
+        const res = await adminApi.createUser({
+          email: form.email.trim(),
+          password: form.password,
+          displayName: form.displayName.trim(),
+          phone: form.phone.trim() || undefined,
+          roles: form.roles,
+          subscriptionLevel: form.subscriptionLevel,
+          isFighter: form.isFighter,
+        });
+        onSaved({ ...res.user, roles: form.roles });
+      } else if (initialData) {
+        const payload: Parameters<typeof adminApi.updateUser>[1] = {
+          displayName: form.displayName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          isFighter: form.isFighter,
+        };
+        if (form.password) payload.password = form.password;
+        const res = await adminApi.updateUser(initialData.id, payload);
+        if (form.roles.join(",") !== (initialData.roles || []).join(",")) {
+          await adminApi.updateRoles(initialData.id, form.roles);
+        }
+        if (form.subscriptionLevel !== initialData.subscriptionLevel) {
+          await adminApi.updateSubscription(initialData.id, form.subscriptionLevel);
+        }
+        onSaved({ ...res.user, roles: form.roles, subscriptionLevel: form.subscriptionLevel });
+      }
+      onClose();
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={userFormStyles.overlay}>
+        <View style={userFormStyles.sheet}>
+          <View style={userFormStyles.sheetHeader}>
+            <Text style={userFormStyles.sheetTitle}>
+              {mode === "create" ? "Nuevo Usuario" : "Editar Usuario"}
+            </Text>
+            <Pressable onPress={onClose} style={userFormStyles.closeBtn}>
+              <Ionicons name="close" size={22} color="#888" />
+            </Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <Text style={userFormStyles.fieldLabel}>NOMBRE *</Text>
+            <TextInput
+              style={userFormStyles.input}
+              value={form.displayName}
+              onChangeText={(v) => setForm((p) => ({ ...p, displayName: v }))}
+              placeholder="Nombre completo"
+              placeholderTextColor="#444"
+              autoCapitalize="words"
+            />
+
+            <Text style={userFormStyles.fieldLabel}>EMAIL *</Text>
+            <TextInput
+              style={userFormStyles.input}
+              value={form.email}
+              onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
+              placeholder="correo@ejemplo.com"
+              placeholderTextColor="#444"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text style={userFormStyles.fieldLabel}>
+              {mode === "create" ? "CONTRASEÑA *" : "CONTRASEÑA (dejar vacío para no cambiar)"}
+            </Text>
+            <TextInput
+              style={userFormStyles.input}
+              value={form.password}
+              onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
+              placeholder={mode === "create" ? "Mínimo 6 caracteres" : "Nueva contraseña (opcional)"}
+              placeholderTextColor="#444"
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Text style={userFormStyles.fieldLabel}>TELÉFONO</Text>
+            <TextInput
+              style={userFormStyles.input}
+              value={form.phone}
+              onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
+              placeholder="+54 9 11 1234 5678"
+              placeholderTextColor="#444"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={userFormStyles.fieldLabel}>ROLES</Text>
+            <View style={userFormStyles.toggleRow}>
+              {ROLES.map((role) => {
+                const active = form.roles.includes(role);
+                return (
+                  <Pressable
+                    key={role}
+                    style={[userFormStyles.toggleChip, active && userFormStyles.toggleChipActive]}
+                    onPress={() => toggleRole(role)}
+                  >
+                    <MaterialCommunityIcons
+                      name={ROLE_ICONS[role] as keyof typeof MaterialCommunityIcons.glyphMap}
+                      size={14}
+                      color={active ? "#000" : "#666"}
+                    />
+                    <Text style={[userFormStyles.toggleChipText, active && userFormStyles.toggleChipTextActive]}>
+                      {ROLE_LABELS[role]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={userFormStyles.fieldLabel}>SUSCRIPCIÓN</Text>
+            <View style={userFormStyles.toggleRow}>
+              {SUB_LEVELS.map((level) => {
+                const active = form.subscriptionLevel === level;
+                return (
+                  <Pressable
+                    key={level}
+                    style={[userFormStyles.toggleChip, active && userFormStyles.toggleChipGold]}
+                    onPress={() => setForm((p) => ({ ...p, subscriptionLevel: level }))}
+                  >
+                    <Text style={[userFormStyles.toggleChipText, active && userFormStyles.toggleChipTextActive]}>
+                      {SUB_LABELS[level]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={userFormStyles.switchRow}>
+              <Text style={userFormStyles.fieldLabel}>MODO LUCHADOR</Text>
+              <Switch
+                value={form.isFighter}
+                onValueChange={(v) => setForm((p) => ({ ...p, isFighter: v }))}
+                thumbColor={form.isFighter ? "#D4AF37" : "#555"}
+                trackColor={{ false: "#222", true: "#5a4800" }}
+              />
+            </View>
+
+            <Pressable
+              style={[userFormStyles.saveBtn, saving && { opacity: 0.6 }]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#000" size="small" />
+              ) : (
+                <Text style={userFormStyles.saveBtnText}>
+                  {mode === "create" ? "Crear Usuario" : "Guardar Cambios"}
+                </Text>
+              )}
+            </Pressable>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const userFormStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: "#111",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "90%",
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    color: "#FFF",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  fieldLabel: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 8,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  toggleChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#1a1a1a",
+  },
+  toggleChipActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  toggleChipGold: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  toggleChipText: {
+    color: "#666",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+  },
+  toggleChipTextActive: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+  },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  saveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  saveBtnText: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+});
+
 function UsersPanel({
   users,
   currentUser,
@@ -83,6 +425,53 @@ function UsersPanel({
   setExpandedUser: (id: number | null) => void;
   setUsers: React.Dispatch<React.SetStateAction<UserData[]>>;
 }) {
+  const [formVisible, setFormVisible] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+
+  const openCreate = () => {
+    setFormMode("create");
+    setEditingUser(null);
+    setFormVisible(true);
+  };
+
+  const openEdit = (user: UserData) => {
+    setFormMode("edit");
+    setEditingUser(user);
+    setFormVisible(true);
+  };
+
+  const handleSaved = (saved: UserData & { roles: string[] }) => {
+    setUsers((prev) => {
+      const exists = prev.find((u) => u.id === saved.id);
+      if (exists) return prev.map((u) => u.id === saved.id ? { ...u, ...saved } : u);
+      return [...prev, saved];
+    });
+  };
+
+  const handleDelete = (user: UserData) => {
+    Alert.alert(
+      "Eliminar Usuario",
+      `¿Eliminar a "${user.displayName}"? Esta acción no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await adminApi.deleteUser(user.id);
+              setUsers((prev) => prev.filter((u) => u.id !== user.id));
+              setExpandedUser(null);
+            } catch (e: unknown) {
+              Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const toggleRole = async (userId: number, role: string) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
@@ -134,6 +523,17 @@ function UsersPanel({
 
   return (
     <>
+      <UserFormModal
+        visible={formVisible}
+        mode={formMode}
+        initialData={editingUser}
+        onClose={() => setFormVisible(false)}
+        onSaved={handleSaved}
+      />
+      <Pressable style={styles.createUserBtn} onPress={openCreate}>
+        <Ionicons name="person-add" size={16} color="#000" />
+        <Text style={styles.createUserBtnText}>Nuevo Usuario</Text>
+      </Pressable>
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={16} color="#666" />
         <TextInput
@@ -260,6 +660,25 @@ function UsersPanel({
                       </Pressable>
                     );
                   })}
+                </View>
+
+                <View style={styles.userActionRow}>
+                  <Pressable
+                    style={styles.editUserBtn}
+                    onPress={() => openEdit(u)}
+                  >
+                    <Ionicons name="pencil" size={14} color="#D4AF37" />
+                    <Text style={styles.editUserBtnText}>Editar</Text>
+                  </Pressable>
+                  {!isCurrentUser && (
+                    <Pressable
+                      style={styles.deleteUserBtn}
+                      onPress={() => handleDelete(u)}
+                    >
+                      <Ionicons name="trash" size={14} color="#FF4444" />
+                      <Text style={styles.deleteUserBtnText}>Eliminar</Text>
+                    </Pressable>
+                  )}
                 </View>
               </View>
             )}
@@ -1055,7 +1474,11 @@ export default function AdminScreen() {
             style={[styles.tabButton, activeTab === "cinturones" && styles.tabButtonActive]}
             onPress={() => setActiveTab("cinturones")}
           >
-            <Text style={{ fontSize: 14 }}>🥋</Text>
+            <MaterialCommunityIcons
+              name="medal"
+              size={16}
+              color={activeTab === "cinturones" ? "#000" : "#666"}
+            />
             <Text
               style={[
                 styles.tabButtonText,
@@ -1704,5 +2127,62 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 12,
     color: "#000",
+  },
+  createUserBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#D4AF37",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    alignSelf: "flex-start",
+  },
+  createUserBtnText: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  userActionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#1A1A1A",
+  },
+  editUserBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  editUserBtnText: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  deleteUserBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#FF4444",
+    borderRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  deleteUserBtnText: {
+    color: "#FF4444",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
 });
