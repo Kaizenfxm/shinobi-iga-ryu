@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, fightsApi, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -438,6 +439,45 @@ function UsersPanel({
   const [formVisible, setFormVisible] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [beltSectionOpen, setBeltSectionOpen] = useState<Record<number, boolean>>({});
+  const [userBeltMap, setUserBeltMap] = useState<Record<number, AdminBeltUser>>({});
+  const [beltDataLoading, setBeltDataLoading] = useState(false);
+  const beltDataLoaded = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem("adminBeltSectionOpen").then((data) => {
+      if (data) {
+        try { setBeltSectionOpen(JSON.parse(data)); } catch { }
+      }
+    });
+  }, []);
+
+  const loadBeltData = useCallback(async () => {
+    if (beltDataLoaded.current) return;
+    beltDataLoaded.current = true;
+    setBeltDataLoading(true);
+    try {
+      const { users: beltUsers } = await beltsApi.adminGetUsers();
+      const map: Record<number, AdminBeltUser> = {};
+      beltUsers.forEach((u) => { map[u.id] = u; });
+      setUserBeltMap(map);
+    } catch (e) {
+      console.error("[UsersPanel] loadBeltData error:", e instanceof Error ? e.message : e);
+      beltDataLoaded.current = false;
+    } finally {
+      setBeltDataLoading(false);
+    }
+  }, []);
+
+  const toggleBeltSection = useCallback(async (userId: number) => {
+    const willOpen = !beltSectionOpen[userId];
+    const newState = { ...beltSectionOpen, [userId]: willOpen };
+    setBeltSectionOpen(newState);
+    AsyncStorage.setItem("adminBeltSectionOpen", JSON.stringify(newState));
+    if (willOpen) {
+      loadBeltData();
+    }
+  }, [beltSectionOpen, loadBeltData]);
 
   const openCreate = () => {
     setFormMode("create");
@@ -673,6 +713,46 @@ function UsersPanel({
                   })}
                 </View>
 
+                <Pressable
+                  style={styles.beltSectionToggle}
+                  onPress={() => toggleBeltSection(u.id)}
+                >
+                  <Text style={styles.sectionLabel}>CINTURONES</Text>
+                  <Ionicons
+                    name={beltSectionOpen[u.id] ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#555"
+                  />
+                </Pressable>
+
+                {beltSectionOpen[u.id] && (
+                  <View style={styles.beltManageSection}>
+                    {beltDataLoading ? (
+                      <ActivityIndicator size="small" color="#D4AF37" />
+                    ) : !userBeltMap[u.id] || userBeltMap[u.id].belts.length === 0 ? (
+                      <Text style={styles.noHistoryText}>Sin cinturones asignados</Text>
+                    ) : (
+                      userBeltMap[u.id].belts.map((b) => {
+                        const beltColorLower = b.currentBelt.color.toLowerCase();
+                        const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
+                        const beltIsWhite = beltColorLower === "#ffffff";
+                        const barColor = beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : b.currentBelt.color;
+                        return (
+                          <View key={b.discipline} style={styles.beltManageRow}>
+                            <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
+                            <View style={styles.beltManageInfo}>
+                              <Text style={styles.beltManageName}>{b.currentBelt.name}</Text>
+                              <Text style={styles.beltManageStatus}>
+                                {DISCIPLINE_LABELS[b.discipline] || b.discipline}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })
+                    )}
+                  </View>
+                )}
+
                 <View style={styles.userActionRow}>
                   <Pressable
                     style={styles.editUserBtn}
@@ -868,6 +948,9 @@ function BeltCatalogPanel() {
                     const beltBarColor = isVeryDark ? "#2a2a2a" : isWhite ? "#E0E0E0" : belt.color;
                     const beltStripes = getStripeCount(belt.name);
                     const beltStripeColor = isVeryDark ? "#D4AF37" : "#000000";
+                    const beltNameLower = belt.name.toLowerCase();
+                    const beltIsPuntaNegra = beltNameLower.includes("punta negra");
+                    const beltIsFranjaRoja = beltNameLower.includes("franja roja");
                     const beltStripePositions = beltStripes > 0
                       ? Array.from({ length: beltStripes }, (_, i) => {
                           const zoneStart = 20;
@@ -884,6 +967,26 @@ function BeltCatalogPanel() {
                           onPress={() => setExpandedBelt(isBeltOpen ? null : belt.id)}
                         >
                           <View style={[styles.catalogBeltColorBar, { backgroundColor: beltBarColor }]}>
+                            {beltIsFranjaRoja && (
+                              <View style={{
+                                position: "absolute",
+                                left: "30%",
+                                width: "35%",
+                                top: 0,
+                                bottom: 0,
+                                backgroundColor: "#CC0000",
+                              }} />
+                            )}
+                            {beltIsPuntaNegra && (
+                              <View style={{
+                                position: "absolute",
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: "30%",
+                                backgroundColor: "#000000",
+                              }} />
+                            )}
                             {beltStripePositions.map((leftPx, si) => (
                               <View
                                 key={si}
@@ -1796,6 +1899,14 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 10,
     color: "#AAA",
+  },
+  beltSectionToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    marginTop: 4,
+    marginBottom: 4,
   },
   beltManageSection: {
     marginBottom: 16,
