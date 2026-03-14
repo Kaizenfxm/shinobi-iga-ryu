@@ -10,11 +10,37 @@ export const trainingSystemsTable = pgTable("training_systems", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const exerciseCategoriesTable = pgTable("exercise_categories", {
+  id: serial("id").primaryKey(),
+  trainingSystemId: integer("training_system_id")
+    .references(() => trainingSystemsTable.id, { onDelete: "cascade" })
+    .notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const knowledgeCategoriesTable = pgTable("knowledge_categories", {
+  id: serial("id").primaryKey(),
+  trainingSystemId: integer("training_system_id")
+    .references(() => trainingSystemsTable.id, { onDelete: "cascade" })
+    .notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const exercisesTable = pgTable("exercises", {
   id: serial("id").primaryKey(),
   trainingSystemId: integer("training_system_id")
     .references(() => trainingSystemsTable.id, { onDelete: "cascade" })
     .notNull(),
+  exerciseCategoryId: integer("exercise_category_id")
+    .references(() => exerciseCategoriesTable.id, { onDelete: "set null" }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   videoUrl: text("video_url"),
@@ -33,6 +59,8 @@ export const knowledgeItemsTable = pgTable("knowledge_items", {
   trainingSystemId: integer("training_system_id")
     .references(() => trainingSystemsTable.id, { onDelete: "cascade" })
     .notNull(),
+  knowledgeCategoryId: integer("knowledge_category_id")
+    .references(() => knowledgeCategoriesTable.id, { onDelete: "set null" }),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content"),
   videoUrl: text("video_url"),

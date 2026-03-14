@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { adminApi, beltsApi, fightsApi, notificationsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -57,7 +57,35 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento";
+
+const TRAINING_SYSTEM_LABELS: Record<string, string> = {
+  ninjutsu: "Ninjutsu",
+  mma: "MMA",
+  box: "Box",
+  jiujitsu: "Jiujitsu",
+  muaythai: "Muay Thai",
+  kickboxing: "Kickboxing",
+  funcional: "Funcional",
+};
+
+const TRAINING_SYSTEM_KANJI: Record<string, string> = {
+  ninjutsu: "忍",
+  mma: "総",
+  box: "拳",
+  jiujitsu: "柔",
+  muaythai: "泰",
+  kickboxing: "蹴",
+  funcional: "機",
+};
+
+const LEVEL_OPTIONS = [
+  { value: "", label: "Sin nivel" },
+  { value: "basico", label: "Básico" },
+  { value: "intermedio", label: "Intermedio" },
+  { value: "avanzado", label: "Avanzado" },
+  { value: "elite", label: "Élite" },
+];
 
 const FIGHT_RESULT_LABELS: Record<string, string> = {
   victoria: "Victoria",
@@ -1879,6 +1907,705 @@ function NotificationsPanel() {
   );
 }
 
+type TrainingSubView = "systems" | "categories" | "items";
+type TrainingContentType = "exercises" | "knowledge";
+
+function EntrenamientoPanel() {
+  const [systems, setSystems] = useState<TrainingSystem[]>([]);
+  const [selectedSystem, setSelectedSystem] = useState<TrainingSystem | null>(null);
+  const [contentType, setContentType] = useState<TrainingContentType>("exercises");
+  const [exerciseCategories, setExerciseCategories] = useState<ExerciseCategoryData[]>([]);
+  const [knowledgeCategories, setKnowledgeCategories] = useState<KnowledgeCategoryData[]>([]);
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [knowledge, setKnowledge] = useState<KnowledgeItemData[]>([]);
+  const [loadingSystems, setLoadingSystems] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const [catFormVisible, setCatFormVisible] = useState(false);
+  const [editingCat, setEditingCat] = useState<ExerciseCategoryData | KnowledgeCategoryData | null>(null);
+  const [catName, setCatName] = useState("");
+  const [catDesc, setCatDesc] = useState("");
+  const [catOrder, setCatOrder] = useState("0");
+  const [savingCat, setSavingCat] = useState(false);
+
+  const [itemFormVisible, setItemFormVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState<ExerciseData | KnowledgeItemData | null>(null);
+  const [itemTitle, setItemTitle] = useState("");
+  const [itemDesc, setItemDesc] = useState("");
+  const [itemVideoUrl, setItemVideoUrl] = useState("");
+  const [itemOrder, setItemOrder] = useState("0");
+  const [itemLevel, setItemLevel] = useState("");
+  const [itemDuration, setItemDuration] = useState("");
+  const [itemCategoryId, setItemCategoryId] = useState<number | null>(null);
+  const [savingItem, setSavingItem] = useState(false);
+
+  useEffect(() => {
+    trainingApi.getSystems().then((r) => {
+      setSystems(r.systems);
+      setLoadingSystems(false);
+    }).catch(() => setLoadingSystems(false));
+  }, []);
+
+  const loadSystemDetail = useCallback(async (sys: TrainingSystem) => {
+    setLoadingDetail(true);
+    try {
+      const detail = await trainingApi.getSystem(sys.key);
+      setExerciseCategories(detail.exerciseCategories);
+      setKnowledgeCategories(detail.knowledgeCategories);
+      setExercises(detail.exercises);
+      setKnowledge(detail.knowledge);
+    } catch {
+      Alert.alert("Error", "No se pudo cargar el detalle");
+    }
+    setLoadingDetail(false);
+  }, []);
+
+  const selectSystem = (sys: TrainingSystem) => {
+    setSelectedSystem(sys);
+    loadSystemDetail(sys);
+  };
+
+  const openCatForm = (cat?: ExerciseCategoryData | KnowledgeCategoryData) => {
+    if (cat) {
+      setEditingCat(cat);
+      setCatName(cat.name);
+      setCatDesc(cat.description || "");
+      setCatOrder(String(cat.orderIndex));
+    } else {
+      setEditingCat(null);
+      setCatName("");
+      setCatDesc("");
+      setCatOrder("0");
+    }
+    setCatFormVisible(true);
+  };
+
+  const saveCat = async () => {
+    if (!catName.trim() || !selectedSystem) return;
+    setSavingCat(true);
+    try {
+      if (contentType === "exercises") {
+        if (editingCat) {
+          await trainingApi.updateExerciseCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, orderIndex: parseInt(catOrder) || 0 });
+        } else {
+          await trainingApi.createExerciseCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, orderIndex: parseInt(catOrder) || 0 });
+        }
+      } else {
+        if (editingCat) {
+          await trainingApi.updateKnowledgeCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, orderIndex: parseInt(catOrder) || 0 });
+        } else {
+          await trainingApi.createKnowledgeCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, orderIndex: parseInt(catOrder) || 0 });
+        }
+      }
+      setCatFormVisible(false);
+      loadSystemDetail(selectedSystem);
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
+    }
+    setSavingCat(false);
+  };
+
+  const deleteCat = async (id: number) => {
+    if (!selectedSystem) return;
+    Alert.alert("Eliminar categoría", "Se eliminarán también las asignaciones. ¿Continuar?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar", style: "destructive", onPress: async () => {
+          try {
+            if (contentType === "exercises") {
+              await trainingApi.deleteExerciseCategory(id);
+            } else {
+              await trainingApi.deleteKnowledgeCategory(id);
+            }
+            loadSystemDetail(selectedSystem);
+          } catch (e: unknown) {
+            Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+          }
+        }
+      },
+    ]);
+  };
+
+  const openItemForm = (item?: ExerciseData | KnowledgeItemData) => {
+    if (item) {
+      setEditingItem(item);
+      setItemTitle(item.title);
+      setItemDesc(contentType === "exercises" ? ((item as ExerciseData).description || "") : ((item as KnowledgeItemData).content || ""));
+      setItemVideoUrl(item.videoUrl || "");
+      setItemOrder(String(item.orderIndex));
+      if (contentType === "exercises") {
+        const ex = item as ExerciseData;
+        setItemLevel(ex.level || "");
+        setItemDuration(ex.durationMinutes ? String(ex.durationMinutes) : "");
+        setItemCategoryId(ex.exerciseCategoryId);
+      } else {
+        const ki = item as KnowledgeItemData;
+        setItemLevel("");
+        setItemDuration("");
+        setItemCategoryId(ki.knowledgeCategoryId);
+      }
+    } else {
+      setEditingItem(null);
+      setItemTitle("");
+      setItemDesc("");
+      setItemVideoUrl("");
+      setItemOrder("0");
+      setItemLevel("");
+      setItemDuration("");
+      setItemCategoryId(null);
+    }
+    setItemFormVisible(true);
+  };
+
+  const saveItem = async () => {
+    if (!itemTitle.trim() || !selectedSystem) return;
+    setSavingItem(true);
+    try {
+      if (contentType === "exercises") {
+        if (editingItem) {
+          await trainingApi.updateExercise(editingItem.id, {
+            title: itemTitle.trim(),
+            description: itemDesc.trim() || null,
+            videoUrl: itemVideoUrl.trim() || null,
+            orderIndex: parseInt(itemOrder) || 0,
+            level: itemLevel || null,
+            durationMinutes: itemDuration ? parseInt(itemDuration) : null,
+            exerciseCategoryId: itemCategoryId,
+          });
+        } else {
+          await trainingApi.createExercise({
+            trainingSystemId: selectedSystem.id,
+            title: itemTitle.trim(),
+            description: itemDesc.trim() || undefined,
+            videoUrl: itemVideoUrl.trim() || undefined,
+            orderIndex: parseInt(itemOrder) || 0,
+            level: itemLevel || undefined,
+            durationMinutes: itemDuration ? parseInt(itemDuration) : undefined,
+            exerciseCategoryId: itemCategoryId || undefined,
+          });
+        }
+      } else {
+        if (editingItem) {
+          await trainingApi.updateKnowledge(editingItem.id, {
+            title: itemTitle.trim(),
+            content: itemDesc.trim() || null,
+            videoUrl: itemVideoUrl.trim() || null,
+            orderIndex: parseInt(itemOrder) || 0,
+            knowledgeCategoryId: itemCategoryId,
+          });
+        } else {
+          await trainingApi.createKnowledge({
+            trainingSystemId: selectedSystem.id,
+            title: itemTitle.trim(),
+            content: itemDesc.trim() || undefined,
+            videoUrl: itemVideoUrl.trim() || undefined,
+            orderIndex: parseInt(itemOrder) || 0,
+            knowledgeCategoryId: itemCategoryId || undefined,
+          });
+        }
+      }
+      setItemFormVisible(false);
+      loadSystemDetail(selectedSystem);
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
+    }
+    setSavingItem(false);
+  };
+
+  const deleteItem = async (id: number) => {
+    if (!selectedSystem) return;
+    Alert.alert("Eliminar", "¿Estás seguro?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar", style: "destructive", onPress: async () => {
+          try {
+            if (contentType === "exercises") {
+              await trainingApi.deleteExercise(id);
+            } else {
+              await trainingApi.deleteKnowledge(id);
+            }
+            loadSystemDetail(selectedSystem);
+          } catch (e: unknown) {
+            Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+          }
+        }
+      },
+    ]);
+  };
+
+  const currentCategories = contentType === "exercises" ? exerciseCategories : knowledgeCategories;
+  const currentItems = contentType === "exercises" ? exercises : knowledge;
+
+  if (loadingSystems) {
+    return <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />;
+  }
+
+  if (!selectedSystem) {
+    return (
+      <View style={{ gap: 8 }}>
+        <Text style={trnStyles.sectionTitle}>SISTEMAS DE ENTRENAMIENTO</Text>
+        {systems.map((sys) => (
+          <Pressable key={sys.id} style={trnStyles.systemCard} onPress={() => selectSystem(sys)}>
+            <Text style={trnStyles.systemKanji}>{TRAINING_SYSTEM_KANJI[sys.key] ?? "武"}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={trnStyles.systemName}>{TRAINING_SYSTEM_LABELS[sys.key] ?? sys.name}</Text>
+              {sys.description ? <Text style={trnStyles.systemDesc}>{sys.description}</Text> : null}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#555" />
+          </Pressable>
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ gap: 10 }}>
+      <Pressable style={trnStyles.backRow} onPress={() => setSelectedSystem(null)}>
+        <Ionicons name="arrow-back" size={16} color="#888" />
+        <Text style={trnStyles.backText}>Sistemas</Text>
+      </Pressable>
+
+      <View style={trnStyles.systemHeader}>
+        <Text style={trnStyles.systemHeaderKanji}>{TRAINING_SYSTEM_KANJI[selectedSystem.key] ?? "武"}</Text>
+        <Text style={trnStyles.systemHeaderName}>{TRAINING_SYSTEM_LABELS[selectedSystem.key] ?? selectedSystem.name}</Text>
+      </View>
+
+      <View style={trnStyles.toggleRow}>
+        <Pressable
+          style={[trnStyles.toggleBtn, contentType === "exercises" && trnStyles.toggleBtnActive]}
+          onPress={() => setContentType("exercises")}
+        >
+          <MaterialCommunityIcons name="dumbbell" size={14} color={contentType === "exercises" ? "#000" : "#666"} />
+          <Text style={[trnStyles.toggleText, contentType === "exercises" && trnStyles.toggleTextActive]}>Ejercicios</Text>
+        </Pressable>
+        <Pressable
+          style={[trnStyles.toggleBtn, contentType === "knowledge" && trnStyles.toggleBtnActive]}
+          onPress={() => setContentType("knowledge")}
+        >
+          <Ionicons name="book-outline" size={14} color={contentType === "knowledge" ? "#000" : "#666"} />
+          <Text style={[trnStyles.toggleText, contentType === "knowledge" && trnStyles.toggleTextActive]}>Conocimiento</Text>
+        </Pressable>
+      </View>
+
+      {loadingDetail ? (
+        <ActivityIndicator color="#D4AF37" style={{ marginTop: 20 }} />
+      ) : (
+        <>
+          <View style={trnStyles.subSection}>
+            <View style={trnStyles.subSectionHeader}>
+              <Text style={trnStyles.subSectionTitle}>CATEGORÍAS</Text>
+              <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()}>
+                <Ionicons name="add" size={16} color="#000" />
+              </Pressable>
+            </View>
+            {currentCategories.length === 0 ? (
+              <Text style={trnStyles.emptyHint}>Sin categorías — todo aparece sin agrupar</Text>
+            ) : (
+              currentCategories.map((cat) => (
+                <View key={cat.id} style={trnStyles.catRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={trnStyles.catName}>{cat.name}</Text>
+                    {cat.description ? <Text style={trnStyles.catDesc}>{cat.description}</Text> : null}
+                  </View>
+                  <Pressable onPress={() => openCatForm(cat)} style={trnStyles.iconBtn}>
+                    <Ionicons name="pencil" size={14} color="#D4AF37" />
+                  </Pressable>
+                  <Pressable onPress={() => deleteCat(cat.id)} style={trnStyles.iconBtn}>
+                    <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </View>
+
+          <View style={trnStyles.subSection}>
+            <View style={trnStyles.subSectionHeader}>
+              <Text style={trnStyles.subSectionTitle}>
+                {contentType === "exercises" ? "EJERCICIOS" : "ITEMS DE CONOCIMIENTO"}
+              </Text>
+              <Pressable style={trnStyles.addBtn} onPress={() => openItemForm()}>
+                <Ionicons name="add" size={16} color="#000" />
+              </Pressable>
+            </View>
+            {currentItems.length === 0 ? (
+              <Text style={trnStyles.emptyHint}>Sin contenido aún</Text>
+            ) : (
+              currentItems.map((item) => {
+                const catId = contentType === "exercises"
+                  ? (item as ExerciseData).exerciseCategoryId
+                  : (item as KnowledgeItemData).knowledgeCategoryId;
+                const catLabel = currentCategories.find((c) => c.id === catId)?.name;
+                return (
+                  <View key={item.id} style={trnStyles.itemRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={trnStyles.itemTitle}>{item.title}</Text>
+                      <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+                        {catLabel ? (
+                          <View style={trnStyles.itemTag}>
+                            <Text style={trnStyles.itemTagText}>{catLabel}</Text>
+                          </View>
+                        ) : null}
+                        {contentType === "exercises" && (item as ExerciseData).level ? (
+                          <View style={[trnStyles.itemTag, { borderColor: "#D4AF3755" }]}>
+                            <Text style={[trnStyles.itemTagText, { color: "#D4AF37" }]}>{(item as ExerciseData).level}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    <Pressable onPress={() => openItemForm(item)} style={trnStyles.iconBtn}>
+                      <Ionicons name="pencil" size={14} color="#D4AF37" />
+                    </Pressable>
+                    <Pressable onPress={() => deleteItem(item.id)} style={trnStyles.iconBtn}>
+                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                    </Pressable>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </>
+      )}
+
+      <Modal visible={catFormVisible} animationType="slide" transparent onRequestClose={() => setCatFormVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={trnStyles.overlay}>
+          <View style={trnStyles.sheet}>
+            <View style={trnStyles.sheetHeader}>
+              <Text style={trnStyles.sheetTitle}>{editingCat ? "Editar Categoría" : "Nueva Categoría"}</Text>
+              <Pressable onPress={() => setCatFormVisible(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </Pressable>
+            </View>
+            <Text style={trnStyles.fieldLabel}>NOMBRE *</Text>
+            <TextInput style={trnStyles.input} value={catName} onChangeText={setCatName} placeholder="Nombre de categoría" placeholderTextColor="#444" />
+            <Text style={trnStyles.fieldLabel}>DESCRIPCIÓN</Text>
+            <TextInput style={[trnStyles.input, { height: 70 }]} value={catDesc} onChangeText={setCatDesc} placeholder="Descripción (opcional)" placeholderTextColor="#444" multiline />
+            <Text style={trnStyles.fieldLabel}>ORDEN</Text>
+            <TextInput style={trnStyles.input} value={catOrder} onChangeText={setCatOrder} placeholder="0" placeholderTextColor="#444" keyboardType="numeric" />
+            <Pressable style={[trnStyles.saveBtn, savingCat && { opacity: 0.6 }]} onPress={saveCat} disabled={savingCat}>
+              {savingCat ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={itemFormVisible} animationType="slide" transparent onRequestClose={() => setItemFormVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={trnStyles.overlay}>
+          <View style={trnStyles.sheet}>
+            <View style={trnStyles.sheetHeader}>
+              <Text style={trnStyles.sheetTitle}>{editingItem ? "Editar" : "Nuevo"} {contentType === "exercises" ? "Ejercicio" : "Conocimiento"}</Text>
+              <Pressable onPress={() => setItemFormVisible(false)}>
+                <Ionicons name="close" size={22} color="#888" />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={trnStyles.fieldLabel}>TÍTULO *</Text>
+              <TextInput style={trnStyles.input} value={itemTitle} onChangeText={setItemTitle} placeholder="Título" placeholderTextColor="#444" />
+              <Text style={trnStyles.fieldLabel}>{contentType === "exercises" ? "DESCRIPCIÓN" : "CONTENIDO"}</Text>
+              <TextInput style={[trnStyles.input, { height: 80 }]} value={itemDesc} onChangeText={setItemDesc} placeholder={contentType === "exercises" ? "Descripción" : "Contenido"} placeholderTextColor="#444" multiline />
+              <Text style={trnStyles.fieldLabel}>URL DE VIDEO</Text>
+              <TextInput style={trnStyles.input} value={itemVideoUrl} onChangeText={setItemVideoUrl} placeholder="https://..." placeholderTextColor="#444" autoCapitalize="none" />
+              <Text style={trnStyles.fieldLabel}>CATEGORÍA</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                <Pressable
+                  style={[trnStyles.chipBtn, itemCategoryId === null && trnStyles.chipBtnActive]}
+                  onPress={() => setItemCategoryId(null)}
+                >
+                  <Text style={[trnStyles.chipText, itemCategoryId === null && trnStyles.chipTextActive]}>Sin categoría</Text>
+                </Pressable>
+                {currentCategories.map((cat) => (
+                  <Pressable
+                    key={cat.id}
+                    style={[trnStyles.chipBtn, itemCategoryId === cat.id && trnStyles.chipBtnActive]}
+                    onPress={() => setItemCategoryId(cat.id)}
+                  >
+                    <Text style={[trnStyles.chipText, itemCategoryId === cat.id && trnStyles.chipTextActive]}>{cat.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              {contentType === "exercises" ? (
+                <>
+                  <Text style={trnStyles.fieldLabel}>NIVEL</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {LEVEL_OPTIONS.map((opt) => (
+                      <Pressable
+                        key={opt.value}
+                        style={[trnStyles.chipBtn, itemLevel === opt.value && trnStyles.chipBtnActive]}
+                        onPress={() => setItemLevel(opt.value)}
+                      >
+                        <Text style={[trnStyles.chipText, itemLevel === opt.value && trnStyles.chipTextActive]}>{opt.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={trnStyles.fieldLabel}>DURACIÓN (MINUTOS)</Text>
+                  <TextInput style={trnStyles.input} value={itemDuration} onChangeText={setItemDuration} placeholder="Ej: 30" placeholderTextColor="#444" keyboardType="numeric" />
+                </>
+              ) : null}
+              <Text style={trnStyles.fieldLabel}>ORDEN</Text>
+              <TextInput style={trnStyles.input} value={itemOrder} onChangeText={setItemOrder} placeholder="0" placeholderTextColor="#444" keyboardType="numeric" />
+              <Pressable style={[trnStyles.saveBtn, savingItem && { opacity: 0.6 }]} onPress={saveItem} disabled={savingItem}>
+                {savingItem ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+const trnStyles = StyleSheet.create({
+  sectionTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  systemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    padding: 14,
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+  },
+  systemKanji: {
+    fontFamily: "NotoSerifJP_700Bold",
+    fontSize: 24,
+    color: "#D4AF37",
+  },
+  systemName: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    color: "#FFF",
+    letterSpacing: 1,
+  },
+  systemDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    marginTop: 2,
+  },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  backText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#888",
+  },
+  systemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 4,
+  },
+  systemHeaderKanji: {
+    fontFamily: "NotoSerifJP_700Bold",
+    fontSize: 28,
+    color: "#D4AF37",
+  },
+  systemHeaderName: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 18,
+    color: "#FFF",
+    letterSpacing: 2,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  toggleBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: "#222",
+    backgroundColor: "#111",
+  },
+  toggleBtnActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  toggleText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#666",
+  },
+  toggleTextActive: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+  },
+  subSection: {
+    gap: 6,
+  },
+  subSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  subSectionTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  addBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 4,
+    padding: 4,
+  },
+  emptyHint: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#444",
+    fontStyle: "italic",
+  },
+  catRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  catName: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#FFF",
+  },
+  catDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    marginTop: 2,
+  },
+  iconBtn: {
+    padding: 6,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  itemTitle: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#FFF",
+  },
+  itemTag: {
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginTop: 4,
+  },
+  itemTagText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 9,
+    color: "#888",
+    letterSpacing: 0.5,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: "#111",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "90%",
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  sheetTitle: {
+    color: "#FFF",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  fieldLabel: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 8,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  chipBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#1a1a1a",
+  },
+  chipBtnActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  chipText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#666",
+  },
+  chipTextActive: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+  },
+  saveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  saveBtnText: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+});
+
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -1973,6 +2700,16 @@ export default function AdminScreen() {
               color={activeTab === "notificaciones" ? "#000" : "#666"}
             />
           </Pressable>
+          <Pressable
+            style={[styles.tabButton, activeTab === "entrenamiento" && styles.tabButtonActive]}
+            onPress={() => setActiveTab("entrenamiento")}
+          >
+            <MaterialCommunityIcons
+              name="dumbbell"
+              size={20}
+              color={activeTab === "entrenamiento" ? "#000" : "#666"}
+            />
+          </Pressable>
         </View>
 
         <View style={styles.divider} />
@@ -1992,6 +2729,8 @@ export default function AdminScreen() {
             const res = await adminApi.getUsers();
             setUsers(res.users);
           }} />
+        ) : activeTab === "entrenamiento" ? (
+          <EntrenamientoPanel />
         ) : (
           <NotificationsPanel />
         )}
