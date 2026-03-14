@@ -314,6 +314,8 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [togglingFighter, setTogglingFighter] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const actionsSectionYRef = useRef(0);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -365,6 +367,9 @@ export default function ProfileScreen() {
     setEditName(profile?.displayName ?? user?.displayName ?? "");
     setEditPhone(profile?.phone ?? "");
     setEditing(true);
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: actionsSectionYRef.current, animated: true });
+    }, 80);
   };
 
   const handlePickAvatar = async () => {
@@ -505,6 +510,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
@@ -604,7 +610,10 @@ export default function ProfileScreen() {
           </View>
         </ViewShot>
 
-        <View style={styles.actionsSection}>
+        <View
+          style={styles.actionsSection}
+          onLayout={(e) => { actionsSectionYRef.current = e.nativeEvent.layout.y; }}
+        >
           {!editing && (
             <Pressable style={styles.editProfileBtn} onPress={handleEditOpen}>
               <Ionicons name="pencil-outline" size={15} color="#D4AF37" />
