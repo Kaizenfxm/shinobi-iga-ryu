@@ -20,7 +20,6 @@ export default function TabLayout() {
 
   const showAdmin = isAuthenticated && hasRole("admin");
   const showAlumnos = isAuthenticated && hasRole("profesor");
-  const showFights = isAuthenticated && user?.isFighter;
 
   return (
     <Tabs
@@ -80,9 +79,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="belts"
+        name="carrera"
         options={{
-          title: "Cinturones",
+          title: "Carrera",
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="medal" size={22} color={color} />
           ),
@@ -90,14 +89,12 @@ export default function TabLayout() {
         listeners={{ tabPress: requireAuth }}
       />
       <Tabs.Screen
+        name="belts"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="fights"
-        options={{
-          title: "Peleas",
-          href: showFights ? undefined : null,
-          tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="sword-cross" size={22} color={color} />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="profile"

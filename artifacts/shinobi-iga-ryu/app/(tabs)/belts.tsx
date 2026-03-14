@@ -713,7 +713,7 @@ function HistorySection({ history }: { history: BeltHistoryItem[] }) {
   );
 }
 
-export default function BeltsScreen() {
+export default function BeltsScreen({ skipSafeArea = false }: { skipSafeArea?: boolean }) {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -808,7 +808,7 @@ export default function BeltsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
+          { paddingTop: skipSafeArea ? 8 : (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" />

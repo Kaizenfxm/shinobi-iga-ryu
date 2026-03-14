@@ -333,6 +333,12 @@ export const beltsApi = {
 
   adminDeleteRequirement: (beltId: number, reqId: number) =>
     apiFetch<{ success: boolean }>(`/admin/belts/definitions/${beltId}/requirements/${reqId}`, { method: "DELETE" }),
+
+  adminAssignBelt: (userId: number, discipline: string, beltDefinitionId: number, notes?: string) =>
+    apiFetch<{ success: boolean }>("/admin/belts/assign", {
+      method: "POST",
+      body: { userId, discipline, beltDefinitionId, notes },
+    }),
 };
 
 export interface UnlockRecord {
