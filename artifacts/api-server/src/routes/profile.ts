@@ -9,6 +9,9 @@ import {
 } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorageService = new ObjectStorageService();
 
 const profileRouter = Router();
 
@@ -136,6 +139,54 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+profileRouter.post("/profile/me/avatar/url", requireAuth, async (req, res) => {
+  try {
+    const { contentType } = req.body;
+    if (!contentType || typeof contentType !== "string" || !contentType.startsWith("image/")) {
+      res.status(400).json({ error: "contentType de imagen requerido" });
+      return;
+    }
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+    res.json({ uploadURL, objectPath });
+  } catch (error) {
+    console.error("Avatar URL error:", error);
+    res.status(500).json({ error: "Error generando URL de subida" });
+  }
+});
+
+profileRouter.put("/profile/me/avatar", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { objectPath } = req.body;
+    if (!objectPath || typeof objectPath !== "string") {
+      res.status(400).json({ error: "objectPath requerido" });
+      return;
+    }
+    const [updated] = await db
+      .update(usersTable)
+      .set({ avatarUrl: objectPath, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+        avatarUrl: usersTable.avatarUrl,
+        subscriptionLevel: usersTable.subscriptionLevel,
+        phone: usersTable.phone,
+        isFighter: usersTable.isFighter,
+      });
+    if (!updated) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("Save avatar error:", error);
+    res.status(500).json({ error: "Error guardando avatar" });
   }
 });
 

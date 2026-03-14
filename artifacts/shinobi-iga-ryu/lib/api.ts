@@ -14,6 +14,14 @@ function getBaseUrl(): string {
   return "http://localhost:8080";
 }
 
+export function getAvatarServingUrl(avatarUrl: string | null): string | null {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith("/objects/")) {
+    return `${getBaseUrl()}/api/storage${avatarUrl}`;
+  }
+  return avatarUrl;
+}
+
 const BASE_URL = getBaseUrl();
 
 interface ApiOptions {
@@ -323,6 +331,19 @@ export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
   updateProfile: (data: { displayName?: string; phone?: string | null }) =>
     apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
+};
+
+export const avatarApi = {
+  getUploadUrl: (contentType: string) =>
+    apiFetch<{ uploadURL: string; objectPath: string }>("/profile/me/avatar/url", {
+      method: "POST",
+      body: { contentType },
+    }),
+  saveAvatar: (objectPath: string) =>
+    apiFetch<{ user: UserData }>("/profile/me/avatar", {
+      method: "PUT",
+      body: { objectPath },
+    }),
 };
 
 export const fightsApi = {
