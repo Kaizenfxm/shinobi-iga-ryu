@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable, exerciseCategoriesTable, knowledgeCategoriesTable } from "@workspace/db";
+import { eq, asc, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const trainingRouter = Router();
@@ -46,9 +46,187 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       .where(eq(knowledgeItemsTable.trainingSystemId, system.id))
       .orderBy(asc(knowledgeItemsTable.orderIndex), asc(knowledgeItemsTable.id));
 
-    res.json({ system, exercises, knowledge });
+    const exerciseCategories = await db
+      .select()
+      .from(exerciseCategoriesTable)
+      .where(and(eq(exerciseCategoriesTable.trainingSystemId, system.id), eq(exerciseCategoriesTable.isActive, true)))
+      .orderBy(asc(exerciseCategoriesTable.orderIndex), asc(exerciseCategoriesTable.id));
+
+    const knowledgeCategories = await db
+      .select()
+      .from(knowledgeCategoriesTable)
+      .where(and(eq(knowledgeCategoriesTable.trainingSystemId, system.id), eq(knowledgeCategoriesTable.isActive, true)))
+      .orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id));
+
+    res.json({ system, exercises, knowledge, exerciseCategories, knowledgeCategories });
   } catch (error) {
     console.error("Get training system detail error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.get("/training/systems/:key/exercise-categories", requireAuth, async (req, res) => {
+  try {
+    const key = String(req.params.key);
+    const [system] = await db.select().from(trainingSystemsTable).where(eq(trainingSystemsTable.key, key)).limit(1);
+    if (!system) { res.status(404).json({ error: "Sistema no encontrado" }); return; }
+
+    const categories = await db
+      .select()
+      .from(exerciseCategoriesTable)
+      .where(eq(exerciseCategoriesTable.trainingSystemId, system.id))
+      .orderBy(asc(exerciseCategoriesTable.orderIndex), asc(exerciseCategoriesTable.id));
+    res.json({ categories });
+  } catch (error) {
+    console.error("Get exercise categories error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.get("/training/systems/:key/knowledge-categories", requireAuth, async (req, res) => {
+  try {
+    const key = String(req.params.key);
+    const [system] = await db.select().from(trainingSystemsTable).where(eq(trainingSystemsTable.key, key)).limit(1);
+    if (!system) { res.status(404).json({ error: "Sistema no encontrado" }); return; }
+
+    const categories = await db
+      .select()
+      .from(knowledgeCategoriesTable)
+      .where(eq(knowledgeCategoriesTable.trainingSystemId, system.id))
+      .orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id));
+    res.json({ categories });
+  } catch (error) {
+    console.error("Get knowledge categories error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.post("/admin/training/exercise-categories", requireAdmin, async (req, res) => {
+  try {
+    const { trainingSystemId, name, description, orderIndex } = req.body as {
+      trainingSystemId?: number;
+      name?: string;
+      description?: string;
+      orderIndex?: number;
+    };
+    if (!trainingSystemId || !name?.trim()) {
+      res.status(400).json({ error: "Sistema y nombre son requeridos" });
+      return;
+    }
+    const [category] = await db
+      .insert(exerciseCategoriesTable)
+      .values({
+        trainingSystemId,
+        name: name.trim(),
+        description: description?.trim() || null,
+        orderIndex: orderIndex ?? 0,
+      })
+      .returning();
+    res.json({ category });
+  } catch (error) {
+    console.error("Create exercise category error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.put("/admin/training/exercise-categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+
+    const { name, description, orderIndex, isActive } = req.body;
+    const updates: Partial<typeof exerciseCategoriesTable.$inferInsert> = {};
+    if (name !== undefined && name.trim()) updates.name = name.trim();
+    if (description !== undefined) updates.description = description?.trim() || null;
+    if (orderIndex !== undefined) updates.orderIndex = orderIndex;
+    if (isActive !== undefined) updates.isActive = Boolean(isActive);
+
+    const [updated] = await db
+      .update(exerciseCategoriesTable)
+      .set(updates)
+      .where(eq(exerciseCategoriesTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Categoría no encontrada" }); return; }
+    res.json({ category: updated });
+  } catch (error) {
+    console.error("Update exercise category error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.delete("/admin/training/exercise-categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+    await db.delete(exerciseCategoriesTable).where(eq(exerciseCategoriesTable.id, id));
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete exercise category error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.post("/admin/training/knowledge-categories", requireAdmin, async (req, res) => {
+  try {
+    const { trainingSystemId, name, description, orderIndex } = req.body as {
+      trainingSystemId?: number;
+      name?: string;
+      description?: string;
+      orderIndex?: number;
+    };
+    if (!trainingSystemId || !name?.trim()) {
+      res.status(400).json({ error: "Sistema y nombre son requeridos" });
+      return;
+    }
+    const [category] = await db
+      .insert(knowledgeCategoriesTable)
+      .values({
+        trainingSystemId,
+        name: name.trim(),
+        description: description?.trim() || null,
+        orderIndex: orderIndex ?? 0,
+      })
+      .returning();
+    res.json({ category });
+  } catch (error) {
+    console.error("Create knowledge category error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.put("/admin/training/knowledge-categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+
+    const { name, description, orderIndex, isActive } = req.body;
+    const updates: Partial<typeof knowledgeCategoriesTable.$inferInsert> = {};
+    if (name !== undefined && name.trim()) updates.name = name.trim();
+    if (description !== undefined) updates.description = description?.trim() || null;
+    if (orderIndex !== undefined) updates.orderIndex = orderIndex;
+    if (isActive !== undefined) updates.isActive = Boolean(isActive);
+
+    const [updated] = await db
+      .update(knowledgeCategoriesTable)
+      .set(updates)
+      .where(eq(knowledgeCategoriesTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Categoría no encontrada" }); return; }
+    res.json({ category: updated });
+  } catch (error) {
+    console.error("Update knowledge category error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.delete("/admin/training/knowledge-categories/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+    await db.delete(knowledgeCategoriesTable).where(eq(knowledgeCategoriesTable.id, id));
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete knowledge category error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -64,6 +242,7 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
       durationMinutes,
       level,
       orderIndex,
+      exerciseCategoryId,
     } = req.body as {
       trainingSystemId?: number;
       title?: string;
@@ -73,6 +252,7 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
       durationMinutes?: number;
       level?: string;
       orderIndex?: number;
+      exerciseCategoryId?: number;
     };
 
     if (!trainingSystemId || !title?.trim()) {
@@ -92,6 +272,7 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
         level: level?.trim() || null,
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
+        exerciseCategoryId: exerciseCategoryId ?? null,
       })
       .returning();
 
@@ -110,7 +291,7 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
       return;
     }
 
-    const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive } = req.body;
+    const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive, exerciseCategoryId } = req.body;
 
     const updates: Partial<typeof exercisesTable.$inferInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
@@ -124,6 +305,7 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
     if (level !== undefined) updates.level = level?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
+    if (exerciseCategoryId !== undefined) updates.exerciseCategoryId = exerciseCategoryId ?? null;
 
     const [updated] = await db
       .update(exercisesTable)
@@ -168,6 +350,7 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
       videoUrl,
       imageUrl,
       orderIndex,
+      knowledgeCategoryId,
     } = req.body as {
       trainingSystemId?: number;
       title?: string;
@@ -175,6 +358,7 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
       videoUrl?: string;
       imageUrl?: string;
       orderIndex?: number;
+      knowledgeCategoryId?: number;
     };
 
     if (!trainingSystemId || !title?.trim()) {
@@ -192,6 +376,7 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
         imageUrl: imageUrl?.trim() || null,
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
+        knowledgeCategoryId: knowledgeCategoryId ?? null,
       })
       .returning();
 
@@ -210,7 +395,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
       return;
     }
 
-    const { title, content, videoUrl, imageUrl, orderIndex, isActive } = req.body;
+    const { title, content, videoUrl, imageUrl, orderIndex, isActive, knowledgeCategoryId } = req.body;
 
     const updates: Partial<typeof knowledgeItemsTable.$inferInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
@@ -222,6 +407,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
     if (imageUrl !== undefined) updates.imageUrl = imageUrl?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
+    if (knowledgeCategoryId !== undefined) updates.knowledgeCategoryId = knowledgeCategoryId ?? null;
 
     const [updated] = await db
       .update(knowledgeItemsTable)

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { trainingApi, type TrainingSystemDetail } from "@/lib/api";
+import { trainingApi, type TrainingSystemDetail, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
 
 type SubTab = "conocimiento" | "ejercicios";
 
@@ -146,9 +146,15 @@ export default function EntrenamientoScreen() {
           }
         >
           {activeTab === "conocimiento" ? (
-            <ConocimientoTab items={data?.knowledge ?? []} />
+            <ConocimientoTab
+              items={data?.knowledge ?? []}
+              categories={data?.knowledgeCategories ?? []}
+            />
           ) : (
-            <EjerciciosTab items={data?.exercises ?? []} />
+            <EjerciciosTab
+              items={data?.exercises ?? []}
+              categories={data?.exerciseCategories ?? []}
+            />
           )}
         </ScrollView>
       )}
@@ -163,6 +169,7 @@ type KnowledgeItem = {
   videoUrl: string | null;
   imageUrl: string | null;
   orderIndex: number;
+  knowledgeCategoryId: number | null;
 };
 
 type ExerciseItem = {
@@ -174,9 +181,22 @@ type ExerciseItem = {
   durationMinutes: number | null;
   level: string | null;
   orderIndex: number;
+  exerciseCategoryId: number | null;
 };
 
-function ConocimientoTab({ items }: { items: KnowledgeItem[] }) {
+function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; categories: KnowledgeCategoryData[] }) {
+  const grouped = useMemo(() => {
+    if (categories.length === 0) return [{ category: null, items }];
+    const groups: { category: KnowledgeCategoryData | null; items: KnowledgeItem[] }[] = [];
+    for (const cat of categories) {
+      const catItems = items.filter((i) => i.knowledgeCategoryId === cat.id);
+      if (catItems.length > 0) groups.push({ category: cat, items: catItems });
+    }
+    const uncategorized = items.filter((i) => !i.knowledgeCategoryId);
+    if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
+    return groups;
+  }, [items, categories]);
+
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -189,26 +209,55 @@ function ConocimientoTab({ items }: { items: KnowledgeItem[] }) {
 
   return (
     <View style={styles.listContainer}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.knowledgeCard}>
-          <View style={styles.cardGoldBar} />
-          <Text style={styles.knowledgeTitle}>{item.title}</Text>
-          {item.content ? (
-            <Text style={styles.knowledgeContent}>{item.content}</Text>
-          ) : null}
-          {item.videoUrl ? (
-            <View style={styles.videoTag}>
-              <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
-              <Text style={styles.videoTagText}>Video disponible</Text>
+      {grouped.map((group, gi) => (
+        <View key={group.category?.id ?? "uncategorized"} style={gi > 0 ? { marginTop: 12 } : undefined}>
+          {group.category ? (
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryBar} />
+              <Text style={styles.categoryName}>{group.category.name}</Text>
+              {group.category.description ? (
+                <Text style={styles.categoryDesc}>{group.category.description}</Text>
+              ) : null}
+            </View>
+          ) : categories.length > 0 ? (
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryNameGeneral}>General</Text>
             </View>
           ) : null}
+          {group.items.map((item) => (
+            <View key={item.id} style={styles.knowledgeCard}>
+              <View style={styles.cardGoldBar} />
+              <Text style={styles.knowledgeTitle}>{item.title}</Text>
+              {item.content ? (
+                <Text style={styles.knowledgeContent}>{item.content}</Text>
+              ) : null}
+              {item.videoUrl ? (
+                <View style={styles.videoTag}>
+                  <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
+                  <Text style={styles.videoTagText}>Video disponible</Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
         </View>
       ))}
     </View>
   );
 }
 
-function EjerciciosTab({ items }: { items: ExerciseItem[] }) {
+function EjerciciosTab({ items, categories }: { items: ExerciseItem[]; categories: ExerciseCategoryData[] }) {
+  const grouped = useMemo(() => {
+    if (categories.length === 0) return [{ category: null, items }];
+    const groups: { category: ExerciseCategoryData | null; items: ExerciseItem[] }[] = [];
+    for (const cat of categories) {
+      const catItems = items.filter((i) => i.exerciseCategoryId === cat.id);
+      if (catItems.length > 0) groups.push({ category: cat, items: catItems });
+    }
+    const uncategorized = items.filter((i) => !i.exerciseCategoryId);
+    if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
+    return groups;
+  }, [items, categories]);
+
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -221,45 +270,62 @@ function EjerciciosTab({ items }: { items: ExerciseItem[] }) {
 
   return (
     <View style={styles.listContainer}>
-      {items.map((item) => (
-        <View key={item.id} style={styles.exerciseCard}>
-          <View style={styles.exerciseCardTop}>
-            <Text style={styles.exerciseTitle}>{item.title}</Text>
-            <View style={styles.exerciseMeta}>
-              {item.level ? (
-                <View
-                  style={[
-                    styles.levelBadge,
-                    { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.levelBadgeText,
-                      { color: LEVEL_COLORS[item.level] ?? "#D4AF37" },
-                    ]}
-                  >
-                    {LEVEL_LABELS[item.level] ?? item.level}
-                  </Text>
-                </View>
+      {grouped.map((group, gi) => (
+        <View key={group.category?.id ?? "uncategorized"} style={gi > 0 ? { marginTop: 12 } : undefined}>
+          {group.category ? (
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryBar} />
+              <Text style={styles.categoryName}>{group.category.name}</Text>
+              {group.category.description ? (
+                <Text style={styles.categoryDesc}>{group.category.description}</Text>
               ) : null}
-              {item.durationMinutes ? (
-                <View style={styles.durationTag}>
-                  <Ionicons name="time-outline" size={11} color="#555" />
-                  <Text style={styles.durationText}>{item.durationMinutes} min</Text>
+            </View>
+          ) : categories.length > 0 ? (
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryNameGeneral}>General</Text>
+            </View>
+          ) : null}
+          {group.items.map((item) => (
+            <View key={item.id} style={styles.exerciseCard}>
+              <View style={styles.exerciseCardTop}>
+                <Text style={styles.exerciseTitle}>{item.title}</Text>
+                <View style={styles.exerciseMeta}>
+                  {item.level ? (
+                    <View
+                      style={[
+                        styles.levelBadge,
+                        { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.levelBadgeText,
+                          { color: LEVEL_COLORS[item.level] ?? "#D4AF37" },
+                        ]}
+                      >
+                        {LEVEL_LABELS[item.level] ?? item.level}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {item.durationMinutes ? (
+                    <View style={styles.durationTag}>
+                      <Ionicons name="time-outline" size={11} color="#555" />
+                      <Text style={styles.durationText}>{item.durationMinutes} min</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+              {item.description ? (
+                <Text style={styles.exerciseDesc}>{item.description}</Text>
+              ) : null}
+              {item.videoUrl ? (
+                <View style={styles.videoTag}>
+                  <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
+                  <Text style={styles.videoTagText}>Video disponible</Text>
                 </View>
               ) : null}
             </View>
-          </View>
-          {item.description ? (
-            <Text style={styles.exerciseDesc}>{item.description}</Text>
-          ) : null}
-          {item.videoUrl ? (
-            <View style={styles.videoTag}>
-              <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
-              <Text style={styles.videoTagText}>Video disponible</Text>
-            </View>
-          ) : null}
+          ))}
         </View>
       ))}
     </View>
@@ -372,6 +438,36 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     gap: 10,
+  },
+  categoryHeader: {
+    marginBottom: 8,
+    gap: 2,
+    overflow: "hidden",
+  },
+  categoryBar: {
+    height: 2,
+    backgroundColor: "#D4AF37",
+    width: 40,
+    marginBottom: 6,
+  },
+  categoryName: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#D4AF37",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  categoryNameGeneral: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#555",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  categoryDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#444",
   },
   knowledgeCard: {
     backgroundColor: "#080808",

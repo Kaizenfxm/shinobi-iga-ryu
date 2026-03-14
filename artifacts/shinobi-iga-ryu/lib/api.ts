@@ -470,9 +470,30 @@ export interface TrainingSystem {
   isActive: boolean;
 }
 
+export interface ExerciseCategoryData {
+  id: number;
+  trainingSystemId: number;
+  name: string;
+  description: string | null;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface KnowledgeCategoryData {
+  id: number;
+  trainingSystemId: number;
+  name: string;
+  description: string | null;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface ExerciseData {
   id: number;
   trainingSystemId: number;
+  exerciseCategoryId: number | null;
   title: string;
   description: string | null;
   videoUrl: string | null;
@@ -487,6 +508,7 @@ export interface ExerciseData {
 export interface KnowledgeItemData {
   id: number;
   trainingSystemId: number;
+  knowledgeCategoryId: number | null;
   title: string;
   content: string | null;
   videoUrl: string | null;
@@ -500,6 +522,8 @@ export interface TrainingSystemDetail {
   system: TrainingSystem;
   exercises: ExerciseData[];
   knowledge: KnowledgeItemData[];
+  exerciseCategories: ExerciseCategoryData[];
+  knowledgeCategories: KnowledgeCategoryData[];
 }
 
 export const trainingApi = {
@@ -518,6 +542,7 @@ export const trainingApi = {
     durationMinutes?: number;
     level?: string;
     orderIndex?: number;
+    exerciseCategoryId?: number;
   }) => apiFetch<{ exercise: ExerciseData }>("/admin/training/exercises", { method: "POST", body: data }),
 
   updateExercise: (id: number, data: Partial<ExerciseData>) =>
@@ -533,6 +558,7 @@ export const trainingApi = {
     videoUrl?: string;
     imageUrl?: string;
     orderIndex?: number;
+    knowledgeCategoryId?: number;
   }) => apiFetch<{ item: KnowledgeItemData }>("/admin/training/knowledge", { method: "POST", body: data }),
 
   updateKnowledge: (id: number, data: Partial<KnowledgeItemData>) =>
@@ -540,6 +566,24 @@ export const trainingApi = {
 
   deleteKnowledge: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/training/knowledge/${id}`, { method: "DELETE" }),
+
+  createExerciseCategory: (data: { trainingSystemId: number; name: string; description?: string; orderIndex?: number }) =>
+    apiFetch<{ category: ExerciseCategoryData }>("/admin/training/exercise-categories", { method: "POST", body: data }),
+
+  updateExerciseCategory: (id: number, data: Partial<ExerciseCategoryData>) =>
+    apiFetch<{ category: ExerciseCategoryData }>(`/admin/training/exercise-categories/${id}`, { method: "PUT", body: data }),
+
+  deleteExerciseCategory: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/training/exercise-categories/${id}`, { method: "DELETE" }),
+
+  createKnowledgeCategory: (data: { trainingSystemId: number; name: string; description?: string; orderIndex?: number }) =>
+    apiFetch<{ category: KnowledgeCategoryData }>("/admin/training/knowledge-categories", { method: "POST", body: data }),
+
+  updateKnowledgeCategory: (id: number, data: Partial<KnowledgeCategoryData>) =>
+    apiFetch<{ category: KnowledgeCategoryData }>(`/admin/training/knowledge-categories/${id}`, { method: "PUT", body: data }),
+
+  deleteKnowledgeCategory: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/training/knowledge-categories/${id}`, { method: "DELETE" }),
 };
 
 export const fightsApi = {

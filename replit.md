@@ -113,6 +113,14 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Share profile button: captures the profile as an image (react-native-view-shot) and shares via expo-sharing
 - API endpoint: `GET /api/profile/me` returns combined user info, belt data, and fight stats
 
+### Features (Fase 7) - Training Categories
+- Exercise and knowledge categories per training system (e.g. Ninjutsu → "Trabajo de pie", "Trabajo en suelo")
+- DB tables: `exercise_categories`, `knowledge_categories` with name, description, orderIndex, isActive, FK to training_systems
+- Exercises have nullable `exercise_category_id` FK; knowledge_items have nullable `knowledge_category_id` FK
+- Admin panel "Entrenamiento" tab: pick a training system → manage categories + exercises/knowledge items with inline CRUD
+- Entrenamiento student screen groups content by category with category headers; uncategorized items under "General" group
+- API endpoints: CRUD for exercise-categories and knowledge-categories, updated exercise/knowledge endpoints accept categoryId
+
 ## Structure
 
 ```text
@@ -173,6 +181,7 @@ Database layer using Drizzle ORM with PostgreSQL.
 
 - `src/schema/users.ts` — users (with isFighter), user_roles, profesor_students, fights tables with enums
 - `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements, belt_exams, student_belt_unlocks tables
+- `src/schema/training.ts` — training_systems, exercise_categories, knowledge_categories, exercises, knowledge_items tables
 - `src/seed-belts.ts` — Deterministic seed for belt catalog, requirements, and exams
 - Production migrations handled by Replit. Dev: `pnpm --filter @workspace/db run push`
 - After schema changes, rebuild declarations: `cd lib/db && npx tsc --build --force`
