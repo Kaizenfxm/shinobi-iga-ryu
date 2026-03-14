@@ -9,6 +9,8 @@ import {
   beltRequirementsTable,
   beltExamsTable,
   studentBeltUnlocksTable,
+  beltApplicationsTable,
+  studentRequirementChecksTable,
 } from "@workspace/db";
 import { eq, and, asc, inArray, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
@@ -54,40 +56,104 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
       .from(beltDefinitionsTable)
       .orderBy(asc(beltDefinitionsTable.discipline), asc(beltDefinitionsTable.orderIndex));
 
+    const allRequirements = await db
+      .select()
+      .from(beltRequirementsTable)
+      .orderBy(asc(beltRequirementsTable.beltId), asc(beltRequirementsTable.orderIndex));
+
+    const myApplications = await db
+      .select()
+      .from(beltApplicationsTable)
+      .where(eq(beltApplicationsTable.userId, userId));
+
+    const myChecks = await db
+      .select()
+      .from(studentRequirementChecksTable)
+      .where(eq(studentRequirementChecksTable.userId, userId));
+
+    const checkedReqIds = new Set(myChecks.map((c) => c.requirementId));
+    const reqsByBeltId = new Map<number, typeof allRequirements>();
+    for (const req of allRequirements) {
+      const existing = reqsByBeltId.get(req.beltId) ?? [];
+      existing.push(req);
+      reqsByBeltId.set(req.beltId, existing);
+    }
+
+    const applicationsByDiscipline = new Map<string, typeof myApplications[0]>();
+    for (const app of myApplications) {
+      applicationsByDiscipline.set(app.discipline, app);
+    }
+
     const beltsWithNext = await Promise.all(
       myBelts.map(async (belt) => {
-        const nextBelt = allDefinitions.find(
-          (d) => d.discipline === belt.discipline && d.orderIndex === belt.beltOrder + 1
-        );
+        const disciplineDefs = allDefinitions.filter((d) => d.discipline === belt.discipline);
+        const nextBelt = disciplineDefs.find((d) => d.orderIndex === belt.beltOrder + 1);
+        const existingApp = applicationsByDiscipline.get(belt.discipline);
+        const applied = !!existingApp && existingApp.targetBeltId === nextBelt?.id;
 
         let nextRequirements: { id: number; title: string; description: string | null; orderIndex: number }[] = [];
         let nextExam: { id: number; title: string; description: string | null; durationMinutes: number | null; passingScore: number | null } | null = null;
-        if (belt.nextUnlocked && nextBelt) {
-          nextRequirements = await db
-            .select({
-              id: beltRequirementsTable.id,
-              title: beltRequirementsTable.title,
-              description: beltRequirementsTable.description,
-              orderIndex: beltRequirementsTable.orderIndex,
-            })
-            .from(beltRequirementsTable)
-            .where(eq(beltRequirementsTable.beltId, nextBelt.id))
-            .orderBy(asc(beltRequirementsTable.orderIndex));
 
-          const [exam] = await db
-            .select({
-              id: beltExamsTable.id,
-              title: beltExamsTable.title,
-              description: beltExamsTable.description,
-              durationMinutes: beltExamsTable.durationMinutes,
-              passingScore: beltExamsTable.passingScore,
-            })
-            .from(beltExamsTable)
-            .where(eq(beltExamsTable.beltId, nextBelt.id))
-            .limit(1);
+        if (nextBelt) {
+          nextRequirements = (reqsByBeltId.get(nextBelt.id) ?? []).map((r) => ({
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            orderIndex: r.orderIndex,
+          }));
 
-          nextExam = exam || null;
+          if (belt.nextUnlocked || applied) {
+            const [exam] = await db
+              .select({
+                id: beltExamsTable.id,
+                title: beltExamsTable.title,
+                description: beltExamsTable.description,
+                durationMinutes: beltExamsTable.durationMinutes,
+                passingScore: beltExamsTable.passingScore,
+              })
+              .from(beltExamsTable)
+              .where(eq(beltExamsTable.beltId, nextBelt.id))
+              .limit(1);
+            nextExam = exam || null;
+          }
         }
+
+        const ladder = disciplineDefs.map((def) => {
+          let status: "earned" | "current" | "available" | "applied" | "locked";
+          if (def.orderIndex < belt.beltOrder) {
+            status = "earned";
+          } else if (def.orderIndex === belt.beltOrder) {
+            status = "current";
+          } else if (def.orderIndex === belt.beltOrder + 1) {
+            if (applied) {
+              status = "applied";
+            } else if (belt.nextUnlocked) {
+              status = "available";
+            } else {
+              status = "locked";
+            }
+          } else {
+            status = "locked";
+          }
+
+          const reqs = (reqsByBeltId.get(def.id) ?? []).map((r) => ({
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            orderIndex: r.orderIndex,
+            checked: checkedReqIds.has(r.id),
+          }));
+
+          return {
+            id: def.id,
+            name: def.name,
+            color: def.color,
+            orderIndex: def.orderIndex,
+            description: def.description,
+            status,
+            requirements: reqs,
+          };
+        });
 
         return {
           discipline: belt.discipline,
@@ -100,6 +166,8 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
           },
           nextUnlocked: belt.nextUnlocked,
           unlockedAt: belt.unlockedAt,
+          applied,
+          ladder,
           nextBelt: nextBelt
             ? {
                 id: nextBelt.id,
@@ -133,6 +201,130 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
     res.json({ belts: beltsWithNext, history });
   } catch (error) {
     console.error("Get my belts error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.post("/belts/apply", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { discipline } = req.body as { discipline: string };
+
+    if (!discipline || !["ninjutsu", "jiujitsu"].includes(discipline)) {
+      res.status(400).json({ error: "Disciplina inválida" });
+      return;
+    }
+
+    const [studentBelt] = await db
+      .select()
+      .from(studentBeltsTable)
+      .where(
+        and(
+          eq(studentBeltsTable.userId, userId),
+          eq(studentBeltsTable.discipline, discipline as "ninjutsu" | "jiujitsu")
+        )
+      )
+      .limit(1);
+
+    if (!studentBelt) {
+      res.status(404).json({ error: "No tienes cinturones en esta disciplina" });
+      return;
+    }
+
+    if (!studentBelt.nextUnlocked) {
+      res.status(400).json({ error: "El siguiente nivel no ha sido desbloqueado por tu sensei" });
+      return;
+    }
+
+    const [currentDef] = await db
+      .select()
+      .from(beltDefinitionsTable)
+      .where(eq(beltDefinitionsTable.id, studentBelt.currentBeltId))
+      .limit(1);
+
+    const [nextBelt] = await db
+      .select()
+      .from(beltDefinitionsTable)
+      .where(
+        and(
+          eq(beltDefinitionsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          eq(beltDefinitionsTable.orderIndex, currentDef.orderIndex + 1)
+        )
+      )
+      .limit(1);
+
+    if (!nextBelt) {
+      res.status(400).json({ error: "Ya tienes el grado máximo" });
+      return;
+    }
+
+    const existing = await db
+      .select()
+      .from(beltApplicationsTable)
+      .where(
+        and(
+          eq(beltApplicationsTable.userId, userId),
+          eq(beltApplicationsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          eq(beltApplicationsTable.targetBeltId, nextBelt.id)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      res.json({ success: true, alreadyApplied: true });
+      return;
+    }
+
+    await db.insert(beltApplicationsTable).values({
+      userId,
+      discipline: discipline as "ninjutsu" | "jiujitsu",
+      targetBeltId: nextBelt.id,
+      status: "pending",
+    });
+
+    res.json({ success: true, alreadyApplied: false, targetBelt: nextBelt });
+  } catch (error) {
+    console.error("Belt apply error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.post("/belts/requirements/:requirementId/toggle", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const requirementId = parseInt(req.params.requirementId as string, 10);
+    if (isNaN(requirementId)) {
+      res.status(400).json({ error: "ID de requerimiento inválido" });
+      return;
+    }
+
+    const existing = await db
+      .select()
+      .from(studentRequirementChecksTable)
+      .where(
+        and(
+          eq(studentRequirementChecksTable.userId, userId),
+          eq(studentRequirementChecksTable.requirementId, requirementId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .delete(studentRequirementChecksTable)
+        .where(
+          and(
+            eq(studentRequirementChecksTable.userId, userId),
+            eq(studentRequirementChecksTable.requirementId, requirementId)
+          )
+        );
+      res.json({ checked: false });
+    } else {
+      await db.insert(studentRequirementChecksTable).values({ userId, requirementId });
+      res.json({ checked: true });
+    }
+  } catch (error) {
+    console.error("Toggle requirement check error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

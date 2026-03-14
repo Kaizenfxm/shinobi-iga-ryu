@@ -9,11 +9,18 @@ import {
   Alert,
   RefreshControl,
   Image,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { beltsApi, type MyBelt, type BeltHistoryItem } from "@/lib/api";
+import {
+  beltsApi,
+  type MyBelt,
+  type BeltHistoryItem,
+  type LadderBelt,
+  type LadderBeltRequirement,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DISCIPLINE_LABELS: Record<string, string> = {
@@ -31,70 +38,57 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-function BeltStrip({ color, name }: { color: string; name: string }) {
+function BeltColorStrip({ color, size = 40 }: { color: string; size?: number }) {
   const isBlack = color === "#000000";
   const isWhite = color === "#FFFFFF";
   const borderColor = isBlack ? "#2a2a2a" : isWhite ? "#555" : color;
-  const labelColor = isWhite ? "#888" : color;
 
   return (
-    <View style={beltStyles.wrapper}>
-      <View style={[beltStyles.strip, { backgroundColor: color, borderColor }]}>
-        <View style={beltStyles.knotZone}>
-          <View style={[beltStyles.knotBar, { backgroundColor: borderColor }]} />
-        </View>
-        <View style={[beltStyles.stripe, { backgroundColor: borderColor, opacity: 0.25 }]} />
-      </View>
-      <Text style={[beltStyles.beltName, { color: labelColor }]}>{name.toUpperCase()}</Text>
+    <View
+      style={[
+        beltStripStyles.strip,
+        {
+          width: size,
+          height: Math.round(size * 0.45),
+          backgroundColor: color,
+          borderColor,
+        },
+      ]}
+    >
+      <View style={[beltStripStyles.knot, { backgroundColor: borderColor }]} />
+      <View style={[beltStripStyles.end, { backgroundColor: borderColor + "40" }]} />
     </View>
   );
 }
 
-const beltStyles = StyleSheet.create({
-  wrapper: {
-    alignItems: "center",
-    gap: 10,
-  },
+const beltStripStyles = StyleSheet.create({
   strip: {
-    width: 200,
-    height: 44,
-    borderRadius: 4,
+    borderRadius: 2,
     borderWidth: 1,
-    justifyContent: "center",
     position: "relative",
     overflow: "hidden",
-  },
-  knotZone: {
-    position: "absolute",
-    left: "42%",
-    top: 0,
-    bottom: 0,
-    width: 12,
     justifyContent: "center",
-    alignItems: "center",
   },
-  knotBar: {
-    width: 3,
-    height: "70%",
-    borderRadius: 2,
+  knot: {
+    position: "absolute",
+    left: "44%",
+    top: "15%",
+    bottom: "15%",
+    width: 2,
+    borderRadius: 1,
   },
-  stripe: {
+  end: {
     position: "absolute",
     right: 0,
     top: 0,
     bottom: 0,
-    width: 16,
-  },
-  beltName: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 10,
-    letterSpacing: 4,
+    width: "20%",
   },
 });
 
 function GoldRule() {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 16 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 14 }}>
       <View style={{ flex: 1, height: 1, backgroundColor: "#1A1A1A" }} />
       <View style={{ width: 4, height: 4, backgroundColor: "#D4AF37", transform: [{ rotate: "45deg" }] }} />
       <View style={{ flex: 1, height: 1, backgroundColor: "#1A1A1A" }} />
@@ -102,126 +96,437 @@ function GoldRule() {
   );
 }
 
-function DisciplineCard({ belt }: { belt: MyBelt }) {
-  const disciplineLabel = DISCIPLINE_LABELS[belt.discipline] || belt.discipline;
-  const kanji = DISCIPLINE_KANJI[belt.discipline] || "";
-  const subtitle = DISCIPLINE_SUBTITLE[belt.discipline] || "";
-  const discIconName: "star-four-points" | "feather" =
-    belt.discipline === "ninjutsu" ? "star-four-points" : "feather";
+function RequirementsChecklist({
+  requirements,
+  onToggle,
+  toggling,
+}: {
+  requirements: LadderBeltRequirement[];
+  onToggle: (id: number) => void;
+  toggling: Set<number>;
+}) {
+  if (requirements.length === 0) {
+    return (
+      <Text style={reqStyles.empty}>Sin requisitos para este cinturón</Text>
+    );
+  }
 
   return (
-    <View style={styles.disciplineCard}>
-      {/* Watermark kanji */}
-      <Text style={styles.kanjiWatermark}>{kanji}</Text>
-
-      {/* Card header */}
-      <View style={styles.cardHeader}>
-        <View style={styles.disciplinePill}>
-          <MaterialCommunityIcons name={discIconName} size={12} color="#D4AF37" />
-          <Text style={styles.disciplinePillText}>{disciplineLabel}</Text>
+    <View style={reqStyles.list}>
+      <Text style={reqStyles.header}>要件 · REQUISITOS A DOMINAR</Text>
+      {requirements.map((req, idx) => (
+        <Pressable
+          key={req.id}
+          style={[reqStyles.row, req.checked && reqStyles.rowChecked]}
+          onPress={() => onToggle(req.id)}
+        >
+          <View style={reqStyles.left}>
+            <View style={[reqStyles.numBadge, req.checked && reqStyles.numBadgeChecked]}>
+              {toggling.has(req.id) ? (
+                <ActivityIndicator size={10} color="#D4AF37" />
+              ) : req.checked ? (
+                <MaterialCommunityIcons name="check" size={12} color="#D4AF37" />
+              ) : (
+                <Text style={reqStyles.numText}>{idx + 1}</Text>
+              )}
+            </View>
+          </View>
+          <View style={reqStyles.content}>
+            <Text style={[reqStyles.title, req.checked && reqStyles.titleChecked]}>
+              {req.title}
+            </Text>
+            {req.description && (
+              <Text style={reqStyles.desc}>{req.description}</Text>
+            )}
+          </View>
+          <MaterialCommunityIcons
+            name={req.checked ? "checkbox-marked" : "checkbox-blank-outline"}
+            size={20}
+            color={req.checked ? "#D4AF37" : "#333"}
+          />
+        </Pressable>
+      ))}
+      <View style={reqStyles.progress}>
+        <Text style={reqStyles.progressText}>
+          {requirements.filter((r) => r.checked).length}/{requirements.length} dominados
+        </Text>
+        <View style={reqStyles.progressBar}>
+          <View
+            style={[
+              reqStyles.progressFill,
+              {
+                width: `${(requirements.filter((r) => r.checked).length / requirements.length) * 100}%` as `${number}%`,
+              },
+            ]}
+          />
         </View>
-        <Text style={styles.cardKanji}>{kanji}</Text>
-        <Text style={styles.cardSubtitle}>{subtitle}</Text>
+      </View>
+    </View>
+  );
+}
+
+const reqStyles = StyleSheet.create({
+  list: { gap: 0 },
+  header: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#444",
+    letterSpacing: 3,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  empty: {
+    fontFamily: "NotoSerifJP_400Regular",
+    fontSize: 12,
+    color: "#444",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 8,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#0D0D0D",
+    backgroundColor: "#080808",
+    borderRadius: 2,
+    marginBottom: 4,
+  },
+  rowChecked: {
+    backgroundColor: "#0A0800",
+  },
+  left: {
+    width: 24,
+    alignItems: "center",
+  },
+  numBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: "#1E1E1E",
+    backgroundColor: "#111",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  numBadgeChecked: {
+    borderColor: "#2a2000",
+    backgroundColor: "#0D0A00",
+  },
+  numText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#555",
+  },
+  content: {
+    flex: 1,
+    gap: 2,
+  },
+  title: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#AAA",
+    lineHeight: 18,
+  },
+  titleChecked: {
+    color: "#D4AF37",
+  },
+  desc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    lineHeight: 16,
+  },
+  progress: {
+    marginTop: 8,
+    gap: 6,
+  },
+  progressText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#555",
+    letterSpacing: 2,
+    textAlign: "right",
+  },
+  progressBar: {
+    height: 2,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 1,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#D4AF37",
+    borderRadius: 1,
+  },
+});
+
+type BeltStatus = "earned" | "current" | "available" | "applied" | "locked";
+
+function LadderRow({
+  belt,
+  onApply,
+  onToggleReq,
+  applying,
+  togglingReqs,
+}: {
+  belt: LadderBelt;
+  onApply: () => void;
+  onToggleReq: (id: number) => void;
+  applying: boolean;
+  togglingReqs: Set<number>;
+}) {
+  const status = belt.status as BeltStatus;
+  const isExpanded = status === "current" || status === "available" || status === "applied";
+
+  const borderColor = (() => {
+    if (status === "current") return "#D4AF37";
+    if (status === "available") return "#8B7225";
+    if (status === "applied") return "#D4AF37";
+    return "#111";
+  })();
+
+  const rowOpacity = status === "locked" ? 0.4 : status === "earned" ? 0.7 : 1;
+
+  const StatusBadge = () => {
+    if (status === "earned") {
+      return (
+        <View style={rowStyles.badgeEarned}>
+          <MaterialCommunityIcons name="check-circle" size={12} color="#4a9" />
+          <Text style={rowStyles.badgeEarnedText}>APROBADO</Text>
+        </View>
+      );
+    }
+    if (status === "current") {
+      return (
+        <View style={rowStyles.badgeCurrent}>
+          <Text style={rowStyles.badgeCurrentText}>ACTUAL</Text>
+        </View>
+      );
+    }
+    if (status === "available") {
+      return (
+        <Pressable
+          style={[rowStyles.applyBtn, applying && rowStyles.applyBtnLoading]}
+          onPress={onApply}
+          disabled={applying}
+        >
+          {applying ? (
+            <ActivityIndicator size={12} color="#000" />
+          ) : (
+            <>
+              <MaterialCommunityIcons name="send" size={12} color="#000" />
+              <Text style={rowStyles.applyBtnText}>POSTULARME</Text>
+            </>
+          )}
+        </Pressable>
+      );
+    }
+    if (status === "applied") {
+      return (
+        <View style={rowStyles.badgeApplied}>
+          <MaterialCommunityIcons name="clock-outline" size={11} color="#D4AF37" />
+          <Text style={rowStyles.badgeAppliedText}>POSTULADO</Text>
+        </View>
+      );
+    }
+    return (
+      <MaterialCommunityIcons name="lock" size={16} color="#333" />
+    );
+  };
+
+  return (
+    <View style={[rowStyles.container, { borderColor, opacity: rowOpacity }]}>
+      <View style={rowStyles.header}>
+        <BeltColorStrip color={belt.color} size={56} />
+        <View style={rowStyles.nameArea}>
+          <Text style={[rowStyles.name, status === "current" && rowStyles.nameCurrent]}>
+            {belt.name.toUpperCase()}
+          </Text>
+          {isExpanded && belt.description && (
+            <Text style={rowStyles.desc} numberOfLines={2}>{belt.description}</Text>
+          )}
+        </View>
+        <StatusBadge />
+      </View>
+
+      {(status === "applied") && (
+        <View style={rowStyles.expandedContent}>
+          <GoldRule />
+          <RequirementsChecklist
+            requirements={belt.requirements}
+            onToggle={onToggleReq}
+            toggling={togglingReqs}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  container: {
+    backgroundColor: "#060606",
+    borderWidth: 1,
+    borderRadius: 2,
+    marginBottom: 6,
+    padding: 14,
+    overflow: "hidden",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  nameArea: {
+    flex: 1,
+    gap: 3,
+  },
+  name: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#888",
+    letterSpacing: 2,
+  },
+  nameCurrent: {
+    color: "#FFFFFF",
+    fontSize: 15,
+  },
+  desc: {
+    fontFamily: "NotoSerifJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    fontStyle: "italic",
+    lineHeight: 16,
+  },
+  badgeEarned: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#001a0f",
+    borderWidth: 1,
+    borderColor: "#0d3320",
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  badgeEarnedText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 8,
+    color: "#4a9",
+    letterSpacing: 1,
+  },
+  badgeCurrent: {
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderRadius: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  badgeCurrentText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  applyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  applyBtnLoading: {
+    opacity: 0.7,
+  },
+  applyBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#000",
+    letterSpacing: 1,
+  },
+  badgeApplied: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#3a2800",
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  badgeAppliedText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 8,
+    color: "#D4AF37",
+    letterSpacing: 1,
+  },
+  expandedContent: {},
+});
+
+function DisciplineSection({
+  belt,
+  onApply,
+  onToggleReq,
+  applyingDiscs,
+  togglingReqs,
+}: {
+  belt: MyBelt;
+  onApply: (discipline: string) => void;
+  onToggleReq: (discipline: string, reqId: number) => void;
+  applyingDiscs: Set<string>;
+  togglingReqs: Set<number>;
+}) {
+  const kanji = DISCIPLINE_KANJI[belt.discipline] || "";
+  const label = DISCIPLINE_LABELS[belt.discipline] || belt.discipline;
+  const subtitle = DISCIPLINE_SUBTITLE[belt.discipline] || "";
+  const discIcon: "star-four-points" | "feather" =
+    belt.discipline === "ninjutsu" ? "star-four-points" : "feather";
+
+  const earned = belt.ladder.filter((b) => b.status === "earned").length;
+  const total = belt.ladder.length;
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionKanjiWatermark}>{kanji}</Text>
+
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionPill}>
+          <MaterialCommunityIcons name={discIcon} size={11} color="#D4AF37" />
+          <Text style={styles.sectionPillText}>{label}</Text>
+        </View>
+        <Text style={styles.sectionKanji}>{kanji}</Text>
+        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+      </View>
+
+      <View style={styles.progressSummary}>
+        <Text style={styles.progressLabel}>{earned}/{total} cinturones aprobados</Text>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${(earned / total) * 100}%` as `${number}%` }]} />
+        </View>
       </View>
 
       <GoldRule />
 
-      {/* Current belt */}
-      <View style={styles.currentSection}>
-        <Text style={styles.microLabel}>現在の帯 · CINTURÓN ACTUAL</Text>
-        <View style={styles.beltStage}>
-          <BeltStrip color={belt.currentBelt.color} name={belt.currentBelt.name} />
-        </View>
-        {belt.currentBelt.description && (
-          <Text style={styles.beltDesc}>{belt.currentBelt.description}</Text>
-        )}
+      <View style={styles.ladder}>
+        {belt.ladder.map((b) => (
+          <LadderRow
+            key={b.id}
+            belt={b}
+            onApply={() => onApply(belt.discipline)}
+            onToggleReq={(reqId) => onToggleReq(belt.discipline, reqId)}
+            applying={applyingDiscs.has(belt.discipline)}
+            togglingReqs={togglingReqs}
+          />
+        ))}
       </View>
-
-      {/* Next belt */}
-      {belt.nextBelt && (
-        <>
-          <GoldRule />
-          <View style={styles.nextSection}>
-            <View style={styles.nextHeader}>
-              <MaterialCommunityIcons
-                name={belt.nextUnlocked ? "lock-open-variant" : "lock"}
-                size={14}
-                color={belt.nextUnlocked ? "#D4AF37" : "#333"}
-              />
-              <Text style={[styles.nextLabel, belt.nextUnlocked && styles.nextLabelUnlocked]}>
-                {belt.nextUnlocked ? "次のレベル · DESBLOQUEADO" : "次のレベル · BLOQUEADO"}
-              </Text>
-            </View>
-
-            {belt.nextUnlocked ? (
-              <View style={styles.unlockedBlock}>
-                <View style={styles.beltStage}>
-                  <BeltStrip color={belt.nextBelt.color} name={belt.nextBelt.name} />
-                </View>
-
-                {belt.nextExam && (
-                  <View style={styles.examCard}>
-                    <Text style={styles.examLabel}>試験 · EXAMEN</Text>
-                    <Text style={styles.examTitle}>{belt.nextExam.title}</Text>
-                    {belt.nextExam.description && (
-                      <Text style={styles.examDesc}>{belt.nextExam.description}</Text>
-                    )}
-                    <View style={styles.examMeta}>
-                      {belt.nextExam.durationMinutes && (
-                        <View style={styles.examMetaItem}>
-                          <MaterialCommunityIcons name="clock-outline" size={13} color="#D4AF37" />
-                          <Text style={styles.examMetaText}>{belt.nextExam.durationMinutes} min</Text>
-                        </View>
-                      )}
-                      {belt.nextExam.passingScore && (
-                        <View style={styles.examMetaItem}>
-                          <MaterialCommunityIcons name="check-circle-outline" size={13} color="#D4AF37" />
-                          <Text style={styles.examMetaText}>Aprobación: {belt.nextExam.passingScore}%</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                )}
-
-                {belt.nextRequirements.length > 0 && (
-                  <View style={styles.reqList}>
-                    <Text style={styles.microLabel}>要件 · REQUISITOS DEL EXAMEN</Text>
-                    {belt.nextRequirements.map((req, i) => (
-                      <View key={req.id} style={styles.reqItem}>
-                        <View style={styles.reqNum}>
-                          <Text style={styles.reqNumText}>{i + 1}</Text>
-                        </View>
-                        <View style={styles.reqContent}>
-                          <Text style={styles.reqTitle}>{req.title}</Text>
-                          {req.description && (
-                            <Text style={styles.reqDesc}>{req.description}</Text>
-                          )}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View style={styles.lockedBlock}>
-                <Text style={styles.lockedText}>
-                  Tu sensei desbloqueará el acceso cuando estés listo
-                </Text>
-              </View>
-            )}
-          </View>
-        </>
-      )}
-
-      {!belt.nextBelt && (
-        <>
-          <GoldRule />
-          <View style={styles.maxBlock}>
-            <MaterialCommunityIcons name="star-circle" size={18} color="#D4AF37" />
-            <Text style={styles.maxText}>Grado máximo alcanzado</Text>
-          </View>
-        </>
-      )}
     </View>
   );
 }
@@ -286,6 +591,8 @@ export default function BeltsScreen() {
   const [history, setHistory] = useState<BeltHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [applyingDiscs, setApplyingDiscs] = useState<Set<string>>(new Set());
+  const [togglingReqs, setTogglingReqs] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -315,6 +622,48 @@ export default function BeltsScreen() {
     setRefreshing(false);
   };
 
+  const handleApply = async (discipline: string) => {
+    setApplyingDiscs((s) => new Set(s).add(discipline));
+    try {
+      await beltsApi.apply(discipline);
+      await fetchBelts();
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo enviar la postulación");
+    } finally {
+      setApplyingDiscs((s) => {
+        const ns = new Set(s);
+        ns.delete(discipline);
+        return ns;
+      });
+    }
+  };
+
+  const handleToggleReq = async (_discipline: string, reqId: number) => {
+    setTogglingReqs((s) => new Set(s).add(reqId));
+    try {
+      const result = await beltsApi.toggleRequirementCheck(reqId);
+      setBelts((prev) =>
+        prev.map((b) => ({
+          ...b,
+          ladder: b.ladder.map((l) => ({
+            ...l,
+            requirements: l.requirements.map((r) =>
+              r.id === reqId ? { ...r, checked: result.checked } : r
+            ),
+          })),
+        }))
+      );
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el requisito");
+    } finally {
+      setTogglingReqs((s) => {
+        const ns = new Set(s);
+        ns.delete(reqId);
+        return ns;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -335,7 +684,6 @@ export default function BeltsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLogoRow}>
             <Image
@@ -360,7 +708,14 @@ export default function BeltsScreen() {
           </View>
         ) : (
           belts.map((belt) => (
-            <DisciplineCard key={belt.discipline} belt={belt} />
+            <DisciplineSection
+              key={belt.discipline}
+              belt={belt}
+              onApply={handleApply}
+              onToggleReq={handleToggleReq}
+              applyingDiscs={applyingDiscs}
+              togglingReqs={togglingReqs}
+            />
           ))
         )}
 
@@ -383,7 +738,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  /* Header */
   header: {
     paddingHorizontal: 8,
     marginBottom: 8,
@@ -417,7 +771,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 
-  /* Empty state */
   emptyState: {
     alignItems: "center",
     paddingVertical: 60,
@@ -440,32 +793,31 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  /* Discipline card */
-  disciplineCard: {
-    backgroundColor: "#060606",
-    borderRadius: 2,
+  section: {
+    marginBottom: 28,
     borderWidth: 1,
     borderColor: "#1C1C1C",
-    padding: 24,
-    marginBottom: 20,
-    overflow: "hidden",
-    position: "relative",
     borderTopWidth: 2,
     borderTopColor: "#D4AF37",
+    borderRadius: 2,
+    padding: 20,
+    backgroundColor: "#060606",
+    overflow: "hidden",
+    position: "relative",
   },
-  kanjiWatermark: {
+  sectionKanjiWatermark: {
     position: "absolute",
     right: -10,
-    top: -16,
+    top: -20,
     fontFamily: "NotoSerifJP_900Black",
     fontSize: 120,
-    color: "#0F0F0F",
-    pointerEvents: "none",
+    color: "#0D0D0D",
   },
-  cardHeader: {
+  sectionHeader: {
     gap: 4,
+    marginBottom: 16,
   },
-  disciplinePill: {
+  sectionPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -474,24 +826,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2a2000",
     borderRadius: 2,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 3,
     marginBottom: 6,
   },
-  disciplinePillText: {
+  sectionPillText: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 10,
+    fontSize: 9,
     color: "#D4AF37",
     letterSpacing: 2,
   },
-  cardKanji: {
+  sectionKanji: {
     fontFamily: "NotoSerifJP_700Bold",
     fontSize: 42,
     color: "#FFFFFF",
-    letterSpacing: -1,
     lineHeight: 48,
   },
-  cardSubtitle: {
+  sectionSubtitle: {
     fontFamily: "NotoSerifJP_400Regular",
     fontSize: 12,
     color: "#555",
@@ -499,175 +850,32 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  /* Belt sections */
-  currentSection: {
-    alignItems: "center",
-    gap: 16,
-  },
-  microLabel: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 9,
-    color: "#444",
-    letterSpacing: 3,
-    textAlign: "center",
-  },
-  beltStage: {
-    alignItems: "center",
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#141414",
-    borderRadius: 2,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    width: "100%",
-  },
-  beltDesc: {
-    fontFamily: "NotoSerifJP_400Regular",
-    fontSize: 13,
-    color: "#555",
-    textAlign: "center",
-    fontStyle: "italic",
-    lineHeight: 20,
-  },
-
-  /* Next belt */
-  nextSection: {
-    gap: 14,
-  },
-  nextHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  nextLabel: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 10,
-    color: "#333",
-    letterSpacing: 2,
-  },
-  nextLabelUnlocked: {
-    color: "#D4AF37",
-  },
-  unlockedBlock: {
-    gap: 16,
-  },
-  lockedBlock: {
-    paddingVertical: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#141414",
-    borderRadius: 2,
-    borderStyle: "dashed",
-  },
-  lockedText: {
-    fontFamily: "NotoSerifJP_400Regular",
-    fontSize: 13,
-    color: "#333",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-
-  /* Exam */
-  examCard: {
-    backgroundColor: "#0A0800",
-    borderWidth: 1,
-    borderColor: "#1E1800",
-    borderRadius: 2,
-    borderLeftWidth: 2,
-    borderLeftColor: "#D4AF37",
-    padding: 14,
+  progressSummary: {
     gap: 6,
   },
-  examLabel: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
-    color: "#D4AF37",
-    letterSpacing: 3,
-  },
-  examTitle: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 14,
-    color: "#D4AF37",
-  },
-  examDesc: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 12,
-    color: "#777",
-    lineHeight: 18,
-  },
-  examMeta: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 4,
-  },
-  examMetaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  examMetaText: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 11,
-    color: "#999",
-  },
-
-  /* Requirements */
-  reqList: {
-    gap: 10,
-  },
-  reqItem: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  reqNum: {
-    width: 22,
-    height: 22,
-    borderRadius: 2,
-    backgroundColor: "#0D0A00",
-    borderWidth: 1,
-    borderColor: "#2a2000",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  reqNumText: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 10,
-    color: "#D4AF37",
-  },
-  reqContent: {
-    flex: 1,
-    gap: 2,
-  },
-  reqTitle: {
+  progressLabel: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 13,
-    color: "#CCC",
-    lineHeight: 18,
-  },
-  reqDesc: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 12,
+    fontSize: 9,
     color: "#555",
-    lineHeight: 17,
+    letterSpacing: 2,
+    textAlign: "right",
+  },
+  progressTrack: {
+    height: 2,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 1,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#D4AF37",
+    borderRadius: 1,
   },
 
-  /* Max belt */
-  maxBlock: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  maxText: {
-    fontFamily: "NotoSerifJP_400Regular",
-    fontSize: 13,
-    color: "#D4AF37",
-    fontStyle: "italic",
-    letterSpacing: 1,
+  ladder: {
+    gap: 0,
   },
 
-  /* History */
   historySection: {
     marginTop: 8,
     paddingTop: 24,
