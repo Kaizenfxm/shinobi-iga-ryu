@@ -37,10 +37,17 @@ const DISCIPLINE_KANJI: Record<string, string> = {
 };
 
 function BeltCard({ belt }: { belt: ProfileBelt }) {
-  const isBlack = belt.beltColor === "#000000";
-  const isWhite = belt.beltColor === "#FFFFFF";
-  const borderColor = isBlack ? "#333" : isWhite ? "#555" : belt.beltColor;
+  const nameLower = belt.beltName.toLowerCase();
+  const colorLower = belt.beltColor.toLowerCase();
+  const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
+  const isWhite = colorLower === "#ffffff";
+  const isPuntaNegra = nameLower.includes("punta negra");
+  const isFranjaRoja = nameLower.includes("franja roja");
+
+  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : belt.beltColor;
   const displayColor = isWhite ? "#AAA" : belt.beltColor;
+  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
+  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
 
   return (
     <View style={beltCardStyles.container}>
@@ -54,16 +61,17 @@ function BeltCard({ belt }: { belt: ProfileBelt }) {
         <View
           style={[
             beltCardStyles.beltStrip,
-            {
-              backgroundColor: belt.beltColor,
-              borderColor,
-              borderWidth: 1,
-            },
+            { backgroundColor: belt.beltColor, borderColor, borderWidth: 1 },
           ]}
         >
-          <View style={beltCardStyles.beltKnot}>
-            <View style={[beltCardStyles.knotLine, { backgroundColor: borderColor }]} />
-          </View>
+          {showKnot && (
+            <View style={[beltCardStyles.knot, { backgroundColor: borderColor }]} />
+          )}
+          {showEnd && (
+            <View style={[beltCardStyles.end, { backgroundColor: borderColor + "40" }]} />
+          )}
+          {isFranjaRoja && <View style={beltCardStyles.franjaRoja} />}
+          {isPuntaNegra && <View style={beltCardStyles.puntaNegra} />}
         </View>
       </View>
       <Text style={[beltCardStyles.beltName, { color: displayColor }]}>
@@ -107,21 +115,40 @@ const beltCardStyles = StyleSheet.create({
   beltStrip: {
     width: "100%",
     height: "100%",
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: 2,
+    overflow: "hidden",
+    position: "relative",
   },
-  beltKnot: {
+  knot: {
     position: "absolute",
-    right: "45%",
-    top: "20%",
-    bottom: "20%",
-    width: 3,
-  },
-  knotLine: {
-    flex: 1,
-    width: 3,
+    left: "44%",
+    top: "15%",
+    bottom: "15%",
+    width: 2,
     borderRadius: 1,
+  },
+  end: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: "20%",
+  },
+  franjaRoja: {
+    position: "absolute",
+    left: "38%",
+    width: "20%",
+    top: 0,
+    bottom: 0,
+    backgroundColor: "#CC0000",
+  },
+  puntaNegra: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: "30%",
+    backgroundColor: "#000000",
   },
   beltName: {
     fontFamily: "NotoSansJP_700Bold",
