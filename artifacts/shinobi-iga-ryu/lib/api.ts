@@ -105,6 +105,27 @@ export const authApi = {
 export const adminApi = {
   getUsers: () => apiFetch<{ users: UserData[] }>("/admin/users"),
 
+  createUser: (data: {
+    email: string;
+    password: string;
+    displayName: string;
+    phone?: string;
+    roles: string[];
+    subscriptionLevel?: string;
+    isFighter?: boolean;
+  }) => apiFetch<{ user: UserData & { roles: string[] } }>("/admin/users", { method: "POST", body: data }),
+
+  updateUser: (userId: number, data: {
+    displayName?: string;
+    email?: string;
+    phone?: string;
+    isFighter?: boolean;
+    password?: string;
+  }) => apiFetch<{ user: UserData }>(`/admin/users/${userId}`, { method: "PUT", body: data }),
+
+  deleteUser: (userId: number) =>
+    apiFetch<{ success: boolean }>(`/admin/users/${userId}`, { method: "DELETE" }),
+
   updateRoles: (userId: number, roles: string[]) =>
     apiFetch<{ success: boolean; roles: string[] }>(`/admin/users/${userId}/roles`, {
       method: "PUT",

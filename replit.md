@@ -47,7 +47,8 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Admin belt management: view all students' belt status, unlock next level, promote student, initialize belts for users without them
 - Belt history tracking with dates and promotion notes
 - Unlock audit trail: student_belt_unlocks tracks each unlock event with who/when/target belt
-- Admin panel has sub-tabs: "Usuarios" (role/subscription management) and "Cinturones" (belt management)
+- Admin panel has sub-tabs: "Usuarios" (full CRUD: create/edit/delete users, manage roles/subscription) and "Cinturones" (belt management)
+- Admin user CRUD: POST /admin/users (create with initial belts), PUT /admin/users/:id (edit profile/password), DELETE /admin/users/:id (cascade delete in transaction)
 - Next level requirements and exam hidden until admin explicitly unlocks them for a specific student
 - Deterministic seed script: `pnpm --filter @workspace/db run seed-belts` provisions all belt definitions, requirements, and exams
 
