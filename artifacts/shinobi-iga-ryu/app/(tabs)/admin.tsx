@@ -457,9 +457,7 @@ function UsersPanel({
         try { setDiscSectionOpen(JSON.parse(data)); } catch { }
       }
     });
-    loadBeltData();
-    loadPendingApps();
-  }, [loadBeltData, loadPendingApps]);
+  }, []);
 
   const toggleDiscSection = useCallback((userId: number, discipline: string) => {
     const key = `${userId}_${discipline}`;
@@ -503,6 +501,11 @@ function UsersPanel({
       setBeltDataLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadBeltData();
+    loadPendingApps();
+  }, [loadBeltData, loadPendingApps]);
 
   const handleActOnApp = useCallback(async (appId: number, action: "approve" | "reject") => {
     setActingOnApp((s) => new Set(s).add(appId));
