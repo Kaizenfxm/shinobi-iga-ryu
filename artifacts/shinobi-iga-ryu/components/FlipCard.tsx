@@ -68,7 +68,10 @@ export default function FlipCard({
 
   return (
     <Pressable onPress={handleFlip} style={styles.container}>
-      <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+      <Animated.View
+        style={[styles.card, styles.cardFront, frontAnimatedStyle]}
+        pointerEvents={isFlipped ? "none" : "auto"}
+      >
         <Image
           source={backgroundImage}
           style={styles.bgImage}
@@ -88,7 +91,10 @@ export default function FlipCard({
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
+      <Animated.View
+        style={[styles.card, styles.cardBack, backAnimatedStyle]}
+        pointerEvents={isFlipped ? "auto" : "none"}
+      >
         <View style={styles.backContent}>
           <Text style={styles.backTitle}>{title}</Text>
           <View style={styles.backLine} />
