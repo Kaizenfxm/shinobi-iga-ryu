@@ -570,24 +570,30 @@ function UsersPanel({
   };
 
   const handleDelete = (user: UserData) => {
+    const doDelete = async () => {
+      try {
+        await adminApi.deleteUser(user.id);
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        setExpandedUser(null);
+      } catch (e: unknown) {
+        Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+      }
+    };
+
+    if (Platform.OS === "web") {
+      // eslint-disable-next-line no-restricted-globals
+      if ((window as Window & typeof globalThis).confirm(`¿Eliminar a "${user.displayName}"? Esta acción no se puede deshacer.`)) {
+        doDelete();
+      }
+      return;
+    }
+
     Alert.alert(
       "Eliminar Usuario",
       `¿Eliminar a "${user.displayName}"? Esta acción no se puede deshacer.`,
       [
         { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await adminApi.deleteUser(user.id);
-              setUsers((prev) => prev.filter((u) => u.id !== user.id));
-              setExpandedUser(null);
-            } catch (e: unknown) {
-              Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
-            }
-          },
-        },
+        { text: "Eliminar", style: "destructive", onPress: doDelete },
       ]
     );
   };
