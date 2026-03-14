@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, userRolesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { requireProfesor } from "../middlewares/auth";
 
@@ -7,16 +7,16 @@ const profesorRouter = Router();
 
 profesorRouter.use(requireProfesor);
 
-profesorRouter.get("/profesor/alumnos", async (_req, res) => {
+profesorRouter.get("/profesor/alumnos", async (req, res) => {
   try {
-    const alumnoRoles = await db
-      .select({
-        userId: userRolesTable.userId,
-      })
-      .from(userRolesTable)
-      .where(eq(userRolesTable.role, "alumno"));
+    const profesorId = req.session.userId!;
 
-    const alumnoIds = alumnoRoles.map((r) => r.userId);
+    const assignments = await db
+      .select({ alumnoId: profesorStudentsTable.alumnoId })
+      .from(profesorStudentsTable)
+      .where(eq(profesorStudentsTable.profesorId, profesorId));
+
+    const alumnoIds = assignments.map((a) => a.alumnoId);
 
     if (alumnoIds.length === 0) {
       res.json({ students: [] });

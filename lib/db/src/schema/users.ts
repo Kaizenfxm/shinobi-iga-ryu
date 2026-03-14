@@ -29,6 +29,19 @@ export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;
 
+export const profesorStudentsTable = pgTable("profesor_students", {
+  id: serial("id").primaryKey(),
+  profesorId: integer("profesor_id").references(() => usersTable.id).notNull(),
+  alumnoId: integer("alumno_id").references(() => usersTable.id).notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("profesor_students_profesor_alumno_idx").on(table.profesorId, table.alumnoId),
+]);
+
 export const insertUserRoleSchema = createInsertSchema(userRolesTable).omit({ id: true, assignedAt: true });
 export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type UserRole = typeof userRolesTable.$inferSelect;
+
+export const insertProfesorStudentSchema = createInsertSchema(profesorStudentsTable).omit({ id: true, assignedAt: true });
+export type InsertProfesorStudent = z.infer<typeof insertProfesorStudentSchema>;
+export type ProfesorStudent = typeof profesorStudentsTable.$inferSelect;

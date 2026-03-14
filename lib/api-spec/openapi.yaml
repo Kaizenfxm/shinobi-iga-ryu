@@ -204,6 +204,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /admin/profesor/{profesorId}/alumnos:
+    get:
+      operationId: adminGetProfesorAlumnos
+      tags: [admin]
+      summary: Get students assigned to a professor (admin only)
+      parameters:
+        - name: profesorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of assigned student IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfesorAlumnoIdsResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: adminUpdateProfesorAlumnos
+      tags: [admin]
+      summary: Update students assigned to a professor (admin only)
+      parameters:
+        - name: profesorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfesorAlumnosRequest"
+      responses:
+        "200":
+          description: Assignments updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateProfesorAlumnosResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Professor not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /profesor/alumnos:
     get:
       operationId: profesorGetAlumnos
@@ -353,6 +418,36 @@ components:
       required:
         - success
         - subscriptionLevel
+    ProfesorAlumnoIdsResponse:
+      type: object
+      properties:
+        alumnoIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - alumnoIds
+    UpdateProfesorAlumnosRequest:
+      type: object
+      properties:
+        alumnoIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - alumnoIds
+    UpdateProfesorAlumnosResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        alumnoIds:
+          type: array
+          items:
+            type: integer
+      required:
+        - success
+        - alumnoIds
     ProfesorStudentsResponse:
       type: object
       properties:

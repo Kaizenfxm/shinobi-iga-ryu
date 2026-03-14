@@ -130,6 +130,33 @@ export const AdminUpdateSubscriptionResponse = zod.object({
 });
 
 /**
+ * @summary Get students assigned to a professor (admin only)
+ */
+export const AdminGetProfesorAlumnosParams = zod.object({
+  profesorId: zod.coerce.number(),
+});
+
+export const AdminGetProfesorAlumnosResponse = zod.object({
+  alumnoIds: zod.array(zod.number()),
+});
+
+/**
+ * @summary Update students assigned to a professor (admin only)
+ */
+export const AdminUpdateProfesorAlumnosParams = zod.object({
+  profesorId: zod.coerce.number(),
+});
+
+export const AdminUpdateProfesorAlumnosBody = zod.object({
+  alumnoIds: zod.array(zod.number()),
+});
+
+export const AdminUpdateProfesorAlumnosResponse = zod.object({
+  success: zod.boolean(),
+  alumnoIds: zod.array(zod.number()),
+});
+
+/**
  * @summary List students (professor only)
  */
 export const ProfesorGetAlumnosResponse = zod.object({
