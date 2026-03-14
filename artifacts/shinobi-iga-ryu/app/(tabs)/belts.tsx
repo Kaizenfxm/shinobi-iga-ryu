@@ -592,6 +592,24 @@ function DisciplineSection({
   const subtitle = DISCIPLINE_SUBTITLE[belt.discipline] || "";
   const discIcon: "star-four-points" | "feather" =
     belt.discipline === "ninjutsu" ? "star-four-points" : "feather";
+  const storageKey = `disc_section_open_${belt.discipline}`;
+
+  const [open, setOpen] = useState(true);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    AsyncStorage.getItem(storageKey).then((val) => {
+      if (val === "0") setOpen(false);
+    });
+  }, [storageKey]);
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    AsyncStorage.setItem(storageKey, next ? "1" : "0");
+  };
 
   const earned = belt.ladder.filter((b) => b.status === "earned").length;
   const total = belt.ladder.length;
@@ -600,14 +618,21 @@ function DisciplineSection({
     <View style={styles.section}>
       <Text style={styles.sectionKanjiWatermark}>{kanji}</Text>
 
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionPill}>
-          <MaterialCommunityIcons name={discIcon} size={11} color="#D4AF37" />
-          <Text style={styles.sectionPillText}>{label}</Text>
+      <Pressable style={styles.sectionHeader} onPress={toggle}>
+        <View style={styles.sectionHeaderLeft}>
+          <View style={styles.sectionPill}>
+            <MaterialCommunityIcons name={discIcon} size={11} color="#D4AF37" />
+            <Text style={styles.sectionPillText}>{label}</Text>
+          </View>
+          <Text style={styles.sectionKanji}>{kanji}</Text>
+          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
         </View>
-        <Text style={styles.sectionKanji}>{kanji}</Text>
-        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-      </View>
+        <MaterialCommunityIcons
+          name={open ? "chevron-up" : "chevron-down"}
+          size={18}
+          color="#555"
+        />
+      </Pressable>
 
       <View style={styles.progressSummary}>
         <Text style={styles.progressLabel}>{earned}/{total} cinturones aprobados</Text>
@@ -616,20 +641,23 @@ function DisciplineSection({
         </View>
       </View>
 
-      <GoldRule />
-
-      <View style={styles.ladder}>
-        {belt.ladder.map((b) => (
-          <LadderRow
-            key={b.id}
-            belt={b}
-            onApply={() => onApply(belt.discipline)}
-            onToggleReq={(reqId) => onToggleReq(belt.discipline, reqId)}
-            applying={applyingDiscs.has(belt.discipline)}
-            togglingReqs={togglingReqs}
-          />
-        ))}
-      </View>
+      {open && (
+        <>
+          <GoldRule />
+          <View style={styles.ladder}>
+            {belt.ladder.map((b) => (
+              <LadderRow
+                key={b.id}
+                belt={b}
+                onApply={() => onApply(belt.discipline)}
+                onToggleReq={(reqId) => onToggleReq(belt.discipline, reqId)}
+                applying={applyingDiscs.has(belt.discipline)}
+                togglingReqs={togglingReqs}
+              />
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -919,8 +947,14 @@ const styles = StyleSheet.create({
     color: "#0D0D0D",
   },
   sectionHeader: {
-    gap: 4,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     marginBottom: 16,
+  },
+  sectionHeaderLeft: {
+    flex: 1,
+    gap: 4,
   },
   sectionPill: {
     flexDirection: "row",
