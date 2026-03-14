@@ -1,0 +1,175 @@
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+
+import FlipCard from "@/components/FlipCard";
+import Colors from "@/constants/colors";
+
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+
+interface MartialArt {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: IconName;
+}
+
+const MARTIAL_ARTS: MartialArt[] = [
+  {
+    id: "ninjutsu",
+    title: "NINJUTSU",
+    subtitle: "忍術 · El arte del ninja",
+    icon: "ninja",
+  },
+  {
+    id: "mma",
+    title: "MMA",
+    subtitle: "総合格闘技 · Artes marciales mixtas",
+    icon: "mixed-martial-arts",
+  },
+  {
+    id: "box",
+    title: "BOX",
+    subtitle: "ボクシング · El arte del puño",
+    icon: "boxing-glove",
+  },
+  {
+    id: "jiujitsu",
+    title: "JIUJITSU",
+    subtitle: "柔術 · El arte suave",
+    icon: "karate",
+  },
+  {
+    id: "muaythai",
+    title: "MUAY THAI",
+    subtitle: "ムエタイ · El arte de los ocho miembros",
+    icon: "human-handsup",
+  },
+  {
+    id: "funcional",
+    title: "FUNCIONAL",
+    subtitle: "機能訓練 · Entrenamiento funcional",
+    icon: "dumbbell",
+  },
+];
+
+export default function MartialArtsScreen() {
+  const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === "web";
+
+  const handleKnowledge = (artId: string) => {
+    Alert.alert(
+      "Conocimiento",
+      `Próximamente: contenido de ${artId}`,
+      [{ text: "OK" }]
+    );
+  };
+
+  const handleExercises = (artId: string) => {
+    Alert.alert(
+      "Ejercicios",
+      `Próximamente: ejercicios de ${artId}`,
+      [{ text: "OK" }]
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: (isWeb ? 67 : insets.top) + 16,
+            paddingBottom: 100,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerLogoRow}>
+            <View style={styles.miniLogo}>
+              <MaterialCommunityIcons name="ninja" size={24} color="#FFFFFF" />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>SHINOBI IGA RYU</Text>
+              <Text style={styles.headerSubtitle}>武道 · Artes Marciales</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        {MARTIAL_ARTS.map((art, index) => (
+          <FlipCard
+            key={art.id}
+            title={art.title}
+            subtitle={art.subtitle}
+            icon={art.icon}
+            index={index}
+            onKnowledgePress={() => handleKnowledge(art.id)}
+            onExercisesPress={() => handleExercises(art.id)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 0,
+  },
+  header: {
+    paddingHorizontal: 24,
+    marginBottom: 8,
+  },
+  headerLogoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  miniLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#333333",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 18,
+    color: "#FFFFFF",
+    letterSpacing: 3,
+  },
+  headerSubtitle: {
+    fontFamily: "NotoSerifJP_400Regular",
+    fontSize: 12,
+    color: "#555555",
+    letterSpacing: 2,
+    marginTop: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#1A1A1A",
+    marginHorizontal: 24,
+    marginVertical: 16,
+  },
+});

@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Shinobi Iga Ryu"
+version = "1.0.0"
+id = "artifacts/shinobi-iga-ryu"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+localPort = 18297
+name = "expo"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/shinobi-iga-ryu run dev"
+
+[services.env]
+PORT = "18297"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/shinobi-iga-ryu", "run", "build"]
+run = ["pnpm", "--filter", "@workspace/shinobi-iga-ryu", "run", "serve"]
