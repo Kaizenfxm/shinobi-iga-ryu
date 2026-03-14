@@ -102,6 +102,19 @@ export interface UpdateSubscriptionResponse {
   subscriptionLevel: string;
 }
 
+export interface ProfesorAlumnoIdsResponse {
+  alumnoIds: number[];
+}
+
+export interface UpdateProfesorAlumnosRequest {
+  alumnoIds: number[];
+}
+
+export interface UpdateProfesorAlumnosResponse {
+  success: boolean;
+  alumnoIds: number[];
+}
+
 export interface ProfesorStudentsResponse {
   students: UserData[];
 }

@@ -22,9 +22,12 @@ import type {
   ErrorResponse,
   HealthStatus,
   LoginRequest,
+  ProfesorAlumnoIdsResponse,
   ProfesorStudentsResponse,
   RegisterRequest,
   SuccessResponse,
+  UpdateProfesorAlumnosRequest,
+  UpdateProfesorAlumnosResponse,
   UpdateRolesRequest,
   UpdateRolesResponse,
   UpdateSubscriptionRequest,
@@ -683,6 +686,192 @@ export const useAdminUpdateSubscription = <
   TContext
 > => {
   return useMutation(getAdminUpdateSubscriptionMutationOptions(options));
+};
+
+/**
+ * @summary Get students assigned to a professor (admin only)
+ */
+export const getAdminGetProfesorAlumnosUrl = (profesorId: number) => {
+  return `/api/admin/profesor/${profesorId}/alumnos`;
+};
+
+export const adminGetProfesorAlumnos = async (
+  profesorId: number,
+  options?: RequestInit,
+): Promise<ProfesorAlumnoIdsResponse> => {
+  return customFetch<ProfesorAlumnoIdsResponse>(
+    getAdminGetProfesorAlumnosUrl(profesorId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminGetProfesorAlumnosQueryKey = (profesorId: number) => {
+  return [`/api/admin/profesor/${profesorId}/alumnos`] as const;
+};
+
+export const getAdminGetProfesorAlumnosQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetProfesorAlumnos>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  profesorId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetProfesorAlumnos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminGetProfesorAlumnosQueryKey(profesorId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetProfesorAlumnos>>
+  > = ({ signal }) =>
+    adminGetProfesorAlumnos(profesorId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!profesorId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetProfesorAlumnos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetProfesorAlumnosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetProfesorAlumnos>>
+>;
+export type AdminGetProfesorAlumnosQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get students assigned to a professor (admin only)
+ */
+
+export function useAdminGetProfesorAlumnos<
+  TData = Awaited<ReturnType<typeof adminGetProfesorAlumnos>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  profesorId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetProfesorAlumnos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetProfesorAlumnosQueryOptions(
+    profesorId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update students assigned to a professor (admin only)
+ */
+export const getAdminUpdateProfesorAlumnosUrl = (profesorId: number) => {
+  return `/api/admin/profesor/${profesorId}/alumnos`;
+};
+
+export const adminUpdateProfesorAlumnos = async (
+  profesorId: number,
+  updateProfesorAlumnosRequest: UpdateProfesorAlumnosRequest,
+  options?: RequestInit,
+): Promise<UpdateProfesorAlumnosResponse> => {
+  return customFetch<UpdateProfesorAlumnosResponse>(
+    getAdminUpdateProfesorAlumnosUrl(profesorId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateProfesorAlumnosRequest),
+    },
+  );
+};
+
+export const getAdminUpdateProfesorAlumnosMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>,
+    TError,
+    { profesorId: number; data: BodyType<UpdateProfesorAlumnosRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>,
+  TError,
+  { profesorId: number; data: BodyType<UpdateProfesorAlumnosRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateProfesorAlumnos"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>,
+    { profesorId: number; data: BodyType<UpdateProfesorAlumnosRequest> }
+  > = (props) => {
+    const { profesorId, data } = props ?? {};
+
+    return adminUpdateProfesorAlumnos(profesorId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateProfesorAlumnosMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>
+>;
+export type AdminUpdateProfesorAlumnosMutationBody =
+  BodyType<UpdateProfesorAlumnosRequest>;
+export type AdminUpdateProfesorAlumnosMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update students assigned to a professor (admin only)
+ */
+export const useAdminUpdateProfesorAlumnos = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>,
+    TError,
+    { profesorId: number; data: BodyType<UpdateProfesorAlumnosRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateProfesorAlumnos>>,
+  TError,
+  { profesorId: number; data: BodyType<UpdateProfesorAlumnosRequest> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateProfesorAlumnosMutationOptions(options));
 };
 
 /**

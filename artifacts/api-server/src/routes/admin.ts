@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, userRolesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -124,6 +124,75 @@ adminRouter.put("/admin/users/:id/subscription", async (req, res) => {
     res.json({ success: true, subscriptionLevel: user.subscriptionLevel });
   } catch (error) {
     console.error("Admin update subscription error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.get("/admin/profesor/:profesorId/alumnos", async (req, res) => {
+  try {
+    const profesorId = parseInt(req.params.profesorId, 10);
+
+    const assignments = await db
+      .select({
+        alumnoId: profesorStudentsTable.alumnoId,
+      })
+      .from(profesorStudentsTable)
+      .where(eq(profesorStudentsTable.profesorId, profesorId));
+
+    res.json({ alumnoIds: assignments.map((a) => a.alumnoId) });
+  } catch (error) {
+    console.error("Admin get profesor alumnos error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/profesor/:profesorId/alumnos", async (req, res) => {
+  try {
+    const profesorId = parseInt(req.params.profesorId, 10);
+    const { alumnoIds } = req.body;
+
+    if (!Array.isArray(alumnoIds)) {
+      res.status(400).json({ error: "Se requiere un array de alumnoIds" });
+      return;
+    }
+
+    const [profesor] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, profesorId))
+      .limit(1);
+
+    if (!profesor) {
+      res.status(404).json({ error: "Profesor no encontrado" });
+      return;
+    }
+
+    const profesorRole = await db
+      .select({ id: userRolesTable.id })
+      .from(userRolesTable)
+      .where(and(eq(userRolesTable.userId, profesorId), eq(userRolesTable.role, "profesor")))
+      .limit(1);
+
+    if (profesorRole.length === 0) {
+      res.status(400).json({ error: "El usuario no tiene rol de profesor" });
+      return;
+    }
+
+    await db.delete(profesorStudentsTable).where(eq(profesorStudentsTable.profesorId, profesorId));
+
+    for (const alumnoId of alumnoIds) {
+      const id = parseInt(alumnoId, 10);
+      if (!isNaN(id)) {
+        await db.insert(profesorStudentsTable).values({
+          profesorId,
+          alumnoId: id,
+        });
+      }
+    }
+
+    res.json({ success: true, alumnoIds: alumnoIds.map((id: number) => parseInt(String(id), 10)) });
+  } catch (error) {
+    console.error("Admin update profesor alumnos error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
