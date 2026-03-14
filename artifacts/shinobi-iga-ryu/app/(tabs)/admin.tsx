@@ -847,62 +847,70 @@ function UsersPanel({
                         })}
                       </View>
                     )}
-                    {beltDataLoading ? (
-                      <ActivityIndicator size="small" color="#D4AF37" />
-                    ) : beltCatalog.length === 0 ? (
-                      <Text style={styles.noHistoryText}>Sin disciplinas configuradas</Text>
-                    ) : (
-                      beltCatalog.map((disc) => {
-                        const userBelt = userBeltMap[u.id]?.belts.find((b) => b.discipline === disc.discipline);
-                        const discKey = `${u.id}_${disc.discipline}`;
-                        const isDiscOpen = !!discSectionOpen[discKey];
-                        const beltColorLower = userBelt ? userBelt.currentBelt.color.toLowerCase() : "";
-                        const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
-                        const beltIsWhite = beltColorLower === "#ffffff";
-                        const barColor = userBelt
-                          ? beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : userBelt.currentBelt.color
-                          : "#1a1a1a";
-                        return (
-                          <View key={disc.discipline}>
-                            <Pressable
-                              style={styles.discToggleRow}
-                              onPress={() => toggleDiscSection(u.id, disc.discipline)}
-                            >
+                    {["ninjutsu", "jiujitsu"].map((discipline) => {
+                      const userBelt = userBeltMap[u.id]?.belts.find((b) => b.discipline === discipline);
+                      const discKey = `${u.id}_${discipline}`;
+                      const isDiscOpen = !!discSectionOpen[discKey];
+                      const beltColorLower = userBelt ? userBelt.currentBelt.color.toLowerCase() : "";
+                      const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
+                      const beltIsWhite = beltColorLower === "#ffffff";
+                      const barColor = userBelt
+                        ? beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : userBelt.currentBelt.color
+                        : "#1a1a1a";
+                      return (
+                        <View key={discipline}>
+                          <Pressable
+                            style={styles.discToggleRow}
+                            onPress={() => toggleDiscSection(u.id, discipline)}
+                          >
+                            <View style={styles.discToggleLabelRow}>
+                              <View style={[styles.discMiniBar, { backgroundColor: barColor }]} />
                               <Text style={styles.discToggleLabel}>
-                                {DISCIPLINE_LABELS[disc.discipline] || disc.discipline}
+                                {DISCIPLINE_LABELS[discipline] || discipline}
                               </Text>
-                              <Ionicons
-                                name={isDiscOpen ? "chevron-up" : "chevron-down"}
-                                size={13}
-                                color="#555"
-                              />
-                            </Pressable>
-                            {isDiscOpen && (
-                              <View style={styles.discExpandedContent}>
-                                <View style={styles.beltManageRow}>
-                                  <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
-                                  <View style={styles.beltManageInfo}>
-                                    <Text style={styles.beltManageName}>
-                                      {userBelt ? userBelt.currentBelt.name : "Sin cinturón asignado"}
-                                    </Text>
-                                    <Text style={styles.beltManageStatus}>
-                                      {userBelt ? "Cinturón actual" : "—"}
-                                    </Text>
+                              {userBelt && (
+                                <Text style={styles.discCurrentBeltName} numberOfLines={1}>
+                                  {userBelt.currentBelt.name}
+                                </Text>
+                              )}
+                            </View>
+                            <Ionicons
+                              name={isDiscOpen ? "chevron-up" : "chevron-down"}
+                              size={13}
+                              color="#555"
+                            />
+                          </Pressable>
+                          {isDiscOpen && (
+                            <View style={styles.discExpandedContent}>
+                              {beltDataLoading ? (
+                                <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 6 }} />
+                              ) : (
+                                <>
+                                  <View style={styles.beltManageRow}>
+                                    <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
+                                    <View style={styles.beltManageInfo}>
+                                      <Text style={styles.beltManageName}>
+                                        {userBelt ? userBelt.currentBelt.name : "Sin cinturón asignado"}
+                                      </Text>
+                                      <Text style={styles.beltManageStatus}>
+                                        {userBelt ? "Cinturón actual" : "—"}
+                                      </Text>
+                                    </View>
                                   </View>
-                                </View>
-                                <Pressable
-                                  style={styles.assignBeltBtn}
-                                  onPress={() => setAssignModal({ userId: u.id, discipline: disc.discipline })}
-                                >
-                                  <Ionicons name="ribbon" size={12} color="#000" />
-                                  <Text style={styles.assignBeltBtnText}>Asignar cinturón</Text>
-                                </Pressable>
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })
-                    )}
+                                  <Pressable
+                                    style={styles.assignBeltBtn}
+                                    onPress={() => setAssignModal({ userId: u.id, discipline })}
+                                  >
+                                    <Ionicons name="ribbon" size={12} color="#000" />
+                                    <Text style={styles.assignBeltBtnText}>Asignar cinturón</Text>
+                                  </Pressable>
+                                </>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
                   );
                 })()}
@@ -960,9 +968,12 @@ function UsersPanel({
               <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 32 }} />
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
-                {assignModal && beltCatalog
-                  .find((d) => d.discipline === assignModal.discipline)
-                  ?.belts.map((belt) => {
+                {assignModal && (() => {
+                  const belts = beltCatalog.find((d) => d.discipline === assignModal.discipline)?.belts ?? [];
+                  if (belts.length === 0) {
+                    return <Text style={[styles.noHistoryText, { margin: 20 }]}>Cargando cinturones...</Text>;
+                  }
+                  return belts.map((belt) => {
                     const cLower = belt.color.toLowerCase();
                     const isDark = cLower === "#000000" || cLower === "#1c1c1c";
                     const isWh = cLower === "#ffffff";
@@ -983,7 +994,8 @@ function UsersPanel({
                         <Ionicons name="chevron-forward" size={14} color="#444" />
                       </Pressable>
                     );
-                  })}
+                  });
+                })()}
               </ScrollView>
             )}
           </View>
@@ -2065,6 +2077,24 @@ const styles = StyleSheet.create({
     padding: 5,
     borderWidth: 1,
     borderColor: "#6a2020",
+  },
+  discToggleLabelRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  discMiniBar: {
+    width: 18,
+    height: 8,
+    borderRadius: 1,
+  },
+  discCurrentBeltName: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 9,
+    color: "#555",
+    letterSpacing: 0.5,
+    flexShrink: 1,
   },
   discExpandedContent: {
     paddingLeft: 8,
