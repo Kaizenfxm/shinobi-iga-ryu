@@ -24,7 +24,7 @@ const requireAdminOrProfesor = (
       .where(eq(userRolesTable.userId, userId));
     const roleList = roles.map((r) => r.role);
     if (roleList.includes("admin") || roleList.includes("profesor")) {
-      (req as Record<string, unknown>).userRoles = roleList;
+      res.locals.userRoles = roleList;
       next();
     } else {
       res.status(403).json({ error: "Se requiere rol de admin o profesor" });
@@ -133,7 +133,7 @@ fightsRouter.post("/fights", requireAdminOrProfesor, async (req, res) => {
       return;
     }
 
-    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const roles = res.locals.userRoles as string[];
     const hasAccess = await verifyProfesorOwnership(req.session.userId!, parsedUserId, roles);
     if (!hasAccess) {
       res.status(403).json({ error: "No tienes acceso a este alumno" });
@@ -186,7 +186,7 @@ fightsRouter.get("/fights/user/:userId", requireAdminOrProfesor, async (req, res
       return;
     }
 
-    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const roles = res.locals.userRoles as string[];
     const hasAccess = await verifyProfesorOwnership(req.session.userId!, userId, roles);
     if (!hasAccess) {
       res.status(403).json({ error: "No tienes acceso a este alumno" });
@@ -284,7 +284,7 @@ fightsRouter.delete("/fights/:fightId", requireAdminOrProfesor, async (req, res)
       return;
     }
 
-    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const roles = res.locals.userRoles as string[];
     const hasAccess = await verifyProfesorOwnership(req.session.userId!, fight.userId, roles);
     if (!hasAccess) {
       res.status(403).json({ error: "No tienes acceso a este alumno" });

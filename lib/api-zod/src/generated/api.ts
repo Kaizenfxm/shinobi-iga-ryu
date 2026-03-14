@@ -46,6 +46,7 @@ export const LoginResponse = zod.object({
       "avanzado",
       "personalizado",
     ]),
+    isFighter: zod.boolean(),
     roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
   }),
 });
@@ -65,6 +66,7 @@ export const GetMeResponse = zod.object({
       "avanzado",
       "personalizado",
     ]),
+    isFighter: zod.boolean(),
     roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
   }),
 });
@@ -92,6 +94,7 @@ export const AdminGetUsersResponse = zod.object({
         "avanzado",
         "personalizado",
       ]),
+      isFighter: zod.boolean(),
       roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
     }),
   ),
@@ -372,7 +375,173 @@ export const ProfesorGetAlumnosResponse = zod.object({
         "avanzado",
         "personalizado",
       ]),
+      isFighter: zod.boolean(),
       roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
     }),
   ),
+});
+
+/**
+ * @summary Toggle fighter mode for a user (admin only)
+ */
+export const AdminToggleFighterModeParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const AdminToggleFighterModeBody = zod.object({
+  isFighter: zod.boolean(),
+});
+
+export const AdminToggleFighterModeResponse = zod.object({
+  success: zod.boolean(),
+  isFighter: zod.boolean(),
+});
+
+/**
+ * @summary Register a fight (admin/profesor only)
+ */
+export const AddFightBody = zod.object({
+  userId: zod.number(),
+  opponentName: zod.string(),
+  eventName: zod.string().optional(),
+  fightDate: zod.string(),
+  result: zod.enum(["victoria", "derrota", "empate"]),
+  method: zod
+    .enum([
+      "ko",
+      "tko",
+      "sumision",
+      "decision",
+      "decision_unanime",
+      "decision_dividida",
+      "descalificacion",
+      "no_contest",
+    ])
+    .optional(),
+  discipline: zod.enum([
+    "mma",
+    "box",
+    "jiujitsu",
+    "muay_thai",
+    "ninjutsu",
+    "otro",
+  ]),
+  rounds: zod.number().optional(),
+  notes: zod.string().optional(),
+});
+
+/**
+ * @summary Get current user fight history and stats
+ */
+export const GetMyFightsResponse = zod.object({
+  isFighter: zod.boolean(),
+  fights: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      opponentName: zod.string(),
+      eventName: zod.string().nullish(),
+      fightDate: zod.string(),
+      result: zod.enum(["victoria", "derrota", "empate"]),
+      method: zod
+        .enum([
+          "ko",
+          "tko",
+          "sumision",
+          "decision",
+          "decision_unanime",
+          "decision_dividida",
+          "descalificacion",
+          "no_contest",
+        ])
+        .nullish(),
+      discipline: zod.enum([
+        "mma",
+        "box",
+        "jiujitsu",
+        "muay_thai",
+        "ninjutsu",
+        "otro",
+      ]),
+      rounds: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      registeredBy: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  stats: zod
+    .object({
+      total: zod.number(),
+      victorias: zod.number(),
+      derrotas: zod.number(),
+      empates: zod.number(),
+      winPercentage: zod.number(),
+    })
+    .nullish(),
+});
+
+/**
+ * @summary Get a fighter's history and stats (admin/profesor only)
+ */
+export const GetUserFightsParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const GetUserFightsResponse = zod.object({
+  fighter: zod.object({
+    id: zod.number(),
+    displayName: zod.string(),
+  }),
+  fights: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      opponentName: zod.string(),
+      eventName: zod.string().nullish(),
+      fightDate: zod.string(),
+      result: zod.enum(["victoria", "derrota", "empate"]),
+      method: zod
+        .enum([
+          "ko",
+          "tko",
+          "sumision",
+          "decision",
+          "decision_unanime",
+          "decision_dividida",
+          "descalificacion",
+          "no_contest",
+        ])
+        .nullish(),
+      discipline: zod.enum([
+        "mma",
+        "box",
+        "jiujitsu",
+        "muay_thai",
+        "ninjutsu",
+        "otro",
+      ]),
+      rounds: zod.number().nullish(),
+      notes: zod.string().nullish(),
+      registeredBy: zod.number(),
+      createdAt: zod.string(),
+    }),
+  ),
+  stats: zod.object({
+    total: zod.number(),
+    victorias: zod.number(),
+    derrotas: zod.number(),
+    empates: zod.number(),
+    winPercentage: zod.number(),
+  }),
+});
+
+/**
+ * @summary Delete a fight record (admin/profesor only)
+ */
+export const DeleteFightParams = zod.object({
+  fightId: zod.coerce.number(),
+});
+
+export const DeleteFightResponse = zod.object({
+  success: zod.boolean(),
 });
