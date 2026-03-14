@@ -6,7 +6,7 @@ import {
   userRolesTable,
   profesorStudentsTable,
 } from "@workspace/db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const fightsRouter = Router();
