@@ -270,7 +270,7 @@ function UsersPanel({
   );
 }
 
-const INIT_BELT_FORM = { visible: false, discipline: "ninjutsu", editingId: null as number | null, name: "", color: "", description: "" };
+const INIT_BELT_FORM = { visible: false, editingId: null as number | null, beltName: "", description: "" };
 const INIT_REQ_FORM = { visible: false, beltId: null as number | null, editingId: null as number | null, title: "", description: "" };
 
 function BeltCatalogPanel() {
@@ -301,86 +301,18 @@ function BeltCatalogPanel() {
     useEffect(() => { loadCatalog(); }, [loadCatalog]);
 
     const saveBelt = async () => {
-      if (!beltForm.name.trim() || !beltForm.color.trim()) {
-        Alert.alert("Error", "Nombre y color son requeridos");
-        return;
-      }
+      if (!beltForm.editingId) return;
       setSaving(true);
       try {
-        if (beltForm.editingId) {
-          await beltsApi.adminUpdateBelt(beltForm.editingId, {
-            name: beltForm.name.trim(),
-            color: beltForm.color.trim(),
-            description: beltForm.description.trim() || undefined,
-          });
-        } else {
-          await beltsApi.adminCreateBelt({
-            discipline: beltForm.discipline,
-            name: beltForm.name.trim(),
-            color: beltForm.color.trim(),
-            description: beltForm.description.trim() || undefined,
-          });
-        }
+        await beltsApi.adminUpdateBelt(beltForm.editingId, {
+          description: beltForm.description.trim() || undefined,
+        });
         setBeltForm(INIT_BELT_FORM);
         await loadCatalog();
       } catch (e: unknown) {
         Alert.alert("Error", e instanceof Error ? e.message : "Error al guardar");
       } finally {
         setSaving(false);
-      }
-    };
-
-    const deleteBelt = (belt: CatalogBelt) => {
-      Alert.alert(
-        "Eliminar Cinturón",
-        `¿Eliminar "${belt.name}"? Esta acción no se puede deshacer si no hay alumnos asignados.`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Eliminar",
-            style: "destructive",
-            onPress: async () => {
-              setSaving(true);
-              try {
-                await beltsApi.adminDeleteBelt(belt.id);
-                if (expandedBelt === belt.id) setExpandedBelt(null);
-                await loadCatalog();
-              } catch (e: unknown) {
-                Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
-              } finally {
-                setSaving(false);
-              }
-            },
-          },
-        ]
-      );
-    };
-
-    const reorderBelt = async (discipline: string, beltId: number, direction: "up" | "down") => {
-      const disc = catalog.find((d) => d.discipline === discipline);
-      if (!disc) return;
-      const idx = disc.belts.findIndex((b) => b.id === beltId);
-      if (direction === "up" && idx === 0) return;
-      if (direction === "down" && idx === disc.belts.length - 1) return;
-
-      const newBelts = [...disc.belts];
-      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-      [newBelts[idx], newBelts[swapIdx]] = [newBelts[swapIdx], newBelts[idx]];
-      const order = newBelts.map((b, i) => ({ id: b.id, orderIndex: i }));
-
-      setCatalog((prev) =>
-        prev.map((d) =>
-          d.discipline === discipline
-            ? { ...d, belts: newBelts.map((b, i) => ({ ...b, orderIndex: i })) }
-            : d
-        )
-      );
-
-      try {
-        await beltsApi.adminReorderBelts(discipline, order);
-      } catch {
-        await loadCatalog();
-        Alert.alert("Error", "No se pudo reordenar");
       }
     };
 
@@ -499,36 +431,17 @@ function BeltCatalogPanel() {
                           <View style={styles.catalogBeltActions}>
                             <Pressable
                               style={styles.catalogIconBtn}
-                              onPress={() => reorderBelt(disc.discipline, belt.id, "up")}
-                              disabled={beltIdx === 0}
-                            >
-                              <Ionicons name="chevron-up-circle" size={20} color={beltIdx === 0 ? "#2A2A2A" : "#555"} />
-                            </Pressable>
-                            <Pressable
-                              style={styles.catalogIconBtn}
-                              onPress={() => reorderBelt(disc.discipline, belt.id, "down")}
-                              disabled={beltIdx === disc.belts.length - 1}
-                            >
-                              <Ionicons name="chevron-down-circle" size={20} color={beltIdx === disc.belts.length - 1 ? "#2A2A2A" : "#555"} />
-                            </Pressable>
-                            <Pressable
-                              style={styles.catalogIconBtn}
                               onPress={() => {
                                 setExpandedBelt(belt.id);
                                 setBeltForm({
                                   visible: true,
-                                  discipline: disc.discipline,
                                   editingId: belt.id,
-                                  name: belt.name,
-                                  color: belt.color,
+                                  beltName: belt.name,
                                   description: belt.description || "",
                                 });
                               }}
                             >
                               <Ionicons name="pencil" size={16} color="#D4AF37" />
-                            </Pressable>
-                            <Pressable style={styles.catalogIconBtn} onPress={() => deleteBelt(belt)}>
-                              <Ionicons name="trash-outline" size={16} color="#555" />
                             </Pressable>
                             <Ionicons
                               name={isBeltOpen ? "chevron-up" : "chevron-down"}
@@ -540,28 +453,15 @@ function BeltCatalogPanel() {
 
                         {isEditingBelt && (
                           <View style={styles.catalogForm}>
-                            <Text style={styles.catalogFormTitle}>Editar Cinturón</Text>
+                            <Text style={styles.catalogFormTitle}>{beltForm.beltName}</Text>
                             <TextInput
-                              style={styles.catalogFormInput}
-                              placeholder="Nombre del cinturón"
-                              placeholderTextColor="#444"
-                              value={beltForm.name}
-                              onChangeText={(v) => setBeltForm((f) => ({ ...f, name: v }))}
-                            />
-                            <TextInput
-                              style={styles.catalogFormInput}
-                              placeholder="Color hex (#FF0000)"
-                              placeholderTextColor="#444"
-                              value={beltForm.color}
-                              onChangeText={(v) => setBeltForm((f) => ({ ...f, color: v }))}
-                              autoCapitalize="characters"
-                            />
-                            <TextInput
-                              style={styles.catalogFormInput}
-                              placeholder="Descripción (opcional)"
+                              style={[styles.catalogFormInput, { minHeight: 72 }]}
+                              placeholder="Descripción del cinturón (opcional)"
                               placeholderTextColor="#444"
                               value={beltForm.description}
                               onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
+                              multiline
+                              numberOfLines={3}
                             />
                             <View style={styles.catalogFormActions}>
                               <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(INIT_BELT_FORM)}>
@@ -688,49 +588,6 @@ function BeltCatalogPanel() {
                     );
                   })}
 
-                  {beltForm.visible && !beltForm.editingId && beltForm.discipline === disc.discipline ? (
-                    <View style={[styles.catalogForm, { marginTop: 8 }]}>
-                      <Text style={styles.catalogFormTitle}>Nuevo Cinturón · {discLabel}</Text>
-                      <TextInput
-                        style={styles.catalogFormInput}
-                        placeholder="Nombre del cinturón"
-                        placeholderTextColor="#444"
-                        value={beltForm.name}
-                        onChangeText={(v) => setBeltForm((f) => ({ ...f, name: v }))}
-                      />
-                      <TextInput
-                        style={styles.catalogFormInput}
-                        placeholder="Color hex (#FF0000)"
-                        placeholderTextColor="#444"
-                        value={beltForm.color}
-                        onChangeText={(v) => setBeltForm((f) => ({ ...f, color: v }))}
-                        autoCapitalize="characters"
-                      />
-                      <TextInput
-                        style={styles.catalogFormInput}
-                        placeholder="Descripción (opcional)"
-                        placeholderTextColor="#444"
-                        value={beltForm.description}
-                        onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
-                      />
-                      <View style={styles.catalogFormActions}>
-                        <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(INIT_BELT_FORM)}>
-                          <Text style={styles.catalogFormCancelText}>Cancelar</Text>
-                        </Pressable>
-                        <Pressable style={styles.catalogFormSave} onPress={saveBelt} disabled={saving}>
-                          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.catalogFormSaveText}>Agregar</Text>}
-                        </Pressable>
-                      </View>
-                    </View>
-                  ) : (
-                    <Pressable
-                      style={[styles.beltActionButton, { marginTop: 8 }]}
-                      onPress={() => setBeltForm({ visible: true, discipline: disc.discipline, editingId: null, name: "", color: "", description: "" })}
-                    >
-                      <Ionicons name="add-circle" size={14} color="#D4AF37" />
-                      <Text style={styles.beltActionText}>Agregar Cinturón</Text>
-                    </Pressable>
-                  )}
                 </View>
               )}
             </View>
