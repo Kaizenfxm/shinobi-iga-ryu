@@ -20,6 +20,8 @@ tags:
     description: Belt progression operations
   - name: fights
     description: Fighter mode and fight history operations
+  - name: profile
+    description: User profile operations
 paths:
   /healthz:
     get:
@@ -549,6 +551,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+  /profile/me:
+    get:
+      operationId: getMyProfile
+      tags: [profile]
+      summary: Get current user's complete profile with belts and fight record
+      responses:
+        "200":
+          description: User profile data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
 components:
   schemas:
     HealthStatus:
@@ -1145,3 +1159,64 @@ components:
         - fighter
         - fights
         - stats
+    ProfileBelt:
+      type: object
+      properties:
+        discipline:
+          type: string
+          enum: [ninjutsu, jiujitsu]
+        beltName:
+          type: string
+        beltColor:
+          type: string
+        beltOrder:
+          type: integer
+      required:
+        - discipline
+        - beltName
+        - beltColor
+        - beltOrder
+    ProfileData:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        subscriptionLevel:
+          type: string
+          enum: [basico, medio, avanzado, personalizado]
+        isFighter:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, profesor, alumno]
+        belts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileBelt"
+        fightStats:
+          $ref: "#/components/schemas/FightStats"
+          nullable: true
+      required:
+        - id
+        - email
+        - displayName
+        - subscriptionLevel
+        - isFighter
+        - roles
+        - belts
+    ProfileResponse:
+      type: object
+      properties:
+        profile:
+          $ref: "#/components/schemas/ProfileData"
+      required:
+        - profile

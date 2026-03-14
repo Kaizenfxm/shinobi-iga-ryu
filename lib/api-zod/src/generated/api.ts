@@ -545,3 +545,40 @@ export const DeleteFightParams = zod.object({
 export const DeleteFightResponse = zod.object({
   success: zod.boolean(),
 });
+
+/**
+ * @summary Get current user's complete profile with belts and fight record
+ */
+export const GetMyProfileResponse = zod.object({
+  profile: zod.object({
+    id: zod.number(),
+    email: zod.string(),
+    displayName: zod.string(),
+    avatarUrl: zod.string().nullish(),
+    subscriptionLevel: zod.enum([
+      "basico",
+      "medio",
+      "avanzado",
+      "personalizado",
+    ]),
+    isFighter: zod.boolean(),
+    roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+    belts: zod.array(
+      zod.object({
+        discipline: zod.enum(["ninjutsu", "jiujitsu"]),
+        beltName: zod.string(),
+        beltColor: zod.string(),
+        beltOrder: zod.number(),
+      }),
+    ),
+    fightStats: zod
+      .object({
+        total: zod.number(),
+        victorias: zod.number(),
+        derrotas: zod.number(),
+        empates: zod.number(),
+        winPercentage: zod.number(),
+      })
+      .nullish(),
+  }),
+});
