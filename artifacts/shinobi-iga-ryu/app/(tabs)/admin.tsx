@@ -14,11 +14,12 @@ import {
   Modal,
   KeyboardAvoidingView,
   Switch,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, fightsApi, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -465,6 +466,36 @@ function UsersPanel({
     AsyncStorage.setItem("adminDiscSectionOpen", JSON.stringify(newState));
   }, [discSectionOpen]);
 
+  const [pendingApps, setPendingApps] = useState<PendingBeltApplication[]>([]);
+  const [actingOnApp, setActingOnApp] = useState<Set<number>>(new Set());
+  const pendingAppsLoaded = useRef(false);
+
+  const loadPendingApps = useCallback(async () => {
+    if (pendingAppsLoaded.current) return;
+    pendingAppsLoaded.current = true;
+    try {
+      const { applications } = await beltsApi.adminGetPendingApplications();
+      setPendingApps(applications);
+    } catch (e) {
+      console.error("[UsersPanel] loadPendingApps error:", e instanceof Error ? e.message : e);
+      pendingAppsLoaded.current = false;
+    }
+  }, []);
+
+  const handleActOnApp = useCallback(async (appId: number, action: "approve" | "reject") => {
+    setActingOnApp((s) => new Set(s).add(appId));
+    try {
+      await beltsApi.adminActOnApplication(appId, action);
+      setPendingApps((prev) => prev.filter((a) => a.id !== appId));
+      beltDataLoaded.current = false;
+      await loadBeltData();
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo procesar la postulación");
+    } finally {
+      setActingOnApp((s) => { const ns = new Set(s); ns.delete(appId); return ns; });
+    }
+  }, [loadBeltData]);
+
   const loadBeltData = useCallback(async () => {
     if (beltDataLoaded.current) return;
     beltDataLoaded.current = true;
@@ -489,8 +520,9 @@ function UsersPanel({
     AsyncStorage.setItem("adminBeltSectionOpen", JSON.stringify(newState));
     if (willOpen) {
       loadBeltData();
+      loadPendingApps();
     }
-  }, [beltSectionOpen, loadBeltData]);
+  }, [beltSectionOpen, loadBeltData, loadPendingApps]);
 
   const openCreate = () => {
     setFormMode("create");
@@ -635,7 +667,14 @@ function UsersPanel({
           >
             <View style={styles.userHeader}>
               <View style={styles.userAvatar}>
-                <Ionicons name="person" size={20} color="#666" />
+                {getAvatarServingUrl(u.avatarUrl ?? null) ? (
+                  <Image
+                    source={{ uri: getAvatarServingUrl(u.avatarUrl ?? null)! }}
+                    style={styles.userAvatarImage}
+                  />
+                ) : (
+                  <Ionicons name="person" size={20} color="#666" />
+                )}
               </View>
               <View style={styles.userInfo}>
                 <View style={styles.userNameRow}>
@@ -738,8 +777,56 @@ function UsersPanel({
                   />
                 </Pressable>
 
-                {beltSectionOpen[u.id] && (
+                {beltSectionOpen[u.id] && (() => {
+                  const userPending = pendingApps.filter((a) => a.userId === u.id);
+                  return (
                   <View style={styles.beltManageSection}>
+                    {userPending.length > 0 && (
+                      <View style={styles.pendingAppsSection}>
+                        <Text style={styles.pendingAppsLabel}>⟳ POSTULACIONES PENDIENTES</Text>
+                        {userPending.map((app) => {
+                          const cLower = app.targetBeltColor.toLowerCase();
+                          const isDark = cLower === "#000000" || cLower === "#1c1c1c";
+                          const isWh = cLower === "#ffffff";
+                          const barBg = isDark ? "#3a3a3a" : isWh ? "#ccc" : app.targetBeltColor;
+                          const isPunta = app.targetBeltName.toLowerCase().includes("punta negra");
+                          const isFranja = app.targetBeltName.toLowerCase().includes("franja roja");
+                          const isActing = actingOnApp.has(app.id);
+                          return (
+                            <View key={app.id} style={styles.pendingAppRow}>
+                              <View style={[styles.pendingBeltBar, { backgroundColor: barBg, overflow: "hidden" }]}>
+                                {isFranja && <View style={styles.pendingFranjaRoja} />}
+                                {isPunta && <View style={styles.pendingPuntaNegra} />}
+                              </View>
+                              <View style={styles.pendingAppInfo}>
+                                <Text style={styles.pendingBeltName}>{app.targetBeltName}</Text>
+                                <Text style={styles.pendingDiscLabel}>{DISCIPLINE_LABELS[app.discipline] || app.discipline}</Text>
+                              </View>
+                              <View style={styles.pendingAppActions}>
+                                {isActing ? (
+                                  <ActivityIndicator size="small" color="#D4AF37" />
+                                ) : (
+                                  <>
+                                    <Pressable
+                                      style={styles.approveBtn}
+                                      onPress={() => handleActOnApp(app.id, "approve")}
+                                    >
+                                      <Ionicons name="checkmark" size={14} color="#000" />
+                                    </Pressable>
+                                    <Pressable
+                                      style={styles.rejectBtn}
+                                      onPress={() => handleActOnApp(app.id, "reject")}
+                                    >
+                                      <Ionicons name="close" size={14} color="#fff" />
+                                    </Pressable>
+                                  </>
+                                )}
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
                     {beltDataLoading ? (
                       <ActivityIndicator size="small" color="#D4AF37" />
                     ) : !userBeltMap[u.id] || userBeltMap[u.id].belts.length === 0 ? (
@@ -781,7 +868,8 @@ function UsersPanel({
                       })
                     )}
                   </View>
-                )}
+                  );
+                })()}
 
                 <View style={styles.userActionRow}>
                   <Pressable
@@ -1803,6 +1891,85 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  userAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  pendingAppsSection: {
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#D4AF3730",
+    borderRadius: 4,
+    padding: 8,
+    backgroundColor: "#0A0800",
+  },
+  pendingAppsLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#D4AF37",
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  pendingAppRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  pendingBeltBar: {
+    width: 32,
+    height: 14,
+    borderRadius: 2,
+    position: "relative",
+  },
+  pendingFranjaRoja: {
+    position: "absolute",
+    left: "38%",
+    width: "20%",
+    top: 0,
+    bottom: 0,
+    backgroundColor: "#CC0000",
+  },
+  pendingPuntaNegra: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: "30%",
+    backgroundColor: "#000000",
+  },
+  pendingAppInfo: {
+    flex: 1,
+  },
+  pendingBeltName: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 11,
+    color: "#CCC",
+  },
+  pendingDiscLabel: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 9,
+    color: "#666",
+    letterSpacing: 1,
+  },
+  pendingAppActions: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  approveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 4,
+    padding: 5,
+  },
+  rejectBtn: {
+    backgroundColor: "#3a1010",
+    borderRadius: 4,
+    padding: 5,
+    borderWidth: 1,
+    borderColor: "#6a2020",
   },
   userInfo: {
     flex: 1,

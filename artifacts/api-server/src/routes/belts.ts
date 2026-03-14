@@ -1112,6 +1112,105 @@ beltsRouter.put("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin
   }
 });
 
+beltsRouter.get("/admin/belts/applications/pending", requireAdmin, async (_req, res) => {
+  try {
+    const apps = await db
+      .select({
+        id: beltApplicationsTable.id,
+        userId: beltApplicationsTable.userId,
+        userDisplayName: usersTable.displayName,
+        userEmail: usersTable.email,
+        userAvatarUrl: usersTable.avatarUrl,
+        discipline: beltApplicationsTable.discipline,
+        targetBeltId: beltApplicationsTable.targetBeltId,
+        targetBeltName: beltDefinitionsTable.name,
+        targetBeltColor: beltDefinitionsTable.color,
+        appliedAt: beltApplicationsTable.appliedAt,
+      })
+      .from(beltApplicationsTable)
+      .innerJoin(usersTable, eq(beltApplicationsTable.userId, usersTable.id))
+      .innerJoin(beltDefinitionsTable, eq(beltApplicationsTable.targetBeltId, beltDefinitionsTable.id))
+      .where(eq(beltApplicationsTable.status, "pending"))
+      .orderBy(asc(beltApplicationsTable.appliedAt));
+    res.json({ applications: apps });
+  } catch (error) {
+    console.error("Pending belt applications error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.put("/admin/belts/applications/:id", requireAdmin, async (req, res) => {
+  try {
+    const appId = parseInt(req.params.id as string, 10);
+    if (isNaN(appId)) { res.status(400).json({ error: "ID inválido" }); return; }
+    const { action } = req.body as { action: "approve" | "reject" };
+    if (action !== "approve" && action !== "reject") {
+      res.status(400).json({ error: "Acción inválida" }); return;
+    }
+
+    const [app] = await db
+      .select()
+      .from(beltApplicationsTable)
+      .where(eq(beltApplicationsTable.id, appId))
+      .limit(1);
+
+    if (!app) { res.status(404).json({ error: "Postulación no encontrada" }); return; }
+    if (app.status !== "pending") { res.status(400).json({ error: "Esta postulación ya fue procesada" }); return; }
+
+    const adminId = req.session.userId!;
+
+    if (action === "approve") {
+      await db.transaction(async (tx) => {
+        await tx.update(beltApplicationsTable)
+          .set({ status: "approved", updatedAt: new Date() })
+          .where(eq(beltApplicationsTable.id, appId));
+
+        const [targetBelt] = await tx
+          .select()
+          .from(beltDefinitionsTable)
+          .where(eq(beltDefinitionsTable.id, app.targetBeltId))
+          .limit(1);
+
+        const [studentBelt] = await tx
+          .select()
+          .from(studentBeltsTable)
+          .where(and(eq(studentBeltsTable.userId, app.userId), eq(studentBeltsTable.discipline, app.discipline)))
+          .limit(1);
+
+        if (studentBelt) {
+          await tx.update(studentBeltsTable)
+            .set({ currentBeltId: app.targetBeltId, nextUnlocked: false, updatedAt: new Date() })
+            .where(eq(studentBeltsTable.id, studentBelt.id));
+        } else {
+          await tx.insert(studentBeltsTable).values({
+            userId: app.userId,
+            discipline: app.discipline,
+            currentBeltId: app.targetBeltId,
+            nextUnlocked: false,
+          });
+        }
+
+        await tx.insert(beltHistoryTable).values({
+          userId: app.userId,
+          discipline: app.discipline,
+          beltId: app.targetBeltId,
+          promotedBy: adminId,
+          notes: `Postulación aprobada — ${targetBelt?.name || ""}`,
+        });
+      });
+    } else {
+      await db.update(beltApplicationsTable)
+        .set({ status: "rejected", updatedAt: new Date() })
+        .where(eq(beltApplicationsTable.id, appId));
+    }
+
+    res.json({ success: true, action });
+  } catch (error) {
+    console.error("Belt application action error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 beltsRouter.delete("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin, async (req, res) => {
   try {
     const beltId = parseInt(req.params.id as string, 10);
