@@ -530,25 +530,27 @@ function UsersPanel({
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
       />
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={16} color="#666" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar por nombre o email..."
-          placeholderTextColor="#444"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
-        />
-        {searchQuery.length > 0 && Platform.OS !== "ios" && (
-          <Pressable onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={16} color="#666" />
-          </Pressable>
-        )}
+      <View style={styles.searchRow}>
+        <View style={[styles.searchContainer, { flex: 1 }]}>
+          <Ionicons name="search" size={16} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar por nombre o email..."
+            placeholderTextColor="#444"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && Platform.OS !== "ios" && (
+            <Pressable onPress={() => setSearchQuery("")}>
+              <Ionicons name="close-circle" size={16} color="#666" />
+            </Pressable>
+          )}
+        </View>
         <Pressable style={styles.addUserBtn} onPress={openCreate}>
-          <Ionicons name="add" size={20} color="#D4AF37" />
+          <Ionicons name="add" size={22} color="#D4AF37" />
         </Pressable>
       </View>
       {filteredUsers.length === 0 && searchQuery.trim() !== "" && (
@@ -1813,7 +1815,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
-    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
@@ -2127,9 +2128,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#000",
   },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
   addUserBtn: {
-    padding: 2,
-    marginLeft: 4,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    alignItems: "center",
+    justifyContent: "center",
   },
   userActionRow: {
     flexDirection: "row",
