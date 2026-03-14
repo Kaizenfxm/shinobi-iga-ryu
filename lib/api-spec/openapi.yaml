@@ -319,6 +319,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /admin/belts/users/{userId}/history:
+    get:
+      operationId: adminGetBeltHistory
+      tags: [admin]
+      summary: Get belt history for a student (admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Belt history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBeltHistoryResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /admin/belts/unlock:
     post:
       operationId: adminUnlockBelt
@@ -716,6 +740,15 @@ components:
             $ref: "#/components/schemas/AdminBeltUserData"
       required:
         - users
+    AdminBeltHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeltHistoryData"
+      required:
+        - history
     BeltActionRequest:
       type: object
       properties:

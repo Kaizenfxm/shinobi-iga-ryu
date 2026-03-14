@@ -253,6 +253,27 @@ export const AdminGetBeltUsersResponse = zod.object({
 });
 
 /**
+ * @summary Get belt history for a student (admin only)
+ */
+export const AdminGetBeltHistoryParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const AdminGetBeltHistoryResponse = zod.object({
+  history: zod.array(
+    zod.object({
+      id: zod.number(),
+      discipline: zod.string(),
+      beltId: zod.number(),
+      achievedAt: zod.string(),
+      notes: zod.string().nullish(),
+      beltName: zod.string(),
+      beltColor: zod.string(),
+    }),
+  ),
+});
+
+/**
  * @summary Unlock next belt level for a student (admin only)
  */
 export const AdminUnlockBeltBody = zod.object({

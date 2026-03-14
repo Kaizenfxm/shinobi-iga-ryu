@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminBeltHistoryResponse,
   AdminBeltUsersResponse,
   AdminUsersResponse,
   AuthResponse,
@@ -1097,6 +1098,98 @@ export function useAdminGetBeltUsers<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getAdminGetBeltUsersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get belt history for a student (admin only)
+ */
+export const getAdminGetBeltHistoryUrl = (userId: number) => {
+  return `/api/admin/belts/users/${userId}/history`;
+};
+
+export const adminGetBeltHistory = async (
+  userId: number,
+  options?: RequestInit,
+): Promise<AdminBeltHistoryResponse> => {
+  return customFetch<AdminBeltHistoryResponse>(
+    getAdminGetBeltHistoryUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminGetBeltHistoryQueryKey = (userId: number) => {
+  return [`/api/admin/belts/users/${userId}/history`] as const;
+};
+
+export const getAdminGetBeltHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetBeltHistory>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetBeltHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminGetBeltHistoryQueryKey(userId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetBeltHistory>>
+  > = ({ signal }) =>
+    adminGetBeltHistory(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetBeltHistory>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetBeltHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetBeltHistory>>
+>;
+export type AdminGetBeltHistoryQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get belt history for a student (admin only)
+ */
+
+export function useAdminGetBeltHistory<
+  TData = Awaited<ReturnType<typeof adminGetBeltHistory>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetBeltHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetBeltHistoryQueryOptions(userId, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
