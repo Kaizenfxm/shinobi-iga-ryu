@@ -108,17 +108,20 @@ export default function MartialArtsScreen() {
 
         <View style={styles.divider} />
 
-        {MARTIAL_ARTS.map((art, index) => (
-          <FlipCard
-            key={art.id}
-            title={art.title}
-            subtitle={art.subtitle}
-            backgroundImage={art.image}
-            index={index}
-            onKnowledgePress={() => handleKnowledge(art.id)}
-            onExercisesPress={() => handleExercises(art.id)}
-          />
-        ))}
+        <View style={styles.grid}>
+          {MARTIAL_ARTS.map((art, index) => (
+            <View key={art.id} style={styles.gridItem}>
+              <FlipCard
+                title={art.title}
+                subtitle={art.subtitle}
+                backgroundImage={art.image}
+                index={index}
+                onKnowledgePress={() => handleKnowledge(art.id)}
+                onExercisesPress={() => handleExercises(art.id)}
+              />
+            </View>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -133,10 +136,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 12,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  gridItem: {
+    width: "48.5%",
   },
   header: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     marginBottom: 8,
   },
   headerLogoRow: {
@@ -158,7 +169,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#1A1A1A",
-    marginHorizontal: 24,
+    marginHorizontal: 12,
     marginVertical: 16,
   },
 });

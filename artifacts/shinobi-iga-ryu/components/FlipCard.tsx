@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Dimensions,
   Platform,
   Image,
   ImageSourcePropType,
@@ -19,10 +18,6 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.85;
-const CARD_HEIGHT = 180;
-
 interface FlipCardProps {
   title: string;
   subtitle: string;
@@ -30,6 +25,7 @@ interface FlipCardProps {
   onKnowledgePress: () => void;
   onExercisesPress: () => void;
   index: number;
+  size?: number;
 }
 
 export default function FlipCard({
@@ -38,7 +34,6 @@ export default function FlipCard({
   backgroundImage,
   onKnowledgePress,
   onExercisesPress,
-  index,
 }: FlipCardProps) {
   const rotation = useSharedValue(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -88,8 +83,7 @@ export default function FlipCard({
             </View>
           </View>
           <View style={styles.tapHint}>
-            <Ionicons name="hand-left-outline" size={14} color="#555" />
-            <Text style={styles.tapHintText}>Toca para ver más</Text>
+            <Ionicons name="hand-left-outline" size={12} color="#555" />
           </View>
         </View>
       </Animated.View>
@@ -98,7 +92,7 @@ export default function FlipCard({
         <View style={styles.backContent}>
           <Text style={styles.backTitle}>{title}</Text>
           <View style={styles.backLine} />
-          <View style={styles.buttonsRow}>
+          <View style={styles.buttonsCol}>
             <Pressable
               onPress={(e) => {
                 e.stopPropagation?.();
@@ -112,7 +106,7 @@ export default function FlipCard({
                 pressed && styles.actionButtonPressed,
               ]}
             >
-              <Ionicons name="book-outline" size={24} color="#FFFFFF" />
+              <Ionicons name="book-outline" size={20} color="#FFFFFF" />
               <Text style={styles.actionButtonText}>Conocimiento</Text>
             </Pressable>
             <View style={styles.buttonDivider} />
@@ -129,7 +123,7 @@ export default function FlipCard({
                 pressed && styles.actionButtonPressed,
               ]}
             >
-              <Ionicons name="fitness-outline" size={24} color="#FFFFFF" />
+              <Ionicons name="fitness-outline" size={20} color="#FFFFFF" />
               <Text style={styles.actionButtonText}>Ejercicios</Text>
             </Pressable>
           </View>
@@ -141,15 +135,13 @@ export default function FlipCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    alignSelf: "center",
-    marginVertical: 8,
+    flex: 1,
+    aspectRatio: 1,
   },
   card: {
     width: "100%",
     height: "100%",
-    borderRadius: 16,
+    borderRadius: 14,
     position: "absolute",
     overflow: "hidden",
   },
@@ -177,87 +169,75 @@ const styles = StyleSheet.create({
   },
   frontOverlay: {
     flex: 1,
-    justifyContent: "center",
-    padding: 24,
+    justifyContent: "flex-end",
+    padding: 14,
   },
   frontContent: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
+    alignItems: "flex-end",
   },
   titleGroup: {
     flex: 1,
   },
   cardTitle: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 22,
+    fontSize: 16,
     color: "#FFFFFF",
     letterSpacing: 2,
   },
   cardSubtitle: {
     fontFamily: "NotoSerifJP_400Regular",
-    fontSize: 13,
+    fontSize: 10,
     color: "#888888",
     letterSpacing: 1,
     marginTop: 2,
   },
   tapHint: {
     position: "absolute",
-    bottom: 12,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  tapHintText: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
-    color: "#444444",
+    top: 10,
+    right: 10,
   },
   backContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: 14,
   },
   backTitle: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 18,
+    fontSize: 14,
     color: "#FFFFFF",
-    letterSpacing: 4,
-    marginBottom: 12,
+    letterSpacing: 3,
+    marginBottom: 8,
   },
   backLine: {
-    width: 40,
+    width: 30,
     height: 1,
     backgroundColor: "#333333",
-    marginBottom: 20,
+    marginBottom: 12,
   },
-  buttonsRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  buttonsCol: {
+    width: "100%",
     gap: 0,
   },
   actionButton: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 6,
+    paddingVertical: 10,
+    gap: 4,
   },
   actionButtonPressed: {
     opacity: 0.5,
   },
   actionButtonText: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 13,
+    fontSize: 11,
     color: "#FFFFFF",
     letterSpacing: 1,
   },
   buttonDivider: {
-    width: 1,
-    height: 40,
+    height: 1,
     backgroundColor: "#222222",
+    marginHorizontal: 16,
   },
 });
