@@ -402,8 +402,9 @@ function BeltsPanel({
                             await beltsApi.adminInitialize(u.id);
                             Alert.alert("Éxito", "Cinturones iniciales asignados");
                             onRefresh();
-                          } catch (e: any) {
-                            Alert.alert("Error", e.message || "Error al asignar cinturones");
+                          } catch (e: unknown) {
+                            const msg = e instanceof Error ? e.message : "Error al asignar cinturones";
+                            Alert.alert("Error", msg);
                           } finally {
                             setActionLoading(null);
                           }
