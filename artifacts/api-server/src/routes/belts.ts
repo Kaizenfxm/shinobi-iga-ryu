@@ -1210,7 +1210,7 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
   try {
     const { userId, discipline, beltDefinitionId, notes } = req.body as {
       userId: number;
-      discipline: string;
+      discipline: "ninjutsu" | "jiujitsu";
       beltDefinitionId: number;
       notes?: string;
     };
