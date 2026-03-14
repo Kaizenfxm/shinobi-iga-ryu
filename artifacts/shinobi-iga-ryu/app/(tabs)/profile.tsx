@@ -15,7 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type FightStats, type UserData } from "@/lib/api";
+import { profileApi, avatarApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData } from "@/lib/api";
+import FightRecord from "@/components/FightRecord";
 import * as ImagePicker from "expo-image-picker";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -155,147 +156,6 @@ const beltCardStyles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.5,
     textTransform: "uppercase",
-  },
-});
-
-function FightRecord({ stats }: { stats: FightStats }) {
-  return (
-    <View style={fightStyles.container}>
-      <View style={fightStyles.header}>
-        <View style={fightStyles.headerLine} />
-        <Text style={fightStyles.headerTitle}>戦 RECORD 戦</Text>
-        <View style={fightStyles.headerLine} />
-      </View>
-      <View style={fightStyles.recordRow}>
-        <View style={fightStyles.statItem}>
-          <Text style={[fightStyles.statNumber, { color: "#22C55E" }]}>
-            {stats.victorias}
-          </Text>
-          <Text style={fightStyles.statLabel}>V</Text>
-        </View>
-        <Text style={fightStyles.separator}>-</Text>
-        <View style={fightStyles.statItem}>
-          <Text style={[fightStyles.statNumber, { color: "#EF4444" }]}>
-            {stats.derrotas}
-          </Text>
-          <Text style={fightStyles.statLabel}>D</Text>
-        </View>
-        <Text style={fightStyles.separator}>-</Text>
-        <View style={fightStyles.statItem}>
-          <Text style={[fightStyles.statNumber, { color: "#F59E0B" }]}>
-            {stats.empates}
-          </Text>
-          <Text style={fightStyles.statLabel}>E</Text>
-        </View>
-      </View>
-      <View style={fightStyles.totalRow}>
-        <Text style={fightStyles.totalLabel}>{stats.total} peleas</Text>
-        <View style={fightStyles.winRateContainer}>
-          <View style={fightStyles.winRateBarBg}>
-            <View
-              style={[
-                fightStyles.winRateBarFill,
-                { width: `${stats.winPercentage}%` },
-              ]}
-            />
-          </View>
-          <Text style={fightStyles.winRateText}>{stats.winPercentage}%</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const fightStyles = StyleSheet.create({
-  container: {
-    width: "100%",
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  headerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#D4AF37",
-    opacity: 0.3,
-  },
-  headerTitle: {
-    fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 16,
-    color: "#D4AF37",
-    letterSpacing: 4,
-  },
-  recordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 16,
-  },
-  statItem: {
-    alignItems: "center",
-    minWidth: 50,
-  },
-  statNumber: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 36,
-    lineHeight: 40,
-  },
-  statLabel: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 12,
-    color: "#666",
-    letterSpacing: 2,
-    marginTop: 4,
-  },
-  separator: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 28,
-    color: "#333",
-    marginTop: -8,
-  },
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    gap: 12,
-  },
-  totalLabel: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 12,
-    color: "#555",
-  },
-  winRateContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  winRateBarBg: {
-    flex: 1,
-    height: 4,
-    backgroundColor: "#1A1A1A",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  winRateBarFill: {
-    height: "100%",
-    backgroundColor: "#D4AF37",
-    borderRadius: 2,
-  },
-  winRateText: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 13,
-    color: "#D4AF37",
   },
 });
 
@@ -587,12 +447,6 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
-          {data.phone ? (
-            <View style={styles.phoneRow}>
-              <Ionicons name="call-outline" size={14} color="#888" />
-              <Text style={styles.phoneText}>{data.phone}</Text>
-            </View>
-          ) : null}
           </View>
 
           {hasBelts && (
@@ -626,13 +480,6 @@ export default function ProfileScreen() {
           style={styles.actionsSection}
           onLayout={(e) => { actionsSectionYRef.current = e.nativeEvent.layout.y; }}
         >
-          {!editing && (
-            <Pressable style={styles.editProfileBtn} onPress={handleEditOpen}>
-              <Ionicons name="pencil-outline" size={15} color="#D4AF37" />
-              <Text style={styles.editProfileBtnText}>Editar Perfil</Text>
-            </Pressable>
-          )}
-
           {editing && (
             <View style={styles.editForm}>
               <Text style={styles.editFormTitle}>Editar Perfil</Text>
@@ -734,10 +581,6 @@ const styles = StyleSheet.create({
     left: 16,
     width: 38,
     height: 38,
-    borderRadius: 2,
-    backgroundColor: "#0D0A00",
-    borderWidth: 1,
-    borderColor: "#2a2000",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
@@ -938,43 +781,6 @@ const styles = StyleSheet.create({
   fighterToggleTextActive: {
     color: "#000000",
   },
-  editProfileBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "#D4AF37",
-    borderTopWidth: 2,
-    borderTopColor: "#D4AF37",
-    borderRadius: 2,
-    marginBottom: 10,
-    backgroundColor: "#0A0800",
-  },
-  editProfileBtnText: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 13,
-    color: "#D4AF37",
-    letterSpacing: 2,
-  },
-  shareButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    backgroundColor: "#0A0800",
-    borderWidth: 1,
-    borderColor: "#332A00",
-    borderRadius: 12,
-  },
-  shareButtonText: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 14,
-    color: "#D4AF37",
-    letterSpacing: 1,
-  },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1012,18 +818,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#666666",
     textAlign: "center",
-  },
-  phoneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 8,
-  },
-  phoneText: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 13,
-    color: "#888",
-    letterSpacing: 0.5,
   },
   changePhotoButton: {
     flexDirection: "row",
