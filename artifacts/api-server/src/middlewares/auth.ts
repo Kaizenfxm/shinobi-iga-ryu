@@ -1,4 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
+import { db, userRolesTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 
 declare module "express-session" {
   interface SessionData {
@@ -21,9 +23,6 @@ async function checkRole(req: Request, res: Response, next: NextFunction, role: 
     res.status(401).json({ error: "No autorizado" });
     return;
   }
-
-  const { db, userRolesTable } = await import("@workspace/db");
-  const { eq, and } = await import("drizzle-orm");
 
   const found = await db
     .select()

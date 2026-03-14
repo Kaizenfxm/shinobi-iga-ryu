@@ -6,4 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adminUsersResponse";
+export * from "./authResponse";
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./loginRequest";
+export * from "./profesorStudentsResponse";
+export * from "./registerRequest";
+export * from "./successResponse";
+export * from "./updateRolesRequest";
+export * from "./updateRolesRequestRolesItem";
+export * from "./updateRolesResponse";
+export * from "./updateSubscriptionRequest";
+export * from "./updateSubscriptionRequestSubscriptionLevel";
+export * from "./updateSubscriptionResponse";
+export * from "./userData";
+export * from "./userDataRolesItem";
+export * from "./userDataSubscriptionLevel";

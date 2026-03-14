@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, userRolesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { requireProfesor } from "../middlewares/auth";
 
 const profesorRouter = Router();
@@ -22,8 +22,6 @@ profesorRouter.get("/profesor/alumnos", async (_req, res) => {
       res.json({ students: [] });
       return;
     }
-
-    const { inArray } = await import("drizzle-orm");
 
     const students = await db
       .select({
