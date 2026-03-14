@@ -509,6 +509,18 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={[styles.topShareBtn, { top: (isWeb ? 67 : insets.top) + 10 }]}
+        onPress={handleShare}
+        disabled={sharing}
+      >
+        {sharing ? (
+          <ActivityIndicator size="small" color="#D4AF37" />
+        ) : (
+          <Ionicons name="share-social-outline" size={20} color="#D4AF37" />
+        )}
+      </Pressable>
+
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
@@ -702,21 +714,6 @@ export default function ProfileScreen() {
             )}
           </Pressable>
 
-          <Pressable
-            style={styles.shareButton}
-            onPress={handleShare}
-            disabled={sharing}
-          >
-            {sharing ? (
-              <ActivityIndicator size="small" color="#D4AF37" />
-            ) : (
-              <>
-                <Ionicons name="share-outline" size={18} color="#D4AF37" />
-                <Text style={styles.shareButtonText}>Compartir Perfil</Text>
-              </>
-            )}
-          </Pressable>
-
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#FF4444" />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -731,6 +728,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000000",
+  },
+  topShareBtn: {
+    position: "absolute",
+    left: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 2,
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#2a2000",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
   },
   centerContent: {
     justifyContent: "center",
