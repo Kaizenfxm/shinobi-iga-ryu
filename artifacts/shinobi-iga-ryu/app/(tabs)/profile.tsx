@@ -170,6 +170,7 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editSedes, setEditSedes] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [togglingFighter, setTogglingFighter] = useState(false);
@@ -223,9 +224,16 @@ export default function ProfileScreen() {
     }
   };
 
+  const toggleEditSede = (sede: string) => {
+    setEditSedes((prev) =>
+      prev.includes(sede) ? prev.filter((s) => s !== sede) : [...prev, sede]
+    );
+  };
+
   const handleEditOpen = () => {
     setEditName(profile?.displayName ?? user?.displayName ?? "");
     setEditPhone(profile?.phone ?? "");
+    setEditSedes(profile?.sedes ?? []);
     setEditing(true);
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: actionsSectionYRef.current, animated: true });
@@ -275,14 +283,21 @@ export default function ProfileScreen() {
       Alert.alert("Error", "El nombre no puede estar vacío");
       return;
     }
+    if (editSedes.length === 0) {
+      Alert.alert("Error", "Selecciona al menos una sede");
+      return;
+    }
     setSaving(true);
     try {
       await profileApi.updateProfile({
         displayName: editName.trim(),
         phone: editPhone.trim() || null,
+        sedes: editSedes,
       });
       setProfile((prev) =>
-        prev ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null } : prev
+        prev
+          ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null, sedes: editSedes }
+          : prev
       );
       setEditing(false);
     } catch {
@@ -531,6 +546,23 @@ export default function ProfileScreen() {
                 placeholderTextColor="#444"
                 keyboardType="phone-pad"
               />
+
+              <Text style={styles.editLabel}>Sedes</Text>
+              <View style={styles.sedeRow}>
+                {(["bogota", "chia"] as const).map((s) => (
+                  <Pressable
+                    key={s}
+                    style={[styles.sedeChip, editSedes.includes(s) && styles.sedeChipSelected]}
+                    onPress={() => toggleEditSede(s)}
+                    disabled={saving}
+                  >
+                    <Text style={[styles.sedeChipText, editSedes.includes(s) && styles.sedeChipTextSelected]}>
+                      {s === "bogota" ? "Bogotá" : "Chía"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
               <View style={styles.editActions}>
                 <Pressable
                   style={styles.editCancelButton}
@@ -843,6 +875,32 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 14,
+  },
+  sedeRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  sedeChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    alignItems: "center",
+    backgroundColor: "#0A0A0A",
+  },
+  sedeChipSelected: {
+    borderColor: "#D4AF37",
+    backgroundColor: "#1A1600",
+  },
+  sedeChipText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#555",
+  },
+  sedeChipTextSelected: {
+    color: "#D4AF37",
   },
   editActions: {
     flexDirection: "row",

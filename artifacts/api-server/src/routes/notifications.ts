@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, notificationsTable, notificationReadsTable, usersTable } from "@workspace/db";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const notificationsRouter = Router();
