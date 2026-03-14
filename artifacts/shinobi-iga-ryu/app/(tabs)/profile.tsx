@@ -440,12 +440,26 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               ))}
-              {data.isFighter && (
-                <View style={styles.fighterPill}>
-                  <MaterialCommunityIcons name="sword-cross" size={12} color="#D4AF37" />
-                  <Text style={styles.fighterPillText}>Peleador</Text>
-                </View>
-              )}
+              <Pressable
+                style={[styles.fighterPill, !data.isFighter && styles.fighterPillInactive]}
+                onPress={handleToggleFighter}
+                disabled={togglingFighter}
+              >
+                {togglingFighter ? (
+                  <ActivityIndicator size="small" color={data.isFighter ? "#D4AF37" : "#555"} />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons
+                      name="sword-cross"
+                      size={12}
+                      color={data.isFighter ? "#D4AF37" : "#555"}
+                    />
+                    <Text style={[styles.fighterPillText, !data.isFighter && styles.fighterPillTextInactive]}>
+                      {data.isFighter ? "Peleador" : "Entrenamiento"}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
             </View>
           </View>
 
@@ -539,27 +553,6 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
-
-          <Pressable
-            style={[styles.fighterToggleButton, data.isFighter && styles.fighterToggleButtonActive]}
-            onPress={handleToggleFighter}
-            disabled={togglingFighter}
-          >
-            {togglingFighter ? (
-              <ActivityIndicator size="small" color={data.isFighter ? "#000" : "#D4AF37"} />
-            ) : (
-              <>
-                <MaterialCommunityIcons
-                  name="sword-cross"
-                  size={16}
-                  color={data.isFighter ? "#000" : "#D4AF37"}
-                />
-                <Text style={[styles.fighterToggleText, data.isFighter && styles.fighterToggleTextActive]}>
-                  {data.isFighter ? "Desactivar modo peleador" : "Activar modo peleador"}
-                </Text>
-              </>
-            )}
-          </Pressable>
 
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#FF4444" />
@@ -702,11 +695,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 12,
   },
+  fighterPillInactive: {
+    backgroundColor: "#111",
+    borderColor: "#2A2A2A",
+  },
   fighterPillText: {
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 11,
     color: "#D4AF37",
     letterSpacing: 1,
+  },
+  fighterPillTextInactive: {
+    color: "#555",
   },
   beltsSection: {
     marginBottom: 20,
@@ -755,31 +755,6 @@ const styles = StyleSheet.create({
   actionsSection: {
     marginTop: 24,
     gap: 12,
-  },
-  fighterToggleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    backgroundColor: "#0A0A0A",
-    borderWidth: 1,
-    borderColor: "#D4AF3750",
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  fighterToggleButtonActive: {
-    backgroundColor: "#D4AF37",
-    borderColor: "#D4AF37",
-  },
-  fighterToggleText: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 13,
-    color: "#D4AF37",
-    letterSpacing: 1,
-  },
-  fighterToggleTextActive: {
-    color: "#000000",
   },
   logoutButton: {
     flexDirection: "row",
