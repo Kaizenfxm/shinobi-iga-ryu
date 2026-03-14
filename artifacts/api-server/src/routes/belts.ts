@@ -296,17 +296,19 @@ beltsRouter.post("/admin/belts/unlock", requireAdmin, async (req, res) => {
 
     const adminId = req.session.userId!;
 
-    await db
-      .update(studentBeltsTable)
-      .set({ nextUnlocked: true, unlockedAt: new Date() })
-      .where(eq(studentBeltsTable.id, studentBelt.id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(studentBeltsTable)
+        .set({ nextUnlocked: true, unlockedAt: new Date() })
+        .where(eq(studentBeltsTable.id, studentBelt.id));
 
-    await db.insert(studentBeltUnlocksTable).values({
-      userId: parsedUserId,
-      discipline: discipline as typeof validDisciplines[number],
-      targetBeltId: nextBelt[0].id,
-      unlockedBy: adminId,
-      notes: `Desbloqueado nivel ${nextBelt[0].name}`,
+      await tx.insert(studentBeltUnlocksTable).values({
+        userId: parsedUserId,
+        discipline: discipline as typeof validDisciplines[number],
+        targetBeltId: nextBelt[0].id,
+        unlockedBy: adminId,
+        notes: `Desbloqueado nivel ${nextBelt[0].name}`,
+      });
     });
 
     res.json({ success: true, nextBelt: nextBelt[0] });
@@ -382,22 +384,24 @@ beltsRouter.post("/admin/belts/promote", requireAdmin, async (req, res) => {
 
     const adminId = req.session.userId!;
 
-    await db
-      .update(studentBeltsTable)
-      .set({
-        currentBeltId: nextBelt.id,
-        nextUnlocked: false,
-        unlockedAt: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(studentBeltsTable.id, studentBelt.id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(studentBeltsTable)
+        .set({
+          currentBeltId: nextBelt.id,
+          nextUnlocked: false,
+          unlockedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(studentBeltsTable.id, studentBelt.id));
 
-    await db.insert(beltHistoryTable).values({
-      userId: parsedUserId,
-      discipline: discipline as typeof validDisciplines[number],
-      beltId: nextBelt.id,
-      promotedBy: adminId,
-      notes: `Promovido a ${nextBelt.name}`,
+      await tx.insert(beltHistoryTable).values({
+        userId: parsedUserId,
+        discipline: discipline as typeof validDisciplines[number],
+        beltId: nextBelt.id,
+        promotedBy: adminId,
+        notes: `Promovido a ${nextBelt.name}`,
+      });
     });
 
     res.json({
@@ -433,50 +437,52 @@ beltsRouter.post("/admin/belts/initialize", requireAdmin, async (req, res) => {
     const disciplines = ["ninjutsu", "jiujitsu"] as const;
     const initialized: string[] = [];
 
-    for (const discipline of disciplines) {
-      const existing = await db
-        .select()
-        .from(studentBeltsTable)
-        .where(
-          and(
-            eq(studentBeltsTable.userId, parsedUserId),
-            eq(studentBeltsTable.discipline, discipline)
-          )
-        )
-        .limit(1);
-
-      if (existing.length === 0) {
-        const [whiteBelt] = await db
+    await db.transaction(async (tx) => {
+      for (const discipline of disciplines) {
+        const existing = await tx
           .select()
-          .from(beltDefinitionsTable)
+          .from(studentBeltsTable)
           .where(
             and(
-              eq(beltDefinitionsTable.discipline, discipline),
-              eq(beltDefinitionsTable.orderIndex, 0)
+              eq(studentBeltsTable.userId, parsedUserId),
+              eq(studentBeltsTable.discipline, discipline)
             )
           )
           .limit(1);
 
-        if (whiteBelt) {
-          await db.insert(studentBeltsTable).values({
-            userId: parsedUserId,
-            discipline,
-            currentBeltId: whiteBelt.id,
-            nextUnlocked: false,
-          });
+        if (existing.length === 0) {
+          const [whiteBelt] = await tx
+            .select()
+            .from(beltDefinitionsTable)
+            .where(
+              and(
+                eq(beltDefinitionsTable.discipline, discipline),
+                eq(beltDefinitionsTable.orderIndex, 0)
+              )
+            )
+            .limit(1);
 
-          await db.insert(beltHistoryTable).values({
-            userId: parsedUserId,
-            discipline,
-            beltId: whiteBelt.id,
-            promotedBy: req.session.userId!,
-            notes: "Cinturón inicial asignado por administrador",
-          });
+          if (whiteBelt) {
+            await tx.insert(studentBeltsTable).values({
+              userId: parsedUserId,
+              discipline,
+              currentBeltId: whiteBelt.id,
+              nextUnlocked: false,
+            });
 
-          initialized.push(discipline);
+            await tx.insert(beltHistoryTable).values({
+              userId: parsedUserId,
+              discipline,
+              beltId: whiteBelt.id,
+              promotedBy: req.session.userId!,
+              notes: "Cinturón inicial asignado por administrador",
+            });
+
+            initialized.push(discipline);
+          }
         }
       }
-    }
+    });
 
     res.json({ success: true, initialized });
   } catch (error) {
