@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { beltsApi, type MyBelt, type BeltHistoryItem } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DISCIPLINE_LABELS: Record<string, string> = {
   ninjutsu: "NINJUTSU",
@@ -230,10 +232,18 @@ function HistorySection({ history }: { history: BeltHistoryItem[] }) {
 export default function BeltsScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [belts, setBelts] = useState<MyBelt[]>([]);
   const [history, setHistory] = useState<BeltHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/auth");
+    }
+  }, [isAuthenticated, authLoading]);
 
   const fetchBelts = useCallback(async () => {
     try {
@@ -246,8 +256,10 @@ export default function BeltsScreen() {
   }, []);
 
   useEffect(() => {
-    fetchBelts().finally(() => setLoading(false));
-  }, [fetchBelts]);
+    if (isAuthenticated) {
+      fetchBelts().finally(() => setLoading(false));
+    }
+  }, [fetchBelts, isAuthenticated]);
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -10,9 +10,10 @@ import {
   Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 import FlipCard from "@/components/FlipCard";
-import Colors from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MartialArt {
   id: string;
@@ -63,20 +64,34 @@ const MARTIAL_ARTS: MartialArt[] = [
 export default function MartialArtsScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  const withAuth = (action: () => void) => {
+    if (!isAuthenticated) {
+      router.push("/auth");
+      return;
+    }
+    action();
+  };
 
   const handleKnowledge = (artId: string) => {
-    Alert.alert(
-      "Conocimiento",
-      `Próximamente: contenido de ${artId}`,
-      [{ text: "OK" }]
+    withAuth(() =>
+      Alert.alert(
+        "Conocimiento",
+        `Próximamente: contenido de ${artId}`,
+        [{ text: "OK" }]
+      )
     );
   };
 
   const handleExercises = (artId: string) => {
-    Alert.alert(
-      "Ejercicios",
-      `Próximamente: ejercicios de ${artId}`,
-      [{ text: "OK" }]
+    withAuth(() =>
+      Alert.alert(
+        "Ejercicios",
+        `Próximamente: ejercicios de ${artId}`,
+        [{ text: "OK" }]
+      )
     );
   };
 

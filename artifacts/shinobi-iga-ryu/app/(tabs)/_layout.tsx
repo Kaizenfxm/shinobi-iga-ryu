@@ -1,5 +1,5 @@
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
@@ -7,8 +7,16 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function TabLayout() {
   const { hasRole, isAuthenticated, user } = useAuth();
+  const router = useRouter();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
+
+  const requireAuth = (e: { preventDefault: () => void }) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      router.push("/auth");
+    }
+  };
 
   const showAdmin = isAuthenticated && hasRole("admin");
   const showAlumnos = isAuthenticated && hasRole("profesor");
@@ -79,6 +87,7 @@ export default function TabLayout() {
             <MaterialCommunityIcons name="karate" size={22} color={color} />
           ),
         }}
+        listeners={{ tabPress: requireAuth }}
       />
       <Tabs.Screen
         name="fights"
@@ -98,6 +107,7 @@ export default function TabLayout() {
             <Ionicons name="person-outline" size={22} color={color} />
           ),
         }}
+        listeners={{ tabPress: requireAuth }}
       />
     </Tabs>
   );
