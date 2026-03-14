@@ -71,6 +71,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="belts"
+        options={{
+          title: "Cinturones",
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="karate" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Perfil",

@@ -6,11 +6,25 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adminBeltUserData";
+export * from "./adminBeltUserDataBeltsItem";
+export * from "./adminBeltUsersResponse";
 export * from "./adminUsersResponse";
 export * from "./authResponse";
+export * from "./beltActionRequest";
+export * from "./beltActionRequestDiscipline";
+export * from "./beltDefinitionData";
+export * from "./beltDefinitionDataDiscipline";
+export * from "./beltDefinitionsResponse";
+export * from "./beltHistoryData";
+export * from "./beltPromoteResponse";
+export * from "./beltRequirementData";
+export * from "./beltUnlockResponse";
 export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./loginRequest";
+export * from "./myBeltData";
+export * from "./myBeltsResponse";
 export * from "./profesorAlumnoIdsResponse";
 export * from "./profesorStudentsResponse";
 export * from "./registerRequest";

@@ -118,3 +118,96 @@ export interface UpdateProfesorAlumnosResponse {
 export interface ProfesorStudentsResponse {
   students: UserData[];
 }
+
+export type BeltDefinitionDataDiscipline =
+  (typeof BeltDefinitionDataDiscipline)[keyof typeof BeltDefinitionDataDiscipline];
+
+export const BeltDefinitionDataDiscipline = {
+  ninjutsu: "ninjutsu",
+  jiujitsu: "jiujitsu",
+} as const;
+
+export interface BeltDefinitionData {
+  id: number;
+  name: string;
+  color: string;
+  orderIndex: number;
+  description?: string | null;
+  discipline?: BeltDefinitionDataDiscipline;
+}
+
+export interface BeltDefinitionsResponse {
+  definitions: BeltDefinitionData[];
+}
+
+export interface BeltRequirementData {
+  id: number;
+  title: string;
+  description?: string | null;
+  orderIndex: number;
+}
+
+export interface MyBeltData {
+  discipline: string;
+  currentBelt: BeltDefinitionData;
+  nextUnlocked: boolean;
+  unlockedAt?: string | null;
+  nextBelt?: BeltDefinitionData | null;
+  nextRequirements: BeltRequirementData[];
+}
+
+export interface BeltHistoryData {
+  id: number;
+  discipline: string;
+  beltId: number;
+  achievedAt: string;
+  notes?: string | null;
+  beltName: string;
+  beltColor: string;
+}
+
+export interface MyBeltsResponse {
+  belts: MyBeltData[];
+  history: BeltHistoryData[];
+}
+
+export type AdminBeltUserDataBeltsItem = {
+  discipline?: string;
+  currentBelt?: BeltDefinitionData;
+  nextUnlocked?: boolean;
+};
+
+export interface AdminBeltUserData {
+  id: number;
+  displayName: string;
+  email: string;
+  roles: string[];
+  belts: AdminBeltUserDataBeltsItem[];
+}
+
+export interface AdminBeltUsersResponse {
+  users: AdminBeltUserData[];
+}
+
+export type BeltActionRequestDiscipline =
+  (typeof BeltActionRequestDiscipline)[keyof typeof BeltActionRequestDiscipline];
+
+export const BeltActionRequestDiscipline = {
+  ninjutsu: "ninjutsu",
+  jiujitsu: "jiujitsu",
+} as const;
+
+export interface BeltActionRequest {
+  userId: number;
+  discipline: BeltActionRequestDiscipline;
+}
+
+export interface BeltUnlockResponse {
+  success: boolean;
+  nextBelt: BeltDefinitionData;
+}
+
+export interface BeltPromoteResponse {
+  success: boolean;
+  newBelt: BeltDefinitionData;
+}
