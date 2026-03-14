@@ -83,6 +83,7 @@ export interface UserData {
   subscriptionLevel: string;
   phone: string | null;
   isFighter: boolean;
+  sedes: string[];
   roles: string[];
 }
 
@@ -91,7 +92,7 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  register: (data: { email: string; password: string; displayName: string; phone?: string }) =>
+  register: (data: { email: string; password: string; displayName: string; phone?: string; sedes?: string[] }) =>
     apiFetch<AuthResponse>("/auth/register", { method: "POST", body: data }),
 
   login: (data: { email: string; password: string }) =>
@@ -113,6 +114,7 @@ export const adminApi = {
     roles: string[];
     subscriptionLevel?: string;
     isFighter?: boolean;
+    sedes?: string[];
   }) => apiFetch<{ user: UserData & { roles: string[] } }>("/admin/users", { method: "POST", body: data }),
 
   updateUser: (userId: number, data: {
@@ -121,6 +123,7 @@ export const adminApi = {
     phone?: string;
     isFighter?: boolean;
     password?: string;
+    sedes?: string[];
   }) => apiFetch<{ user: UserData }>(`/admin/users/${userId}`, { method: "PUT", body: data }),
 
   deleteUser: (userId: number) =>
@@ -435,6 +438,7 @@ export interface NotificationData {
   id: number;
   title: string;
   body: string;
+  target: string;
   createdAt: string;
   createdByName: string | null;
   readAt: string | null;
@@ -444,10 +448,10 @@ export const notificationsApi = {
   getAll: () =>
     apiFetch<{ notifications: NotificationData[]; unreadCount: number }>("/notifications"),
 
-  send: (title: string, body: string) =>
+  send: (title: string, body: string, target: string) =>
     apiFetch<{ notification: NotificationData }>("/notifications", {
       method: "POST",
-      body: { title, body },
+      body: { title, body, target },
     }),
 
   markAllRead: () =>

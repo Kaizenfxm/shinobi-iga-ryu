@@ -1,19 +1,39 @@
 import { Router } from "express";
 import { db, notificationsTable, notificationReadsTable, usersTable } from "@workspace/db";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const notificationsRouter = Router();
 
+async function getUserTargetInfo(userId: number) {
+  const [user] = await db
+    .select({ isFighter: usersTable.isFighter, sedes: usersTable.sedes })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  return user ?? { isFighter: false, sedes: [] as string[] };
+}
+
+function buildTargetCondition(isFighter: boolean, sedes: string[]) {
+  const allowedTargets = ["todas"];
+  if (isFighter) allowedTargets.push("peleadores");
+  if (sedes.includes("bogota")) allowedTargets.push("bogota");
+  if (sedes.includes("chia")) allowedTargets.push("chia");
+  return inArray(notificationsTable.target, allowedTargets);
+}
+
 notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const { isFighter, sedes } = await getUserTargetInfo(userId);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[]);
 
     const notifications = await db
       .select({
         id: notificationsTable.id,
         title: notificationsTable.title,
         body: notificationsTable.body,
+        target: notificationsTable.target,
         createdAt: notificationsTable.createdAt,
         createdByName: usersTable.displayName,
         readAt: notificationReadsTable.readAt,
@@ -27,6 +47,7 @@ notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
           eq(notificationReadsTable.userId, userId)
         )
       )
+      .where(targetCond)
       .orderBy(desc(notificationsTable.createdAt));
 
     const unreadCount = notifications.filter((n) => !n.readAt).length;
@@ -41,18 +62,22 @@ notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
 notificationsRouter.post("/notifications", requireAdmin, async (req, res) => {
   try {
     const adminId = req.session.userId!;
-    const { title, body } = req.body as { title?: string; body?: string };
+    const { title, body, target } = req.body as { title?: string; body?: string; target?: string };
 
     if (!title?.trim() || !body?.trim()) {
       res.status(400).json({ error: "Título y mensaje son requeridos" });
       return;
     }
 
+    const validTargets = ["todas", "bogota", "chia", "peleadores"];
+    const resolvedTarget = validTargets.includes(target ?? "") ? target! : "todas";
+
     const [notification] = await db
       .insert(notificationsTable)
       .values({
         title: title.trim(),
         body: body.trim(),
+        target: resolvedTarget,
         createdByUserId: adminId,
       })
       .returning();
@@ -67,17 +92,20 @@ notificationsRouter.post("/notifications", requireAdmin, async (req, res) => {
 notificationsRouter.post("/notifications/read-all", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const { isFighter, sedes } = await getUserTargetInfo(userId);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[]);
 
-    const allNotifs = await db
+    const relevantNotifs = await db
       .select({ id: notificationsTable.id })
-      .from(notificationsTable);
+      .from(notificationsTable)
+      .where(targetCond);
 
-    if (allNotifs.length === 0) {
+    if (relevantNotifs.length === 0) {
       res.json({ ok: true });
       return;
     }
 
-    const notifIds = allNotifs.map((n) => n.id);
+    const notifIds = relevantNotifs.map((n) => n.id);
 
     const alreadyRead = await db
       .select({ notificationId: notificationReadsTable.notificationId })

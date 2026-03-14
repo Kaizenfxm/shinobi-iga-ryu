@@ -28,6 +28,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
+  const [sedes, setSedes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const mottoOpacity = useRef(new Animated.Value(1)).current;
@@ -79,6 +80,12 @@ export default function AuthScreen() {
     }
   };
 
+  const toggleSede = (sede: string) => {
+    setSedes((prev) =>
+      prev.includes(sede) ? prev.filter((s) => s !== sede) : [...prev, sede]
+    );
+  };
+
   const handleRegister = async () => {
     if (!email.trim() || !password || !displayName.trim()) {
       setError("Completa todos los campos");
@@ -88,10 +95,14 @@ export default function AuthScreen() {
       setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
+    if (sedes.length === 0) {
+      setError("Selecciona al menos una sede");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      await register(email.trim(), password, displayName.trim(), phone.trim() || undefined);
+      await register(email.trim(), password, displayName.trim(), phone.trim() || undefined, sedes);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
@@ -199,6 +210,24 @@ export default function AuthScreen() {
               keyboardType="phone-pad"
               autoComplete="tel"
             />
+          </View>
+        )}
+        {mode === "register" && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Sede *</Text>
+            <View style={styles.sedeRow}>
+              {(["bogota", "chia"] as const).map((s) => (
+                <Pressable
+                  key={s}
+                  style={[styles.sedeChip, sedes.includes(s) && styles.sedeChipSelected]}
+                  onPress={() => toggleSede(s)}
+                >
+                  <Text style={[styles.sedeChipText, sedes.includes(s) && styles.sedeChipTextSelected]}>
+                    {s === "bogota" ? "Bogotá" : "Chía"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
 
@@ -416,5 +445,31 @@ const styles = StyleSheet.create({
     color: "#666666",
     textAlign: "center",
     marginTop: 8,
+  },
+  sedeRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  sedeChip: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#333333",
+    borderRadius: 2,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: "#111111",
+  },
+  sedeChipSelected: {
+    borderColor: "#D4AF37",
+    backgroundColor: "#1A1500",
+  },
+  sedeChipText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 14,
+    color: "#666666",
+    letterSpacing: 1,
+  },
+  sedeChipTextSelected: {
+    color: "#D4AF37",
   },
 });

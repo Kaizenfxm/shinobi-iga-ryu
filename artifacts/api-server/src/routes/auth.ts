@@ -8,7 +8,7 @@ const authRouter = Router();
 
 authRouter.post("/auth/register", async (req, res) => {
   try {
-    const { email, password, displayName, phone } = req.body;
+    const { email, password, displayName, phone, sedes } = req.body;
 
     if (!email || !password || !displayName) {
       res.status(400).json({ error: "Email, contraseña y nombre son requeridos" });
@@ -33,6 +33,11 @@ authRouter.post("/auth/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    const validSedes = ["bogota", "chia"];
+    const sedesArray = Array.isArray(sedes)
+      ? sedes.filter((s: string) => validSedes.includes(s))
+      : [];
+
     const [user] = await db
       .insert(usersTable)
       .values({
@@ -40,6 +45,7 @@ authRouter.post("/auth/register", async (req, res) => {
         passwordHash,
         displayName: displayName.trim(),
         phone: phone?.trim() || null,
+        sedes: sedesArray,
       })
       .returning({
         id: usersTable.id,
@@ -49,6 +55,7 @@ authRouter.post("/auth/register", async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,
         isFighter: usersTable.isFighter,
+        sedes: usersTable.sedes,
       });
 
     await db.insert(userRolesTable).values({
@@ -149,6 +156,7 @@ authRouter.post("/auth/login", async (req, res) => {
         subscriptionLevel: user.subscriptionLevel,
         phone: user.phone,
         isFighter: user.isFighter,
+        sedes: user.sedes,
         roles: roles.map((r) => r.role),
       },
     });
@@ -169,6 +177,7 @@ authRouter.get("/auth/me", requireAuth, async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,
         isFighter: usersTable.isFighter,
+        sedes: usersTable.sedes,
       })
       .from(usersTable)
       .where(eq(usersTable.id, req.session.userId!))

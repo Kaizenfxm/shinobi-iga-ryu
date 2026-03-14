@@ -2,6 +2,9 @@ import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export const SEDES = ["bogota", "chia"] as const;
+export type Sede = typeof SEDES[number];
+
 export const roleEnum = pgEnum("user_role", ["admin", "profesor", "alumno"]);
 export const subscriptionLevelEnum = pgEnum("subscription_level", ["basico", "medio", "avanzado", "personalizado"]);
 
@@ -14,6 +17,7 @@ export const usersTable = pgTable("users", {
   subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico").notNull(),
   phone: varchar("phone", { length: 50 }),
   isFighter: boolean("is_fighter").default(false).notNull(),
+  sedes: text("sedes").array().notNull().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

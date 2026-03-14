@@ -16,6 +16,7 @@ async function fetchUsersWithRoles() {
       subscriptionLevel: usersTable.subscriptionLevel,
       isFighter: usersTable.isFighter,
       phone: usersTable.phone,
+      sedes: usersTable.sedes,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -47,7 +48,7 @@ adminRouter.get("/admin/users", requireAdmin, async (_req, res) => {
 
 adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
   try {
-    const { email, password, displayName, phone, roles, subscriptionLevel, isFighter } = req.body;
+    const { email, password, displayName, phone, roles, subscriptionLevel, isFighter, sedes } = req.body;
 
     if (!email || !password || !displayName) {
       res.status(400).json({ error: "Email, contraseña y nombre son obligatorios" });
@@ -79,6 +80,11 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    const validSedes = ["bogota", "chia"];
+    const sedesArray = Array.isArray(sedes)
+      ? sedes.filter((s: string) => validSedes.includes(s))
+      : [];
+
     const [newUser] = await db
       .insert(usersTable)
       .values({
@@ -88,6 +94,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         phone: phone?.trim() || null,
         subscriptionLevel: subLevel,
         isFighter: isFighter === true,
+        sedes: sedesArray,
       })
       .returning({
         id: usersTable.id,
@@ -97,6 +104,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         isFighter: usersTable.isFighter,
         phone: usersTable.phone,
+        sedes: usersTable.sedes,
       });
 
     for (const role of userRoles) {
@@ -143,7 +151,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { displayName, email, phone, isFighter, password } = req.body;
+    const { displayName, email, phone, isFighter, password, sedes } = req.body;
 
     const [existing] = await db
       .select({ id: usersTable.id })
@@ -160,10 +168,12 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
       updatedAt: new Date(),
     };
 
+    const validSedes = ["bogota", "chia"];
     if (displayName !== undefined && displayName.trim()) updates.displayName = displayName.trim();
     if (email !== undefined && email.trim()) updates.email = email.toLowerCase().trim();
     if (phone !== undefined) updates.phone = phone?.trim() || null;
     if (isFighter !== undefined) updates.isFighter = Boolean(isFighter);
+    if (Array.isArray(sedes)) updates.sedes = sedes.filter((s: string) => validSedes.includes(s));
     if (password !== undefined && password.length >= 6) {
       updates.passwordHash = await bcrypt.hash(password, 12);
     }
@@ -180,6 +190,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         isFighter: usersTable.isFighter,
         phone: usersTable.phone,
+        sedes: usersTable.sedes,
       });
 
     res.json({ user: updated });
