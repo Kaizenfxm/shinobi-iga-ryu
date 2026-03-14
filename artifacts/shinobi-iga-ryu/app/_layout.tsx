@@ -22,7 +22,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -31,6 +31,8 @@ import { StatusBar } from "expo-status-bar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SplashAnimation from "@/components/SplashAnimation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationBell from "@/components/NotificationBell";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -109,11 +111,16 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AuthProvider>
-                <StatusBar style="light" />
-                <RootLayoutNav />
+                <NotificationProvider>
+                  <StatusBar style="light" />
+                  <View style={{ flex: 1 }}>
+                    <RootLayoutNav />
+                    <NotificationBell />
+                  </View>
+                </NotificationProvider>
               </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
