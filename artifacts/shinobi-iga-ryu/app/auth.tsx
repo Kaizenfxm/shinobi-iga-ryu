@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
+  Animated,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,6 +29,34 @@ export default function AuthScreen() {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const mottoOpacity = useRef(new Animated.Value(1)).current;
+  const [mottoText, setMottoText] = useState("忍者は永遠に");
+
+  useEffect(() => {
+    if (mode === "welcome") {
+      setMottoText("忍者は永遠に");
+      mottoOpacity.setValue(1);
+      
+      const timer = setTimeout(() => {
+        Animated.sequence([
+          Animated.timing(mottoOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(mottoOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+            delay: 200,
+          }),
+        ]).start();
+        setMottoText("Ninjas por siempre");
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [mode, mottoOpacity]);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -77,11 +107,15 @@ export default function AuthScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.welcomeContent}>
           <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="ninja" size={64} color="#FFFFFF" />
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.welcomeTitle}>SHINOBI</Text>
-          <Text style={styles.welcomeSubtitle}>伊賀流 IGA RYU</Text>
-          <Text style={styles.welcomeMotto}>忍者は永遠に</Text>
+          <Animated.Text style={[styles.welcomeMotto, { opacity: mottoOpacity }]}>
+            {mottoText}
+          </Animated.Text>
 
           <View style={styles.buttonGroup}>
             <Pressable
@@ -116,7 +150,11 @@ export default function AuthScreen() {
         </Pressable>
 
         <View style={styles.formHeader}>
-          <MaterialCommunityIcons name="ninja" size={40} color="#FFFFFF" />
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.formLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.formTitle}>
             {mode === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
           </Text>
@@ -220,14 +258,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logoCircle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     borderWidth: 2,
     borderColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  logoImage: {
+    width: 160,
+    height: 160,
+  },
+  formLogo: {
+    width: 50,
+    height: 50,
   },
   welcomeTitle: {
     fontFamily: "NotoSansJP_900Black",
