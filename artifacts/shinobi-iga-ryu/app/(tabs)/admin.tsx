@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { adminApi, beltsApi, fightsApi, notificationsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
@@ -1759,6 +1760,7 @@ const TARGET_LABELS: Record<string, string> = {
 };
 
 function NotificationsPanel() {
+  const { refresh: refreshBell } = useNotifications();
   const [notifs, setNotifs] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -1791,6 +1793,7 @@ function NotificationsPanel() {
       setTitle("");
       setBody("");
       setTarget("todas");
+      refreshBell();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo enviar");
     } finally {
