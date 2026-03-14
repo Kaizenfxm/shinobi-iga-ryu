@@ -225,6 +225,15 @@ export interface BeltPromoteResponse {
   newBelt: BeltDefinitionData;
 }
 
+export interface BeltInitializeRequest {
+  userId: number;
+}
+
+export interface BeltInitializeResponse {
+  success: boolean;
+  initialized: string[];
+}
+
 export interface AdminUnlockRecordData {
   id: number;
   discipline: string;
@@ -239,12 +248,3 @@ export interface AdminUnlockRecordData {
 export interface AdminUnlockRecordsResponse {
   unlocks: AdminUnlockRecordData[];
 }
-
-export type AdminInitializeBeltsBody = {
-  userId: number;
-};
-
-export type AdminInitializeBelts200 = {
-  success: boolean;
-  initialized: string[];
-};

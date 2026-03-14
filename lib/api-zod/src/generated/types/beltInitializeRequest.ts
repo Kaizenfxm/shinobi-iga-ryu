@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminInitializeBeltsBody = {
+export interface BeltInitializeRequest {
   userId: number;
-};
+}

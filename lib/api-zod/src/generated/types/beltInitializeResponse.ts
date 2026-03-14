@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminInitializeBelts200 = {
+export interface BeltInitializeResponse {
   success: boolean;
   initialized: string[];
-};
+}

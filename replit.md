@@ -41,12 +41,15 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 
 ### Features (Fase 3)
 - Belt system for Ninjutsu (8 belts: Blanco→Amarillo→Naranja→Verde→Azul→Morado→Marrón→Negro) and Jiujitsu (5 belts: Blanco→Azul→Morado→Marrón→Negro)
-- Each belt has specific requirements/exam criteria stored in belt_requirements table
-- Student belt progression screen: shows current belt per discipline, locked/unlocked next level, requirements when unlocked, full belt history
-- Admin belt management: view all students' belt status, unlock next level for a student, promote student to next belt
+- Each belt has requirements (belt_requirements) and an exam definition (belt_exams) with title, description, duration, passing score
+- Auto-initialization: new users get white belts in both disciplines on registration
+- Student belt progression screen: shows current belt per discipline, locked/unlocked next level, exam info + requirements when unlocked, full belt history
+- Admin belt management: view all students' belt status, unlock next level, promote student, initialize belts for users without them
 - Belt history tracking with dates and promotion notes
+- Unlock audit trail: student_belt_unlocks tracks each unlock event with who/when/target belt
 - Admin panel has sub-tabs: "Usuarios" (role/subscription management) and "Cinturones" (belt management)
-- Next level requirements hidden until admin explicitly unlocks them for a specific student
+- Next level requirements and exam hidden until admin explicitly unlocks them for a specific student
+- Deterministic seed script: `pnpm --filter @workspace/db run seed-belts` provisions all belt definitions, requirements, and exams
 
 ### Fonts
 - NotoSansJP (400, 500, 700, 900) - Japanese sans-serif
@@ -61,6 +64,8 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - `student_belts` - Current belt per user per discipline, with next_unlocked flag
 - `belt_history` - Historical record of all belt promotions with dates and notes
 - `belt_requirements` - Exam requirements for each belt level
+- `belt_exams` - Exam definitions per belt (title, description, duration, passing score)
+- `student_belt_unlocks` - Audit trail of belt unlock events (user, target belt, unlocked by, timestamp)
 - `session` - Express session store (auto-created by connect-pg-simple)
 
 ### API Routes
@@ -79,6 +84,9 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - `GET /api/admin/belts/users` - All students with belt info (admin only)
 - `POST /api/admin/belts/unlock` - Unlock next belt level for student (admin only)
 - `POST /api/admin/belts/promote` - Promote student to next belt (admin only)
+- `POST /api/admin/belts/initialize` - Initialize white belts for student (admin only)
+- `GET /api/admin/belts/users/:userId/history` - Belt history for a student (admin only)
+- `GET /api/admin/belts/unlocks/:userId` - Unlock audit records for a student (admin only)
 - `GET /api/healthz` - Health check
 
 ### Planned Features (Future Phases)
@@ -144,6 +152,7 @@ Express 5 API server with session-based auth.
 Database layer using Drizzle ORM with PostgreSQL.
 
 - `src/schema/users.ts` — users, user_roles, profesor_students tables with enums
-- `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements tables
+- `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements, belt_exams, student_belt_unlocks tables
+- `src/seed-belts.ts` — Deterministic seed for belt catalog, requirements, and exams
 - Production migrations handled by Replit. Dev: `pnpm --filter @workspace/db run push`
 - After schema changes, rebuild declarations: `cd lib/db && npx tsc --build --force`
