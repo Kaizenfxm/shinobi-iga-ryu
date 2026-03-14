@@ -405,6 +405,7 @@ export interface ProfileData {
   subscriptionLevel: string;
   phone: string | null;
   isFighter: boolean;
+  sedes: string[];
   roles: string[];
   belts: ProfileBelt[];
   fightStats: FightStats | null;
@@ -412,7 +413,7 @@ export interface ProfileData {
 
 export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
-  updateProfile: (data: { displayName?: string; phone?: string | null }) =>
+  updateProfile: (data: { displayName?: string; phone?: string | null; sedes?: string[] }) =>
     apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
   toggleFighterMode: (isFighter: boolean) =>
     apiFetch<{ success: boolean; isFighter: boolean }>("/profile/me/fighter", {

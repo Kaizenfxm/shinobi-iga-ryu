@@ -28,6 +28,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,
         isFighter: usersTable.isFighter,
+        sedes: usersTable.sedes,
       })
       .from(usersTable)
       .where(eq(usersTable.id, userId))
@@ -93,7 +94,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
 profileRouter.put("/profile/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { displayName, phone } = req.body;
+    const { displayName, phone, sedes } = req.body;
 
     if (displayName !== undefined && typeof displayName !== "string") {
       res.status(400).json({ error: "Nombre inválido" });
@@ -103,6 +104,12 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Teléfono inválido" });
       return;
     }
+    if (sedes !== undefined) {
+      if (!Array.isArray(sedes) || sedes.some((s: unknown) => s !== "bogota" && s !== "chia")) {
+        res.status(400).json({ error: "Sedes inválidas" });
+        return;
+      }
+    }
 
     const trimmedName = displayName?.trim();
     if (trimmedName !== undefined && trimmedName.length === 0) {
@@ -110,11 +117,12 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
       return;
     }
 
-    const updates: { displayName?: string; phone?: string | null; updatedAt: Date } = {
+    const updates: { displayName?: string; phone?: string | null; sedes?: string[]; updatedAt: Date } = {
       updatedAt: new Date(),
     };
     if (trimmedName !== undefined) updates.displayName = trimmedName;
     if (phone !== undefined) updates.phone = phone?.trim() || null;
+    if (sedes !== undefined) updates.sedes = sedes;
 
     const [updated] = await db
       .update(usersTable)
@@ -128,6 +136,7 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,
         isFighter: usersTable.isFighter,
+        sedes: usersTable.sedes,
       });
 
     if (!updated) {
