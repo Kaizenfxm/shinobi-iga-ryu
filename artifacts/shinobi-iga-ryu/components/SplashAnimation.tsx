@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
+import { View, Text, StyleSheet, Dimensions, Platform, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,7 +7,6 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -19,9 +18,7 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
   const [phase, setPhase] = useState(0);
   const containerRef = useRef<View>(null);
   const logoRef = useRef<View>(null);
-  const line1Ref = useRef<View>(null);
-  const line2Ref = useRef<View>(null);
-  const textRef = useRef<View>(null);
+  const lineRef = useRef<View>(null);
   const subtitleRef = useRef<View>(null);
 
   useEffect(() => {
@@ -34,9 +31,7 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
 
     applyWebTransition(containerRef, "opacity 0.5s ease-in");
     applyWebTransition(logoRef, "opacity 0.8s ease-out, transform 1s ease-out");
-    applyWebTransition(line1Ref, "width 0.6s ease-out, opacity 0.6s ease-out");
-    applyWebTransition(line2Ref, "width 0.6s ease-out, opacity 0.6s ease-out");
-    applyWebTransition(textRef, "opacity 0.6s ease-out, transform 0.6s ease-out");
+    applyWebTransition(lineRef, "width 0.6s ease-out, opacity 0.6s ease-out");
     applyWebTransition(subtitleRef, "opacity 0.6s ease-out");
 
     requestAnimationFrame(() => setPhase(1));
@@ -71,38 +66,15 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
             },
           ]}
         >
-          <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="ninja" size={80} color="#FFFFFF" />
-          </View>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         <View
-          ref={line1Ref}
-          style={[
-            styles.line,
-            {
-              width: phase >= 2 ? width * 0.4 : 0,
-              opacity: phase >= 2 ? 1 : 0,
-            },
-          ]}
-        />
-
-        <View
-          ref={textRef}
-          style={[
-            {
-              opacity: phase >= 2 ? 1 : 0,
-              transform: [{ translateY: phase >= 2 ? 0 : 20 }],
-            },
-          ]}
-        >
-          <Text style={styles.academyName}>SHINOBI</Text>
-          <Text style={styles.academySubname}>伊賀流</Text>
-          <Text style={styles.academySubnameRomaji}>IGA RYU</Text>
-        </View>
-
-        <View
-          ref={line2Ref}
+          ref={lineRef}
           style={[
             styles.line,
             {
@@ -129,10 +101,9 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
 function NativeSplash({ onFinish }: SplashAnimationProps) {
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.3);
-  const textOpacity = useSharedValue(0);
-  const textTranslateY = useSharedValue(20);
   const subtitleOpacity = useSharedValue(0);
   const lineWidth = useSharedValue(0);
+  const lineOpacity = useSharedValue(0);
   const containerOpacity = useSharedValue(1);
 
   useEffect(() => {
@@ -151,11 +122,7 @@ function NativeSplash({ onFinish }: SplashAnimationProps) {
         easing: Easing.out(Easing.cubic),
       })
     );
-    textOpacity.value = withDelay(800, withTiming(1, { duration: 600 }));
-    textTranslateY.value = withDelay(
-      800,
-      withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) })
-    );
+    lineOpacity.value = withDelay(600, withTiming(1, { duration: 600 }));
     subtitleOpacity.value = withDelay(1200, withTiming(1, { duration: 600 }));
     containerOpacity.value = withDelay(
       3200,
@@ -173,12 +140,7 @@ function NativeSplash({ onFinish }: SplashAnimationProps) {
 
   const lineAnimatedStyle = useAnimatedStyle(() => ({
     width: lineWidth.value,
-    opacity: textOpacity.value,
-  }));
-
-  const textAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textTranslateY.value }],
+    opacity: lineOpacity.value,
   }));
 
   const subtitleAnimatedStyle = useAnimatedStyle(() => ({
@@ -193,17 +155,11 @@ function NativeSplash({ onFinish }: SplashAnimationProps) {
     <Animated.View style={[styles.container, containerAnimatedStyle]}>
       <View style={styles.content}>
         <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-          <View style={styles.logoCircle}>
-            <MaterialCommunityIcons name="ninja" size={80} color="#FFFFFF" />
-          </View>
-        </Animated.View>
-
-        <Animated.View style={[styles.line, lineAnimatedStyle]} />
-
-        <Animated.View style={textAnimatedStyle}>
-          <Text style={styles.academyName}>SHINOBI</Text>
-          <Text style={styles.academySubname}>伊賀流</Text>
-          <Text style={styles.academySubnameRomaji}>IGA RYU</Text>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         <Animated.View style={[styles.line, lineAnimatedStyle]} />
@@ -238,42 +194,14 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginBottom: 8,
   },
-  logoCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
+  logoImage: {
+    width: 200,
+    height: 200,
   },
   line: {
     height: 1,
     backgroundColor: "#FFFFFF",
     marginVertical: 4,
-  },
-  academyName: {
-    fontFamily: "NotoSansJP_900Black",
-    fontSize: 42,
-    color: "#FFFFFF",
-    letterSpacing: 12,
-    textAlign: "center",
-  },
-  academySubname: {
-    fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 28,
-    color: "#FFFFFF",
-    letterSpacing: 16,
-    textAlign: "center",
-    marginTop: -2,
-  },
-  academySubnameRomaji: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 14,
-    color: "#A0A0A0",
-    letterSpacing: 8,
-    textAlign: "center",
-    marginTop: 2,
   },
   motto: {
     fontFamily: "NotoSerifJP_400Regular",
