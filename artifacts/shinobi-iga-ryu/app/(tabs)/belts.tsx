@@ -165,10 +165,12 @@ function RequirementsChecklist({
   requirements,
   onToggle,
   toggling,
+  readOnly = false,
 }: {
   requirements: LadderBeltRequirement[];
   onToggle: (id: number) => void;
   toggling: Set<number>;
+  readOnly?: boolean;
 }) {
   if (requirements.length === 0) {
     return (
@@ -178,16 +180,16 @@ function RequirementsChecklist({
 
   return (
     <View style={reqStyles.list}>
-      <Text style={reqStyles.header}>要件 · REQUISITOS A DOMINAR</Text>
+      <Text style={reqStyles.header}>{readOnly ? "要件 · REQUISITOS" : "要件 · REQUISITOS A DOMINAR"}</Text>
       {requirements.map((req, idx) => (
         <Pressable
           key={req.id}
-          style={[reqStyles.row, req.checked && reqStyles.rowChecked]}
-          onPress={() => onToggle(req.id)}
+          style={[reqStyles.row, req.checked && reqStyles.rowChecked, readOnly && reqStyles.rowReadOnly]}
+          onPress={readOnly ? undefined : () => onToggle(req.id)}
         >
           <View style={reqStyles.left}>
             <View style={[reqStyles.numBadge, req.checked && reqStyles.numBadgeChecked]}>
-              {toggling.has(req.id) ? (
+              {!readOnly && toggling.has(req.id) ? (
                 <ActivityIndicator size={10} color="#D4AF37" />
               ) : req.checked ? (
                 <MaterialCommunityIcons name="check" size={12} color="#D4AF37" />
@@ -204,28 +206,32 @@ function RequirementsChecklist({
               <Text style={reqStyles.desc}>{req.description}</Text>
             )}
           </View>
-          <MaterialCommunityIcons
-            name={req.checked ? "checkbox-marked" : "checkbox-blank-outline"}
-            size={20}
-            color={req.checked ? "#D4AF37" : "#333"}
-          />
+          {!readOnly && (
+            <MaterialCommunityIcons
+              name={req.checked ? "checkbox-marked" : "checkbox-blank-outline"}
+              size={20}
+              color={req.checked ? "#D4AF37" : "#333"}
+            />
+          )}
         </Pressable>
       ))}
-      <View style={reqStyles.progress}>
-        <Text style={reqStyles.progressText}>
-          {requirements.filter((r) => r.checked).length}/{requirements.length} dominados
-        </Text>
-        <View style={reqStyles.progressBar}>
-          <View
-            style={[
-              reqStyles.progressFill,
-              {
-                width: `${(requirements.filter((r) => r.checked).length / requirements.length) * 100}%` as `${number}%`,
-              },
-            ]}
-          />
+      {!readOnly && (
+        <View style={reqStyles.progress}>
+          <Text style={reqStyles.progressText}>
+            {requirements.filter((r) => r.checked).length}/{requirements.length} dominados
+          </Text>
+          <View style={reqStyles.progressBar}>
+            <View
+              style={[
+                reqStyles.progressFill,
+                {
+                  width: `${(requirements.filter((r) => r.checked).length / requirements.length) * 100}%` as `${number}%`,
+                },
+              ]}
+            />
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -262,6 +268,9 @@ const reqStyles = StyleSheet.create({
   },
   rowChecked: {
     backgroundColor: "#0A0800",
+  },
+  rowReadOnly: {
+    opacity: 0.85,
   },
   left: {
     width: 24,
@@ -364,7 +373,8 @@ function LadderRow({
 
   const showInfo = status === "current" || status === "available" || status === "applied";
   const hasReqs = belt.requirements.length > 0;
-  const showReqsToggle = status === "applied" && hasReqs;
+  const showReqsToggle = (status === "applied" || status === "earned" || status === "current") && hasReqs;
+  const reqsReadOnly = status === "earned" || status === "current";
 
   const borderColor = (() => {
     if (status === "current") return "#D4AF37";
@@ -431,7 +441,9 @@ function LadderRow({
       {showReqsToggle && (
         <>
           <Pressable style={rowStyles.reqsToggle} onPress={toggleReqs}>
-            <Text style={rowStyles.reqsToggleText}>REQUISITOS</Text>
+            <Text style={rowStyles.reqsToggleText}>
+              {reqsReadOnly ? "VER REQUISITOS" : "REQUISITOS"}
+            </Text>
             <MaterialCommunityIcons
               name={reqsOpen ? "chevron-up" : "chevron-down"}
               size={14}
@@ -444,6 +456,7 @@ function LadderRow({
                 requirements={belt.requirements}
                 onToggle={onToggleReq}
                 toggling={togglingReqs}
+                readOnly={reqsReadOnly}
               />
             </View>
           )}
