@@ -9,11 +9,12 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, type UserData, type AdminBeltUser } from "@/lib/api";
+import { adminApi, beltsApi, type UserData, type AdminBeltUser, type BeltHistoryItem } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -217,6 +218,39 @@ function BeltsPanel({
 }) {
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userHistory, setUserHistory] = useState<Record<number, BeltHistoryItem[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<number | null>(null);
+
+  const filteredUsers = beltUsers.filter((u) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      u.displayName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q)
+    );
+  });
+
+  const loadHistory = async (userId: number) => {
+    if (userHistory[userId]) return;
+    setHistoryLoading(userId);
+    try {
+      const data = await beltsApi.adminGetHistory(userId);
+      setUserHistory((prev) => ({ ...prev, [userId]: data.history }));
+    } catch {
+      // silent
+    } finally {
+      setHistoryLoading(null);
+    }
+  };
+
+  const handleExpand = (userId: number) => {
+    const isExpanded = expandedUser === userId;
+    setExpandedUser(isExpanded ? null : userId);
+    if (!isExpanded) {
+      loadHistory(userId);
+    }
+  };
 
   const handleUnlock = async (userId: number, discipline: string) => {
     const key = `unlock-${userId}-${discipline}`;
@@ -253,7 +287,13 @@ function BeltsPanel({
                 "Promoción Exitosa",
                 `${userName} ahora tiene cinturón ${result.newBelt.name}`
               );
+              setUserHistory((prev) => {
+                const copy = { ...prev };
+                delete copy[userId];
+                return copy;
+              });
               await onRefresh();
+              loadHistory(userId);
             } catch (e: unknown) {
               const msg = e instanceof Error ? e.message : "Error al promover";
               Alert.alert("Error", msg);
@@ -268,20 +308,40 @@ function BeltsPanel({
 
   return (
     <>
-      {beltUsers.length === 0 ? (
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={16} color="#555" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar alumno..."
+          placeholderTextColor="#444"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <Pressable onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={16} color="#555" />
+          </Pressable>
+        )}
+      </View>
+
+      {filteredUsers.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="karate" size={48} color="#333" />
-          <Text style={styles.emptyText}>No hay alumnos con cinturones</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery ? "Sin resultados" : "No hay alumnos con cinturones"}
+          </Text>
         </View>
       ) : (
-        beltUsers.map((u) => {
+        filteredUsers.map((u) => {
           const isExpanded = expandedUser === u.id;
+          const history = userHistory[u.id] || [];
 
           return (
             <Pressable
               key={u.id}
               style={styles.userCard}
-              onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+              onPress={() => handleExpand(u.id)}
             >
               <View style={styles.userHeader}>
                 <View style={styles.userAvatar}>
@@ -386,30 +446,75 @@ function BeltsPanel({
                               )}
                             </Pressable>
                           )}
-                          <Pressable
-                            style={[styles.beltActionButton, styles.beltPromoteButton]}
-                            onPress={() =>
-                              handlePromote(u.id, b.discipline, u.displayName)
-                            }
-                            disabled={actionLoading === promoteKey}
-                          >
-                            {actionLoading === promoteKey ? (
-                              <ActivityIndicator size="small" color="#000" />
-                            ) : (
-                              <>
-                                <MaterialCommunityIcons
-                                  name="arrow-up-bold"
-                                  size={14}
-                                  color="#000"
-                                />
-                                <Text style={styles.beltPromoteText}>Promover</Text>
-                              </>
-                            )}
-                          </Pressable>
+                          {b.nextUnlocked && (
+                            <Pressable
+                              style={[styles.beltActionButton, styles.beltPromoteButton]}
+                              onPress={() =>
+                                handlePromote(u.id, b.discipline, u.displayName)
+                              }
+                              disabled={actionLoading === promoteKey}
+                            >
+                              {actionLoading === promoteKey ? (
+                                <ActivityIndicator size="small" color="#000" />
+                              ) : (
+                                <>
+                                  <MaterialCommunityIcons
+                                    name="arrow-up-bold"
+                                    size={14}
+                                    color="#000"
+                                  />
+                                  <Text style={styles.beltPromoteText}>Promover</Text>
+                                </>
+                              )}
+                            </Pressable>
+                          )}
                         </View>
                       </View>
                     );
                   })}
+
+                  <View style={styles.sectionDivider} />
+                  <Text style={styles.sectionLabel}>HISTORIAL</Text>
+                  {historyLoading === u.id ? (
+                    <ActivityIndicator size="small" color="#555" style={{ marginVertical: 8 }} />
+                  ) : history.length > 0 ? (
+                    history.map((h) => {
+                      const date = new Date(h.achievedAt);
+                      const dateStr = date.toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      });
+                      return (
+                        <View key={h.id} style={styles.historyItem}>
+                          <View
+                            style={[
+                              styles.historyDot,
+                              {
+                                backgroundColor:
+                                  h.beltColor === "#FFFFFF"
+                                    ? "#555"
+                                    : h.beltColor === "#000000"
+                                    ? "#333"
+                                    : h.beltColor,
+                              },
+                            ]}
+                          />
+                          <View style={styles.historyContent}>
+                            <Text style={styles.historyBeltName}>
+                              {h.beltName} · {DISCIPLINE_LABELS[h.discipline] || h.discipline}
+                            </Text>
+                            <Text style={styles.historyDate}>{dateStr}</Text>
+                            {h.notes && (
+                              <Text style={styles.historyNotes}>{h.notes}</Text>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <Text style={styles.noHistoryText}>Sin historial</Text>
+                  )}
                 </View>
               )}
             </Pressable>
@@ -816,5 +921,61 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 12,
     color: "#000",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    color: "#FFFFFF",
+    padding: 0,
+  },
+  historyItem: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 6,
+  },
+  historyDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  historyContent: {
+    flex: 1,
+    gap: 1,
+  },
+  historyBeltName: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#CCC",
+  },
+  historyDate: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    color: "#555",
+  },
+  historyNotes: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#666",
+  },
+  noHistoryText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#444",
+    fontStyle: "italic",
+    paddingVertical: 8,
   },
 });

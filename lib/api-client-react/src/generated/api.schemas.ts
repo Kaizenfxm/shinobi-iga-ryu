@@ -189,6 +189,10 @@ export interface AdminBeltUsersResponse {
   users: AdminBeltUserData[];
 }
 
+export interface AdminBeltHistoryResponse {
+  history: BeltHistoryData[];
+}
+
 export type BeltActionRequestDiscipline =
   (typeof BeltActionRequestDiscipline)[keyof typeof BeltActionRequestDiscipline];
 

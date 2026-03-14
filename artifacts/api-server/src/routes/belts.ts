@@ -187,6 +187,37 @@ beltsRouter.get("/admin/belts/users", requireAdmin, async (_req, res) => {
   }
 });
 
+beltsRouter.get("/admin/belts/users/:userId/history", requireAdmin, async (req, res) => {
+  try {
+    const userIdParam = req.params.userId;
+    const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam, 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const history = await db
+      .select({
+        id: beltHistoryTable.id,
+        discipline: beltHistoryTable.discipline,
+        beltId: beltHistoryTable.beltId,
+        achievedAt: beltHistoryTable.achievedAt,
+        notes: beltHistoryTable.notes,
+        beltName: beltDefinitionsTable.name,
+        beltColor: beltDefinitionsTable.color,
+      })
+      .from(beltHistoryTable)
+      .innerJoin(beltDefinitionsTable, eq(beltHistoryTable.beltId, beltDefinitionsTable.id))
+      .where(eq(beltHistoryTable.userId, userId))
+      .orderBy(desc(beltHistoryTable.achievedAt));
+
+    res.json({ history });
+  } catch (error) {
+    console.error("Admin get belt history error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 beltsRouter.post("/admin/belts/unlock", requireAdmin, async (req, res) => {
   try {
     const { userId, discipline } = req.body;
@@ -292,6 +323,11 @@ beltsRouter.post("/admin/belts/promote", requireAdmin, async (req, res) => {
 
     if (!studentBelt) {
       res.status(404).json({ error: "No se encontró el cinturón del alumno" });
+      return;
+    }
+
+    if (!studentBelt.nextUnlocked) {
+      res.status(400).json({ error: "El siguiente nivel no está desbloqueado. Debes desbloquear primero." });
       return;
     }
 

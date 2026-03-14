@@ -170,6 +170,9 @@ export const beltsApi = {
 
   adminGetUsers: () => apiFetch<{ users: AdminBeltUser[] }>("/admin/belts/users"),
 
+  adminGetHistory: (userId: number) =>
+    apiFetch<{ history: BeltHistoryItem[] }>(`/admin/belts/users/${userId}/history`),
+
   adminUnlock: (userId: number, discipline: string) =>
     apiFetch<{ success: boolean; nextBelt: BeltDefinition }>("/admin/belts/unlock", {
       method: "POST",
