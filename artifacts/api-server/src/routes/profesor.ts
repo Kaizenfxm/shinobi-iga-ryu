@@ -30,6 +30,7 @@ profesorRouter.get("/profesor/alumnos", async (req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        isFighter: usersTable.isFighter,
       })
       .from(usersTable)
       .where(inArray(usersTable.id, alumnoIds));

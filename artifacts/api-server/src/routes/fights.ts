@@ -154,7 +154,7 @@ fightsRouter.post("/fights", requireAdminOrProfesor, async (req, res) => {
   }
 });
 
-fightsRouter.get("/fights/user/:userId", requireAuth, async (req, res) => {
+fightsRouter.get("/fights/user/:userId", requireAdminOrProfesor, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId as string, 10);
     if (isNaN(userId)) {
