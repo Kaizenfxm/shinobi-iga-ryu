@@ -85,6 +85,18 @@ const FIGHT_METHOD_OPTIONS = [
   { value: "no_contest", label: "Sin Resultado" },
 ];
 
+const SEDES_OPTIONS = [
+  { value: "bogota", label: "Bogotá" },
+  { value: "chia", label: "Chía" },
+];
+
+const NOTIFICATION_TARGETS = [
+  { value: "todas", label: "Todos" },
+  { value: "bogota", label: "Bogotá" },
+  { value: "chia", label: "Chía" },
+  { value: "peleadores", label: "Peleadores" },
+];
+
 const INIT_USER_FORM = {
   displayName: "",
   email: "",
@@ -93,6 +105,7 @@ const INIT_USER_FORM = {
   roles: ["alumno"] as string[],
   subscriptionLevel: "basico",
   isFighter: false,
+  sedes: [] as string[],
 };
 
 function UserFormModal({
@@ -122,6 +135,7 @@ function UserFormModal({
           roles: initialData.roles || ["alumno"],
           subscriptionLevel: initialData.subscriptionLevel,
           isFighter: initialData.isFighter,
+          sedes: initialData.sedes || [],
         });
       } else {
         setForm(INIT_USER_FORM);
@@ -165,6 +179,7 @@ function UserFormModal({
           roles: form.roles,
           subscriptionLevel: form.subscriptionLevel,
           isFighter: form.isFighter,
+          sedes: form.sedes,
         });
         onSaved({ ...res.user, roles: form.roles });
       } else if (initialData) {
@@ -173,6 +188,7 @@ function UserFormModal({
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
           isFighter: form.isFighter,
+          sedes: form.sedes,
         };
         if (form.password) payload.password = form.password;
         const res = await adminApi.updateUser(initialData.id, payload);
@@ -300,6 +316,29 @@ function UserFormModal({
                 thumbColor={form.isFighter ? "#D4AF37" : "#555"}
                 trackColor={{ false: "#222", true: "#5a4800" }}
               />
+            </View>
+
+            <Text style={userFormStyles.fieldLabel}>SEDES</Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {SEDES_OPTIONS.map((s) => {
+                const active = form.sedes.includes(s.value);
+                return (
+                  <Pressable
+                    key={s.value}
+                    style={[userFormStyles.toggleChip, active && userFormStyles.toggleChipGold, { flex: 1 }]}
+                    onPress={() =>
+                      setForm((p) => ({
+                        ...p,
+                        sedes: active ? p.sedes.filter((x) => x !== s.value) : [...p.sedes, s.value],
+                      }))
+                    }
+                  >
+                    <Text style={[userFormStyles.toggleChipText, active && userFormStyles.toggleChipTextActive]}>
+                      {s.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
             <Pressable
@@ -1712,12 +1751,20 @@ function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUs
   );
 }
 
+const TARGET_LABELS: Record<string, string> = {
+  todas: "Todos",
+  bogota: "Bogotá",
+  chia: "Chía",
+  peleadores: "Peleadores",
+};
+
 function NotificationsPanel() {
   const [notifs, setNotifs] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [target, setTarget] = useState("todas");
 
   const load = useCallback(async () => {
     try {
@@ -1739,10 +1786,11 @@ function NotificationsPanel() {
     }
     setSending(true);
     try {
-      const res = await notificationsApi.send(title.trim(), body.trim());
+      const res = await notificationsApi.send(title.trim(), body.trim(), target);
       setNotifs((prev) => [{ ...res.notification, readAt: null, createdByName: null }, ...prev]);
       setTitle("");
       setBody("");
+      setTarget("todas");
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo enviar");
     } finally {
@@ -1768,19 +1816,33 @@ function NotificationsPanel() {
           style={[styles.notifInput, styles.notifBodyInput]}
           value={body}
           onChangeText={setBody}
-          placeholder="Mensaje para todos los usuarios..."
+          placeholder="Mensaje..."
           placeholderTextColor="#333"
           multiline
           numberOfLines={3}
           maxLength={500}
         />
+        <Text style={styles.notifTargetLabel}>ENVIAR A</Text>
+        <View style={styles.notifTargetRow}>
+          {NOTIFICATION_TARGETS.map((t) => (
+            <Pressable
+              key={t.value}
+              style={[styles.notifTargetChip, target === t.value && styles.notifTargetChipActive]}
+              onPress={() => setTarget(t.value)}
+            >
+              <Text style={[styles.notifTargetChipText, target === t.value && styles.notifTargetChipTextActive]}>
+                {t.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         <Pressable style={styles.notifSendBtn} onPress={handleSend} disabled={sending}>
           {sending ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
             <>
               <Ionicons name="send" size={14} color="#000" />
-              <Text style={styles.notifSendBtnText}>Enviar a todos</Text>
+              <Text style={styles.notifSendBtnText}>Enviar</Text>
             </>
           )}
         </Pressable>
@@ -1795,7 +1857,14 @@ function NotificationsPanel() {
       ) : (
         notifs.map((n) => (
           <View key={n.id} style={styles.notifHistoryItem}>
-            <Text style={styles.notifHistoryItemTitle}>{n.title}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={styles.notifHistoryItemTitle}>{n.title}</Text>
+              <View style={styles.notifTargetBadge}>
+                <Text style={styles.notifTargetBadgeText}>
+                  {TARGET_LABELS[n.target] ?? n.target}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.notifHistoryItemBody}>{n.body}</Text>
             <Text style={styles.notifHistoryItemDate}>
               {new Date(n.createdAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
@@ -1867,17 +1936,9 @@ export default function AdminScreen() {
           >
             <Ionicons
               name="people"
-              size={16}
+              size={20}
               color={activeTab === "usuarios" ? "#000" : "#666"}
             />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "usuarios" && styles.tabButtonTextActive,
-              ]}
-            >
-              Usuarios ({users.length})
-            </Text>
           </Pressable>
           <Pressable
             style={[styles.tabButton, activeTab === "cinturones" && styles.tabButtonActive]}
@@ -1885,17 +1946,9 @@ export default function AdminScreen() {
           >
             <MaterialCommunityIcons
               name="medal"
-              size={16}
+              size={20}
               color={activeTab === "cinturones" ? "#000" : "#666"}
             />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "cinturones" && styles.tabButtonTextActive,
-              ]}
-            >
-              Cinturones
-            </Text>
           </Pressable>
           <Pressable
             style={[styles.tabButton, activeTab === "peleas" && styles.tabButtonActive]}
@@ -1903,17 +1956,9 @@ export default function AdminScreen() {
           >
             <MaterialCommunityIcons
               name="sword-cross"
-              size={16}
+              size={20}
               color={activeTab === "peleas" ? "#000" : "#666"}
             />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "peleas" && styles.tabButtonTextActive,
-              ]}
-            >
-              Peleas
-            </Text>
           </Pressable>
           <Pressable
             style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
@@ -1921,17 +1966,9 @@ export default function AdminScreen() {
           >
             <Ionicons
               name="notifications"
-              size={16}
+              size={20}
               color={activeTab === "notificaciones" ? "#000" : "#666"}
             />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "notificaciones" && styles.tabButtonTextActive,
-              ]}
-            >
-              Notificaciones
-            </Text>
           </Pressable>
         </View>
 
@@ -3091,5 +3128,54 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#444",
     marginTop: 2,
+  },
+  notifTargetLabel: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 1.5,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  notifTargetRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 10,
+  },
+  notifTargetChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 2,
+    backgroundColor: "#0A0A0A",
+  },
+  notifTargetChipActive: {
+    borderColor: "#D4AF37",
+    backgroundColor: "#1A1500",
+  },
+  notifTargetChipText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#555",
+  },
+  notifTargetChipTextActive: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_500Medium",
+  },
+  notifTargetBadge: {
+    backgroundColor: "#1A1500",
+    borderWidth: 1,
+    borderColor: "#3A3000",
+    borderRadius: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  notifTargetBadgeText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 0.5,
   },
 });
