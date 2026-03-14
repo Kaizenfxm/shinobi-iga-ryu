@@ -7,7 +7,7 @@ interface AuthState {
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -36,8 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, displayName: string) => {
-    const { user: userData } = await authApi.register({ email, password, displayName });
+  const register = useCallback(async (email: string, password: string, displayName: string, phone?: string) => {
+    const { user: userData } = await authApi.register({ email, password, displayName, phone });
     setUser(userData);
   }, []);
 

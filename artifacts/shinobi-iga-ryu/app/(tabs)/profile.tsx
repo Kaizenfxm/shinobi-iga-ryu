@@ -9,12 +9,13 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, type ProfileData, type ProfileBelt, type FightStats } from "@/lib/api";
+import { profileApi, type ProfileData, type ProfileBelt, type FightStats, type UserData } from "@/lib/api";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 
@@ -278,6 +279,10 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [saving, setSaving] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
 
   useEffect(() => {
@@ -309,6 +314,34 @@ export default function ProfileScreen() {
       await logout();
     } catch {
       Alert.alert("Error", "No se pudo cerrar la sesión");
+    }
+  };
+
+  const handleEditOpen = () => {
+    setEditName(profile?.displayName ?? user?.displayName ?? "");
+    setEditPhone(profile?.phone ?? "");
+    setEditing(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert("Error", "El nombre no puede estar vacío");
+      return;
+    }
+    setSaving(true);
+    try {
+      await profileApi.updateProfile({
+        displayName: editName.trim(),
+        phone: editPhone.trim() || null,
+      });
+      setProfile((prev) =>
+        prev ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null } : prev
+      );
+      setEditing(false);
+    } catch {
+      Alert.alert("Error", "No se pudo guardar el perfil");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -443,6 +476,12 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
+          {data.phone ? (
+            <View style={styles.phoneRow}>
+              <Ionicons name="call-outline" size={14} color="#888" />
+              <Text style={styles.phoneText}>{data.phone}</Text>
+            </View>
+          ) : null}
           </View>
 
           {hasBelts && (
@@ -473,6 +512,55 @@ export default function ProfileScreen() {
         </ViewShot>
 
         <View style={styles.actionsSection}>
+          {editing ? (
+            <View style={styles.editForm}>
+              <Text style={styles.editFormTitle}>Editar Perfil</Text>
+              <Text style={styles.editLabel}>Nombre</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Tu nombre"
+                placeholderTextColor="#444"
+                autoCapitalize="words"
+              />
+              <Text style={styles.editLabel}>Teléfono (opcional)</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editPhone}
+                onChangeText={setEditPhone}
+                placeholder="+57 300 000 0000"
+                placeholderTextColor="#444"
+                keyboardType="phone-pad"
+              />
+              <View style={styles.editActions}>
+                <Pressable
+                  style={styles.editCancelButton}
+                  onPress={() => setEditing(false)}
+                  disabled={saving}
+                >
+                  <Text style={styles.editCancelText}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.editSaveButton}
+                  onPress={handleSaveProfile}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.editSaveText}>Guardar</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable style={styles.editButton} onPress={handleEditOpen}>
+              <Ionicons name="create-outline" size={18} color="#D4AF37" />
+              <Text style={styles.editButtonText}>Editar Perfil</Text>
+            </Pressable>
+          )}
+
           <Pressable
             style={styles.shareButton}
             onPress={handleShare}
@@ -714,5 +802,99 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#666666",
     textAlign: "center",
+  },
+  phoneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  phoneText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#888",
+    letterSpacing: 0.5,
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    backgroundColor: "#080800",
+    borderWidth: 1,
+    borderColor: "#2A2500",
+    borderRadius: 12,
+  },
+  editButtonText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 14,
+    color: "#D4AF37",
+    letterSpacing: 1,
+  },
+  editForm: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  editFormTitle: {
+    fontFamily: "NotoSerifJP_700Bold",
+    fontSize: 15,
+    color: "#D4AF37",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  editLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 11,
+    color: "#888",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  editInput: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#fff",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+  },
+  editActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  editCancelButton: {
+    flex: 1,
+    paddingVertical: 11,
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  editCancelText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#888",
+  },
+  editSaveButton: {
+    flex: 1,
+    paddingVertical: 11,
+    backgroundColor: "#D4AF37",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  editSaveText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#000",
+    letterSpacing: 1,
   },
 });

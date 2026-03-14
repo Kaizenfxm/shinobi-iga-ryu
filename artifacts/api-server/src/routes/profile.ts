@@ -23,6 +23,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        phone: usersTable.phone,
         isFighter: usersTable.isFighter,
       })
       .from(usersTable)
@@ -82,6 +83,58 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Get profile error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+profileRouter.put("/profile/me", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { displayName, phone } = req.body;
+
+    if (displayName !== undefined && typeof displayName !== "string") {
+      res.status(400).json({ error: "Nombre inválido" });
+      return;
+    }
+    if (phone !== undefined && phone !== null && typeof phone !== "string") {
+      res.status(400).json({ error: "Teléfono inválido" });
+      return;
+    }
+
+    const trimmedName = displayName?.trim();
+    if (trimmedName !== undefined && trimmedName.length === 0) {
+      res.status(400).json({ error: "El nombre no puede estar vacío" });
+      return;
+    }
+
+    const updates: { displayName?: string; phone?: string | null; updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
+    if (trimmedName !== undefined) updates.displayName = trimmedName;
+    if (phone !== undefined) updates.phone = phone?.trim() || null;
+
+    const [updated] = await db
+      .update(usersTable)
+      .set(updates)
+      .where(eq(usersTable.id, userId))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+        avatarUrl: usersTable.avatarUrl,
+        subscriptionLevel: usersTable.subscriptionLevel,
+        phone: usersTable.phone,
+        isFighter: usersTable.isFighter,
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    res.json({ user: updated });
+  } catch (error) {
+    console.error("Update profile error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
