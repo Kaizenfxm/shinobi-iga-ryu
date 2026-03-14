@@ -700,22 +700,24 @@ export default function BeltsScreen() {
 
         <View style={styles.divider} />
 
-        {belts.every((b) => b.ladder.length === 0) ? (
+        {belts.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyKanji}>帯</Text>
-            <Text style={styles.emptyText}>No hay cinturones definidos aún</Text>
-            <Text style={styles.emptySubtext}>El catálogo está siendo configurado</Text>
+            <Text style={styles.emptyText}>Cargando disciplinas...</Text>
+            <Text style={styles.emptySubtext}>Por favor espera</Text>
           </View>
         ) : (
           belts.map((belt) => (
-            <DisciplineSection
-              key={belt.discipline}
-              belt={belt}
-              onApply={handleApply}
-              onToggleReq={handleToggleReq}
-              applyingDiscs={applyingDiscs}
-              togglingReqs={togglingReqs}
-            />
+            belt.ladder.length > 0 ? (
+              <DisciplineSection
+                key={belt.discipline}
+                belt={belt}
+                onApply={handleApply}
+                onToggleReq={handleToggleReq}
+                applyingDiscs={applyingDiscs}
+                togglingReqs={togglingReqs}
+              />
+            ) : null
           ))
         )}
 
