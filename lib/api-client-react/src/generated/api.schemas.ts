@@ -8,3 +8,100 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export interface RegisterRequest {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+  displayName: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export type UserDataSubscriptionLevel =
+  (typeof UserDataSubscriptionLevel)[keyof typeof UserDataSubscriptionLevel];
+
+export const UserDataSubscriptionLevel = {
+  basico: "basico",
+  medio: "medio",
+  avanzado: "avanzado",
+  personalizado: "personalizado",
+} as const;
+
+export type UserDataRolesItem =
+  (typeof UserDataRolesItem)[keyof typeof UserDataRolesItem];
+
+export const UserDataRolesItem = {
+  admin: "admin",
+  profesor: "profesor",
+  alumno: "alumno",
+} as const;
+
+export interface UserData {
+  id: number;
+  email: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  subscriptionLevel: UserDataSubscriptionLevel;
+  roles: UserDataRolesItem[];
+}
+
+export interface AuthResponse {
+  user: UserData;
+}
+
+export interface AdminUsersResponse {
+  users: UserData[];
+}
+
+export type UpdateRolesRequestRolesItem =
+  (typeof UpdateRolesRequestRolesItem)[keyof typeof UpdateRolesRequestRolesItem];
+
+export const UpdateRolesRequestRolesItem = {
+  admin: "admin",
+  profesor: "profesor",
+  alumno: "alumno",
+} as const;
+
+export interface UpdateRolesRequest {
+  roles: UpdateRolesRequestRolesItem[];
+}
+
+export interface UpdateRolesResponse {
+  success: boolean;
+  roles: string[];
+}
+
+export type UpdateSubscriptionRequestSubscriptionLevel =
+  (typeof UpdateSubscriptionRequestSubscriptionLevel)[keyof typeof UpdateSubscriptionRequestSubscriptionLevel];
+
+export const UpdateSubscriptionRequestSubscriptionLevel = {
+  basico: "basico",
+  medio: "medio",
+  avanzado: "avanzado",
+  personalizado: "personalizado",
+} as const;
+
+export interface UpdateSubscriptionRequest {
+  subscriptionLevel: UpdateSubscriptionRequestSubscriptionLevel;
+}
+
+export interface UpdateSubscriptionResponse {
+  success: boolean;
+  subscriptionLevel: string;
+}
+
+export interface ProfesorStudentsResponse {
+  students: UserData[];
+}

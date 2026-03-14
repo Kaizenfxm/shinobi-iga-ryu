@@ -14,3 +14,138 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Register a new user
+ */
+export const registerBodyPasswordMin = 6;
+
+export const RegisterBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string().min(registerBodyPasswordMin),
+  displayName: zod.string(),
+});
+
+/**
+ * @summary Login with credentials
+ */
+export const LoginBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string(),
+});
+
+export const LoginResponse = zod.object({
+  user: zod.object({
+    id: zod.number(),
+    email: zod.string(),
+    displayName: zod.string(),
+    avatarUrl: zod.string().nullish(),
+    subscriptionLevel: zod.enum([
+      "basico",
+      "medio",
+      "avanzado",
+      "personalizado",
+    ]),
+    roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+  }),
+});
+
+/**
+ * @summary Get current user
+ */
+export const GetMeResponse = zod.object({
+  user: zod.object({
+    id: zod.number(),
+    email: zod.string(),
+    displayName: zod.string(),
+    avatarUrl: zod.string().nullish(),
+    subscriptionLevel: zod.enum([
+      "basico",
+      "medio",
+      "avanzado",
+      "personalizado",
+    ]),
+    roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+  }),
+});
+
+/**
+ * @summary Logout current session
+ */
+export const LogoutResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List all users (admin only)
+ */
+export const AdminGetUsersResponse = zod.object({
+  users: zod.array(
+    zod.object({
+      id: zod.number(),
+      email: zod.string(),
+      displayName: zod.string(),
+      avatarUrl: zod.string().nullish(),
+      subscriptionLevel: zod.enum([
+        "basico",
+        "medio",
+        "avanzado",
+        "personalizado",
+      ]),
+      roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+    }),
+  ),
+});
+
+/**
+ * @summary Update user roles (admin only)
+ */
+export const AdminUpdateRolesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateRolesBody = zod.object({
+  roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+});
+
+export const AdminUpdateRolesResponse = zod.object({
+  success: zod.boolean(),
+  roles: zod.array(zod.string()),
+});
+
+/**
+ * @summary Update user subscription (admin only)
+ */
+export const AdminUpdateSubscriptionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateSubscriptionBody = zod.object({
+  subscriptionLevel: zod.enum(["basico", "medio", "avanzado", "personalizado"]),
+});
+
+export const AdminUpdateSubscriptionResponse = zod.object({
+  success: zod.boolean(),
+  subscriptionLevel: zod.string(),
+});
+
+/**
+ * @summary List students (professor only)
+ */
+export const ProfesorGetAlumnosResponse = zod.object({
+  students: zod.array(
+    zod.object({
+      id: zod.number(),
+      email: zod.string(),
+      displayName: zod.string(),
+      avatarUrl: zod.string().nullish(),
+      subscriptionLevel: zod.enum([
+        "basico",
+        "medio",
+        "avanzado",
+        "personalizado",
+      ]),
+      roles: zod.array(zod.enum(["admin", "profesor", "alumno"])),
+    }),
+  ),
+});
