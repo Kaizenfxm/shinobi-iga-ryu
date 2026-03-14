@@ -55,8 +55,8 @@ function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?:
   const stripeColor = isVeryDark ? "#D4AF37" : "#000000";
   const height = Math.round(size * 0.45);
 
-  const showKnot = !isWhite && !isPuntaNegra && !isFranjaRoja;
-  const showEnd = !isWhite && !isPuntaNegra && !isFranjaRoja;
+  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
+  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
 
   const stripePositions = stripes > 0
     ? Array.from({ length: stripes }, (_, i) => {
@@ -134,8 +134,8 @@ const beltStripStyles = StyleSheet.create({
   },
   franjaRoja: {
     position: "absolute",
-    left: "30%",
-    width: "35%",
+    left: "38%",
+    width: "20%",
     top: 0,
     bottom: 0,
     backgroundColor: "#CC0000",
@@ -417,7 +417,7 @@ function LadderRow({
         <StatusBadge />
       </View>
 
-      {(status === "applied") && (
+      {(status === "available" || status === "applied") && belt.requirements.length > 0 && (
         <View style={rowStyles.expandedContent}>
           <GoldRule />
           <RequirementsChecklist

@@ -970,8 +970,8 @@ function BeltCatalogPanel() {
                             {beltIsFranjaRoja && (
                               <View style={{
                                 position: "absolute",
-                                left: "30%",
-                                width: "35%",
+                                left: "38%",
+                                width: "20%",
                                 top: 0,
                                 bottom: 0,
                                 backgroundColor: "#CC0000",
