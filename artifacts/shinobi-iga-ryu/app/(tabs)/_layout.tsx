@@ -1,31 +1,17 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/contexts/AuthContext";
 
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "figure.martial.arts", selected: "figure.martial.arts" }} />
-        <Label>Artes</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Perfil</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
-
-function ClassicTabLayout() {
-  const isIOS = Platform.OS === "ios";
+export default function TabLayout() {
+  const { hasRole, isAuthenticated } = useAuth();
   const isWeb = Platform.OS === "web";
+  const isIOS = Platform.OS === "ios";
+
+  const showAdmin = isAuthenticated && hasRole("admin");
+  const showAlumnos = isAuthenticated && hasRole("profesor");
 
   return (
     <Tabs
@@ -50,10 +36,7 @@ function ClassicTabLayout() {
             />
           ) : isWeb ? (
             <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: "#000000" },
-              ]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: "#000000" }]}
             />
           ) : null,
       }}
@@ -62,33 +45,40 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Artes",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="figure.martial.arts" tintColor={color} size={22} />
-            ) : (
-              <MaterialCommunityIcons name="karate" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="karate" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: "Admin",
+          href: showAdmin ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="shield-crown" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="alumnos"
+        options={{
+          title: "Alumnos",
+          href: showAlumnos ? undefined : null,
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="school" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Perfil",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person" tintColor={color} size={22} />
-            ) : (
-              <Ionicons name="person-outline" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" size={22} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
-}
-
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
 }
