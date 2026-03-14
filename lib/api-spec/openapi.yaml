@@ -413,29 +413,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                userId:
-                  type: integer
-              required:
-                - userId
+              $ref: "#/components/schemas/BeltInitializeRequest"
       responses:
         "200":
           description: Belts initialized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  initialized:
-                    type: array
-                    items:
-                      type: string
-                required:
-                  - success
-                  - initialized
+                $ref: "#/components/schemas/BeltInitializeResponse"
   /admin/belts/unlocks/{userId}:
     get:
       operationId: adminGetUnlockRecords
@@ -834,6 +819,25 @@ components:
       required:
         - success
         - newBelt
+    BeltInitializeRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+      required:
+        - userId
+    BeltInitializeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        initialized:
+          type: array
+          items:
+            type: string
+      required:
+        - success
+        - initialized
     BeltExamData:
       type: object
       properties:

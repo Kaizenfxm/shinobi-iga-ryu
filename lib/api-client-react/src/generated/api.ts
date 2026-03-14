@@ -19,13 +19,13 @@ import type {
 import type {
   AdminBeltHistoryResponse,
   AdminBeltUsersResponse,
-  AdminInitializeBelts200,
-  AdminInitializeBeltsBody,
   AdminUnlockRecordsResponse,
   AdminUsersResponse,
   AuthResponse,
   BeltActionRequest,
   BeltDefinitionsResponse,
+  BeltInitializeRequest,
+  BeltInitializeResponse,
   BeltPromoteResponse,
   BeltUnlockResponse,
   ErrorResponse,
@@ -1381,14 +1381,14 @@ export const getAdminInitializeBeltsUrl = () => {
 };
 
 export const adminInitializeBelts = async (
-  adminInitializeBeltsBody: AdminInitializeBeltsBody,
+  beltInitializeRequest: BeltInitializeRequest,
   options?: RequestInit,
-): Promise<AdminInitializeBelts200> => {
-  return customFetch<AdminInitializeBelts200>(getAdminInitializeBeltsUrl(), {
+): Promise<BeltInitializeResponse> => {
+  return customFetch<BeltInitializeResponse>(getAdminInitializeBeltsUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(adminInitializeBeltsBody),
+    body: JSON.stringify(beltInitializeRequest),
   });
 };
 
@@ -1399,14 +1399,14 @@ export const getAdminInitializeBeltsMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminInitializeBelts>>,
     TError,
-    { data: BodyType<AdminInitializeBeltsBody> },
+    { data: BodyType<BeltInitializeRequest> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminInitializeBelts>>,
   TError,
-  { data: BodyType<AdminInitializeBeltsBody> },
+  { data: BodyType<BeltInitializeRequest> },
   TContext
 > => {
   const mutationKey = ["adminInitializeBelts"];
@@ -1420,7 +1420,7 @@ export const getAdminInitializeBeltsMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminInitializeBelts>>,
-    { data: BodyType<AdminInitializeBeltsBody> }
+    { data: BodyType<BeltInitializeRequest> }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -1433,8 +1433,7 @@ export const getAdminInitializeBeltsMutationOptions = <
 export type AdminInitializeBeltsMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminInitializeBelts>>
 >;
-export type AdminInitializeBeltsMutationBody =
-  BodyType<AdminInitializeBeltsBody>;
+export type AdminInitializeBeltsMutationBody = BodyType<BeltInitializeRequest>;
 export type AdminInitializeBeltsMutationError = ErrorType<unknown>;
 
 /**
@@ -1447,14 +1446,14 @@ export const useAdminInitializeBelts = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminInitializeBelts>>,
     TError,
-    { data: BodyType<AdminInitializeBeltsBody> },
+    { data: BodyType<BeltInitializeRequest> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof adminInitializeBelts>>,
   TError,
-  { data: BodyType<AdminInitializeBeltsBody> },
+  { data: BodyType<BeltInitializeRequest> },
   TContext
 > => {
   return useMutation(getAdminInitializeBeltsMutationOptions(options));
