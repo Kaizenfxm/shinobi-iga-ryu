@@ -703,6 +703,11 @@ function UsersPanel({
 const INIT_BELT_FORM = { visible: false, editingId: null as number | null, beltName: "", description: "" };
 const INIT_REQ_FORM = { visible: false, beltId: null as number | null, editingId: null as number | null, title: "", description: "" };
 
+function getStripeCount(name: string): number {
+  const match = name.match(/(\d+)\s+franja/i);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
 function BeltCatalogPanel() {
   const [catalog, setCatalog] = useState<CatalogDiscipline[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
@@ -853,14 +858,24 @@ function BeltCatalogPanel() {
                     <Text style={styles.noHistoryText}>Sin cinturones. Agrega el primero.</Text>
                   )}
 
-                  {disc.belts.map((belt, beltIdx) => {
+                  {disc.belts.map((belt) => {
                     const isBeltOpen = expandedBelt === belt.id;
                     const isEditingBelt = beltForm.visible && beltForm.editingId === belt.id;
                     const isAddingReq = reqForm.visible && reqForm.beltId === belt.id && !reqForm.editingId;
-                    const beltBarColor =
-                      belt.color === "#FFFFFF" ? "#CCCCCC"
-                      : belt.color === "#000000" ? "#333333"
-                      : belt.color;
+                    const colorLower = belt.color.toLowerCase();
+                    const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
+                    const isWhite = colorLower === "#ffffff";
+                    const beltBarColor = isVeryDark ? "#2a2a2a" : isWhite ? "#E0E0E0" : belt.color;
+                    const beltStripes = getStripeCount(belt.name);
+                    const beltStripeColor = isVeryDark ? "#D4AF37" : "#000000";
+                    const beltStripePositions = beltStripes > 0
+                      ? Array.from({ length: beltStripes }, (_, i) => {
+                          const zoneStart = 20;
+                          const zoneWidth = 13;
+                          const step = zoneWidth / beltStripes;
+                          return Math.round(zoneStart + step * i + step * 0.35);
+                        })
+                      : [];
 
                     return (
                       <View key={belt.id} style={styles.catalogBeltItem}>
@@ -869,7 +884,20 @@ function BeltCatalogPanel() {
                           onPress={() => setExpandedBelt(isBeltOpen ? null : belt.id)}
                         >
                           <View style={[styles.catalogBeltColorBar, { backgroundColor: beltBarColor }]}>
-                            <View style={[styles.catalogBeltColorStripe, { backgroundColor: beltBarColor + "55" }]} />
+                            {beltStripePositions.map((leftPx, si) => (
+                              <View
+                                key={si}
+                                style={{
+                                  position: "absolute",
+                                  left: leftPx,
+                                  top: 2,
+                                  bottom: 2,
+                                  width: 2,
+                                  backgroundColor: beltStripeColor,
+                                  borderRadius: 1,
+                                }}
+                              />
+                            ))}
                           </View>
                           <Text style={styles.catalogBeltName} numberOfLines={1}>{belt.name.toUpperCase()}</Text>
                           <View style={styles.catalogBeltActions}>
