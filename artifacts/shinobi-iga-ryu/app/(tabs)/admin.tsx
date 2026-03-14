@@ -396,7 +396,7 @@ function BeltCatalogPanel() {
                 onPress={() => setExpandedDisc(isDiscOpen ? null : disc.discipline)}
               >
                 <View style={styles.catalogDiscLeft}>
-                  <MaterialCommunityIcons name="karate" size={18} color="#D4AF37" />
+                  <Text style={{ fontSize: 16 }}>🥋</Text>
                   <Text style={styles.catalogDiscTitle}>{discLabel}</Text>
                   <View style={styles.catalogBeltCount}>
                     <Text style={styles.catalogBeltCountText}>{disc.belts.length}</Text>
@@ -1050,11 +1050,7 @@ export default function AdminScreen() {
             style={[styles.tabButton, activeTab === "cinturones" && styles.tabButtonActive]}
             onPress={() => setActiveTab("cinturones")}
           >
-            <MaterialCommunityIcons
-              name="karate"
-              size={16}
-              color={activeTab === "cinturones" ? "#000" : "#666"}
-            />
+            <Text style={{ fontSize: 14 }}>🥋</Text>
             <Text
               style={[
                 styles.tabButtonText,
