@@ -8,13 +8,11 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors from "@/constants/colors";
-
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "shuriken", selected: "shuriken" }} />
+        <Icon sf={{ default: "figure.martial.arts", selected: "figure.martial.arts" }} />
         <Label>Artes</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
@@ -28,7 +26,6 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
-  const safeAreaInsets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -42,7 +39,6 @@ function ClassicTabLayout() {
           borderTopWidth: 1,
           borderTopColor: "#1A1A1A",
           elevation: 0,
-          paddingBottom: isWeb ? 0 : undefined,
           ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>

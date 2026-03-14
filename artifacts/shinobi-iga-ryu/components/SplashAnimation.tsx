@@ -15,16 +15,6 @@ interface SplashAnimationProps {
   onFinish: () => void;
 }
 
-function SplashContent() {
-  return (
-    <>
-      <View style={styles.logoCircle}>
-        <MaterialCommunityIcons name="ninja" size={80} color="#FFFFFF" />
-      </View>
-    </>
-  );
-}
-
 function WebSplash({ onFinish }: SplashAnimationProps) {
   const [phase, setPhase] = useState(0);
 
@@ -42,14 +32,37 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
     };
   }, []);
 
+  const containerWebStyle = Platform.select({
+    web: { transition: "opacity 0.5s ease-in" },
+    default: {},
+  });
+
+  const logoWebStyle = Platform.select({
+    web: { transition: "opacity 0.8s ease-out, transform 1s ease-out" },
+    default: {},
+  });
+
+  const lineWebStyle = Platform.select({
+    web: { transition: "width 0.6s ease-out, opacity 0.6s ease-out" },
+    default: {},
+  });
+
+  const textWebStyle = Platform.select({
+    web: { transition: "opacity 0.6s ease-out, transform 0.6s ease-out" },
+    default: {},
+  });
+
+  const subtitleWebStyle = Platform.select({
+    web: { transition: "opacity 0.6s ease-out" },
+    default: {},
+  });
+
   return (
     <View
       style={[
         styles.container,
-        {
-          opacity: phase >= 4 ? 0 : 1,
-          transition: "opacity 0.5s ease-in" as any,
-        },
+        { opacity: phase >= 4 ? 0 : 1 },
+        containerWebStyle,
       ]}
     >
       <View style={styles.content}>
@@ -59,8 +72,8 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
             {
               opacity: phase >= 1 ? 1 : 0,
               transform: [{ scale: phase >= 1 ? 1 : 0.3 }],
-              transition: "opacity 0.8s ease-out, transform 1s ease-out" as any,
             },
+            logoWebStyle,
           ]}
         >
           <View style={styles.logoCircle}>
@@ -74,17 +87,19 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
             {
               width: phase >= 2 ? width * 0.4 : 0,
               opacity: phase >= 2 ? 1 : 0,
-              transition: "width 0.6s ease-out, opacity 0.6s ease-out" as any,
             },
+            lineWebStyle,
           ]}
         />
 
         <View
-          style={{
-            opacity: phase >= 2 ? 1 : 0,
-            transform: [{ translateY: phase >= 2 ? 0 : 20 }],
-            transition: "opacity 0.6s ease-out, transform 0.6s ease-out" as any,
-          }}
+          style={[
+            {
+              opacity: phase >= 2 ? 1 : 0,
+              transform: [{ translateY: phase >= 2 ? 0 : 20 }],
+            },
+            textWebStyle,
+          ]}
         >
           <Text style={styles.academyName}>SHINOBI</Text>
           <Text style={styles.academySubname}>伊賀流</Text>
@@ -97,16 +112,16 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
             {
               width: phase >= 2 ? width * 0.4 : 0,
               opacity: phase >= 2 ? 1 : 0,
-              transition: "width 0.6s ease-out, opacity 0.6s ease-out" as any,
             },
+            lineWebStyle,
           ]}
         />
 
         <View
-          style={{
-            opacity: phase >= 3 ? 1 : 0,
-            transition: "opacity 0.6s ease-out" as any,
-          }}
+          style={[
+            { opacity: phase >= 3 ? 1 : 0 },
+            subtitleWebStyle,
+          ]}
         >
           <Text style={styles.motto}>忍者は永遠に</Text>
           <Text style={styles.mottoLatin}>NINJAS POR SIEMPRE</Text>
