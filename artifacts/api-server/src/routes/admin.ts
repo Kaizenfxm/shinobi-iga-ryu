@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable } from "@workspace/db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
 const adminRouter = Router();
@@ -18,7 +18,8 @@ async function fetchUsersWithRoles() {
       phone: usersTable.phone,
       createdAt: usersTable.createdAt,
     })
-    .from(usersTable);
+    .from(usersTable)
+    .orderBy(desc(usersTable.id));
 
   const allRoles = await db
     .select({ userId: userRolesTable.userId, role: userRolesTable.role })
