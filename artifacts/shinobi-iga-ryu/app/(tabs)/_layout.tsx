@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Tabs, useRouter } from "expo-router";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TabLayout() {
@@ -83,8 +83,8 @@ export default function TabLayout() {
         name="belts"
         options={{
           title: "Cinturones",
-          tabBarIcon: () => (
-            <Text style={{ fontSize: 20 }}>🥋</Text>
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="medal" size={22} color={color} />
           ),
         }}
         listeners={{ tabPress: requireAuth }}
