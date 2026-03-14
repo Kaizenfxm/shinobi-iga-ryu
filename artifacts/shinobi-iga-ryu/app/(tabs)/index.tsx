@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  Alert,
   ImageSourcePropType,
   Image,
   Pressable,
@@ -88,23 +87,11 @@ export default function MartialArtsScreen() {
   };
 
   const handleKnowledge = (artId: string) => {
-    withAuth(() =>
-      Alert.alert(
-        "Conocimiento",
-        `Próximamente: contenido de ${artId}`,
-        [{ text: "OK" }]
-      )
-    );
+    withAuth(() => router.push(`/entrenamiento/${artId}?tab=conocimiento` as never));
   };
 
   const handleExercises = (artId: string) => {
-    withAuth(() =>
-      Alert.alert(
-        "Ejercicios",
-        `Próximamente: ejercicios de ${artId}`,
-        [{ text: "OK" }]
-      )
-    );
+    withAuth(() => router.push(`/entrenamiento/${artId}?tab=ejercicios` as never));
   };
 
   return (
