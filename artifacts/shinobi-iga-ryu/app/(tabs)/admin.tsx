@@ -482,20 +482,6 @@ function UsersPanel({
     }
   }, []);
 
-  const handleActOnApp = useCallback(async (appId: number, action: "approve" | "reject") => {
-    setActingOnApp((s) => new Set(s).add(appId));
-    try {
-      await beltsApi.adminActOnApplication(appId, action);
-      setPendingApps((prev) => prev.filter((a) => a.id !== appId));
-      beltDataLoaded.current = false;
-      await loadBeltData();
-    } catch (e) {
-      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo procesar la postulación");
-    } finally {
-      setActingOnApp((s) => { const ns = new Set(s); ns.delete(appId); return ns; });
-    }
-  }, [loadBeltData]);
-
   const loadBeltData = useCallback(async () => {
     if (beltDataLoaded.current) return;
     beltDataLoaded.current = true;
@@ -512,6 +498,20 @@ function UsersPanel({
       setBeltDataLoading(false);
     }
   }, []);
+
+  const handleActOnApp = useCallback(async (appId: number, action: "approve" | "reject") => {
+    setActingOnApp((s) => new Set(s).add(appId));
+    try {
+      await beltsApi.adminActOnApplication(appId, action);
+      setPendingApps((prev) => prev.filter((a) => a.id !== appId));
+      beltDataLoaded.current = false;
+      await loadBeltData();
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo procesar la postulación");
+    } finally {
+      setActingOnApp((s) => { const ns = new Set(s); ns.delete(appId); return ns; });
+    }
+  }, [loadBeltData]);
 
   const toggleBeltSection = useCallback(async (userId: number) => {
     const willOpen = !beltSectionOpen[userId];
