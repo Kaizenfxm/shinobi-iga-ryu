@@ -530,10 +530,6 @@ function UsersPanel({
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
       />
-      <Pressable style={styles.createUserBtn} onPress={openCreate}>
-        <Ionicons name="person-add" size={16} color="#000" />
-        <Text style={styles.createUserBtnText}>Nuevo Usuario</Text>
-      </Pressable>
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={16} color="#666" />
         <TextInput
@@ -551,6 +547,9 @@ function UsersPanel({
             <Ionicons name="close-circle" size={16} color="#666" />
           </Pressable>
         )}
+        <Pressable style={styles.addUserBtn} onPress={openCreate}>
+          <Ionicons name="add" size={20} color="#D4AF37" />
+        </Pressable>
       </View>
       {filteredUsers.length === 0 && searchQuery.trim() !== "" && (
         <View style={{ alignItems: "center", paddingVertical: 24 }}>
@@ -2128,22 +2127,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#000",
   },
-  createUserBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#D4AF37",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    alignSelf: "flex-start",
-  },
-  createUserBtnText: {
-    color: "#000",
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.5,
+  addUserBtn: {
+    padding: 2,
+    marginLeft: 4,
   },
   userActionRow: {
     flexDirection: "row",
