@@ -15,7 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, type ProfileData, type ProfileBelt, type FightStats, type UserData } from "@/lib/api";
+import { profileApi, avatarApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type FightStats, type UserData } from "@/lib/api";
+import * as ImagePicker from "expo-image-picker";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 
@@ -283,6 +284,7 @@ export default function ProfileScreen() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
 
   useEffect(() => {
@@ -321,6 +323,44 @@ export default function ProfileScreen() {
     setEditName(profile?.displayName ?? user?.displayName ?? "");
     setEditPhone(profile?.phone ?? "");
     setEditing(true);
+  };
+
+  const handlePickAvatar = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permiso requerido", "Necesitamos acceso a tu galería para cambiar la foto");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType ?? "image/jpeg";
+
+      setUploadingAvatar(true);
+      const { uploadURL, objectPath } = await avatarApi.getUploadUrl(mimeType);
+
+      const imageBlob = await fetch(asset.uri).then((r) => r.blob());
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": mimeType },
+        body: imageBlob,
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      await avatarApi.saveAvatar(objectPath);
+      setProfile((prev) => prev ? { ...prev, avatarUrl: objectPath } : prev);
+    } catch {
+      Alert.alert("Error", "No se pudo subir la foto");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -447,9 +487,9 @@ export default function ProfileScreen() {
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                {data.avatarUrl ? (
+                {getAvatarServingUrl(data.avatarUrl) ? (
                   <Image
-                    source={{ uri: data.avatarUrl }}
+                    source={{ uri: getAvatarServingUrl(data.avatarUrl)! }}
                     style={styles.avatarImage}
                   />
                 ) : (
@@ -457,6 +497,17 @@ export default function ProfileScreen() {
                 )}
               </View>
               <View style={styles.avatarBorder} />
+              <Pressable
+                style={styles.avatarEditBadge}
+                onPress={handleEditOpen}
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <Ionicons name="pencil" size={13} color="#000" />
+                )}
+              </Pressable>
             </View>
 
             <Text style={styles.name}>{data.displayName}</Text>
@@ -512,9 +563,25 @@ export default function ProfileScreen() {
         </ViewShot>
 
         <View style={styles.actionsSection}>
-          {editing ? (
+          {editing && (
             <View style={styles.editForm}>
               <Text style={styles.editFormTitle}>Editar Perfil</Text>
+
+              <Pressable
+                style={styles.changePhotoButton}
+                onPress={handlePickAvatar}
+                disabled={uploadingAvatar || saving}
+              >
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color="#D4AF37" />
+                ) : (
+                  <>
+                    <Ionicons name="camera-outline" size={16} color="#D4AF37" />
+                    <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
+                  </>
+                )}
+              </Pressable>
+
               <Text style={styles.editLabel}>Nombre</Text>
               <TextInput
                 style={styles.editInput}
@@ -554,11 +621,6 @@ export default function ProfileScreen() {
                 </Pressable>
               </View>
             </View>
-          ) : (
-            <Pressable style={styles.editButton} onPress={handleEditOpen}>
-              <Ionicons name="create-outline" size={18} color="#D4AF37" />
-              <Text style={styles.editButtonText}>Editar Perfil</Text>
-            </Pressable>
           )}
 
           <Pressable
@@ -632,6 +694,20 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: "relative",
     marginBottom: 14,
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#D4AF37",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#000",
+    zIndex: 10,
   },
   avatar: {
     width: 100,
@@ -815,22 +891,22 @@ const styles = StyleSheet.create({
     color: "#888",
     letterSpacing: 0.5,
   },
-  editButton: {
+  changePhotoButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 14,
-    backgroundColor: "#080800",
+    paddingVertical: 11,
+    backgroundColor: "#0A0800",
     borderWidth: 1,
     borderColor: "#2A2500",
-    borderRadius: 12,
+    borderRadius: 8,
   },
-  editButtonText: {
+  changePhotoText: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 14,
+    fontSize: 13,
     color: "#D4AF37",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   editForm: {
     backgroundColor: "#080808",
