@@ -50,12 +50,14 @@ export default function NotificationBell() {
 
   const handleOpen = useCallback(async () => {
     setOpen(true);
-    if (unreadCount > 0) {
-      setMarking(true);
+    setMarking(true);
+    try {
+      await refresh();
       await markAllRead();
+    } finally {
       setMarking(false);
     }
-  }, [unreadCount, markAllRead]);
+  }, [refresh, markAllRead]);
 
   const handleClose = useCallback(() => {
     setOpen(false);

@@ -58,7 +58,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     intervalRef.current = setInterval(() => {
       refresh();
-    }, 30_000);
+    }, 15_000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
