@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, varchar, pgEnum, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,7 +11,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   displayName: varchar("display_name", { length: 255 }).notNull(),
   avatarUrl: text("avatar_url"),
-  subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico"),
+  subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -21,7 +21,9 @@ export const userRolesTable = pgTable("user_roles", {
   userId: integer("user_id").references(() => usersTable.id).notNull(),
   role: roleEnum("role").notNull(),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex("user_roles_user_id_role_idx").on(table.userId, table.role),
+]);
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
