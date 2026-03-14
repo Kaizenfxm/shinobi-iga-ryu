@@ -457,7 +457,9 @@ function UsersPanel({
         try { setDiscSectionOpen(JSON.parse(data)); } catch { }
       }
     });
-  }, []);
+    loadBeltData();
+    loadPendingApps();
+  }, [loadBeltData, loadPendingApps]);
 
   const toggleDiscSection = useCallback((userId: number, discipline: string) => {
     const key = `${userId}_${discipline}`;
@@ -693,7 +695,7 @@ function UsersPanel({
                     style={styles.userAvatarImage}
                   />
                 ) : (
-                  <Ionicons name="person" size={20} color="#666" />
+                  <Ionicons name="person" size={14} color="#333" />
                 )}
               </View>
               <View style={styles.userInfo}>
@@ -719,8 +721,8 @@ function UsersPanel({
               </View>
               <Ionicons
                 name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={18}
-                color="#555"
+                size={13}
+                color="#444"
               />
             </View>
 
@@ -743,8 +745,8 @@ function UsersPanel({
                       >
                         <MaterialCommunityIcons
                           name={ROLE_ICONS[role] as keyof typeof MaterialCommunityIcons.glyphMap}
-                          size={16}
-                          color={hasRole ? "#000" : "#666"}
+                          size={11}
+                          color={hasRole ? "#000" : "#555"}
                         />
                         <Text
                           style={[
@@ -872,7 +874,7 @@ function UsersPanel({
                     style={styles.editUserBtn}
                     onPress={() => openEdit(u)}
                   >
-                    <Ionicons name="pencil" size={14} color="#D4AF37" />
+                    <Ionicons name="pencil" size={10} color="#D4AF37" />
                     <Text style={styles.editUserBtnText}>Editar</Text>
                   </Pressable>
                   {!isCurrentUser && (
@@ -880,7 +882,7 @@ function UsersPanel({
                       style={styles.deleteUserBtn}
                       onPress={() => handleDelete(u)}
                     >
-                      <Ionicons name="trash" size={14} color="#FF4444" />
+                      <Ionicons name="trash" size={10} color="#FF4444" />
                       <Text style={styles.deleteUserBtnText}>Eliminar</Text>
                     </Pressable>
                   )}
@@ -922,8 +924,8 @@ function UsersPanel({
               <ScrollView showsVerticalScrollIndicator={false}>
                 {assignModal && (() => {
                   const belts = beltCatalog.find((d) => d.discipline === assignModal.discipline)?.belts ?? [];
-                  if (belts.length === 0) {
-                    return <Text style={[styles.noHistoryText, { margin: 20 }]}>Cargando cinturones...</Text>;
+                  if (beltDataLoading || belts.length === 0) {
+                    return <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 32 }} />;
                   }
                   return belts.map((belt) => {
                     const cLower = belt.color.toLowerCase();
@@ -1931,31 +1933,33 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   userCard: {
-    backgroundColor: "#0A0A0A",
-    borderRadius: 12,
+    backgroundColor: "#070707",
+    borderRadius: 2,
     borderWidth: 1,
-    borderColor: "#1A1A1A",
-    padding: 16,
-    marginBottom: 10,
+    borderColor: "#111",
+    borderTopWidth: 1,
+    borderTopColor: "#D4AF3722",
+    padding: 10,
+    marginBottom: 6,
   },
   userHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
   },
   userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 2,
     backgroundColor: "#111",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
   },
   userAvatarImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 2,
   },
   pendingAppsSection: {
     marginBottom: 12,
@@ -2131,94 +2135,97 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     flex: 1,
-    gap: 2,
+    gap: 1,
   },
   userNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   userName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 15,
+    fontSize: 12,
     color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   youBadge: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 8,
     color: "#D4AF37",
     backgroundColor: "#1A1500",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 1,
     overflow: "hidden",
   },
   userEmail: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "#555",
+    fontSize: 10,
+    color: "#444",
   },
   roleBadges: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 4,
-    marginTop: 4,
+    gap: 3,
+    marginTop: 3,
   },
   roleBadge: {
-    backgroundColor: "#1A1A1A",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "#111",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 1,
   },
   roleBadgeText: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
-    color: "#AAA",
-    letterSpacing: 1,
+    fontSize: 8,
+    color: "#888",
+    letterSpacing: 0.8,
   },
   subBadge: {
-    backgroundColor: "#1A1500",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: "#0D0B00",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 1,
+    borderWidth: 1,
+    borderColor: "#D4AF3730",
   },
   subBadgeText: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
+    fontSize: 8,
     color: "#D4AF37",
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
   expandedContent: {
-    marginTop: 4,
+    marginTop: 2,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: "#1A1A1A",
-    marginVertical: 12,
+    backgroundColor: "#111",
+    marginVertical: 8,
   },
   sectionLabel: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 10,
-    color: "#555",
-    letterSpacing: 3,
-    marginBottom: 8,
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 8,
+    color: "#444",
+    letterSpacing: 2.5,
+    marginBottom: 5,
   },
   toggleGroup: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
+    gap: 4,
+    marginBottom: 8,
   },
   toggleButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: "#111",
+    gap: 4,
+    backgroundColor: "#0D0D0D",
     borderWidth: 1,
-    borderColor: "#222",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderColor: "#1C1C1C",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 2,
   },
   toggleButtonActive: {
     backgroundColor: "#FFFFFF",
@@ -2230,8 +2237,8 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 12,
-    color: "#888",
+    fontSize: 10,
+    color: "#666",
   },
   toggleTextActive: {
     color: "#000",
@@ -2259,9 +2266,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 8,
-    marginTop: 4,
-    marginBottom: 4,
+    paddingVertical: 5,
+    marginTop: 2,
+    marginBottom: 2,
   },
   discToggleRow: {
     flexDirection: "row",
@@ -2825,42 +2832,43 @@ const styles = StyleSheet.create({
   },
   userActionRow: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
-    paddingTop: 12,
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#1A1A1A",
+    borderTopColor: "#111",
+    justifyContent: "flex-end",
   },
   editUserBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     borderWidth: 1,
-    borderColor: "#D4AF37",
-    borderRadius: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    borderColor: "#D4AF3760",
+    borderRadius: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
   editUserBtnText: {
     color: "#D4AF37",
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 12,
+    fontSize: 9,
     letterSpacing: 0.5,
   },
   deleteUserBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     borderWidth: 1,
-    borderColor: "#FF4444",
-    borderRadius: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    borderColor: "#FF444440",
+    borderRadius: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
   deleteUserBtnText: {
     color: "#FF4444",
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 12,
+    fontSize: 9,
     letterSpacing: 0.5,
   },
 });

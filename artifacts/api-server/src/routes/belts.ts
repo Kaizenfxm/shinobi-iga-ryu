@@ -475,12 +475,7 @@ beltsRouter.get("/admin/belts/users", requireAdmin, async (_req, res) => {
       beltsByUser.set(sb.userId, existing);
     }
 
-    const alumnoUsers = users.filter((u) => {
-      const roles = rolesByUser.get(u.id) || [];
-      return roles.includes("alumno");
-    });
-
-    const result = alumnoUsers.map((u) => ({
+    const result = users.map((u) => ({
       ...u,
       roles: rolesByUser.get(u.id) || [],
       belts: (beltsByUser.get(u.id) || []).map((b) => ({
