@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -57,7 +58,11 @@ export default function ProfileScreen() {
             <View style={styles.avatarBorder} />
           </View>
           <Text style={styles.name}>Ninja</Text>
-          <Text style={styles.subtitle}>Shinobi Iga Ryu</Text>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.profileLogo}
+            resizeMode="contain"
+          />
           <View style={styles.divider} />
           <View style={styles.infoRow}>
             <MaterialCommunityIcons name="shield-outline" size={20} color="#555" />
@@ -87,6 +92,12 @@ export default function ProfileScreen() {
 
         <Text style={styles.name}>{user.displayName}</Text>
         <Text style={styles.email}>{user.email}</Text>
+
+        <Image
+          source={require("@/assets/images/logo.png")}
+          style={styles.profileLogo}
+          resizeMode="contain"
+        />
 
         <View style={styles.rolesRow}>
           {user.roles.map((role) => (
@@ -177,12 +188,10 @@ const styles = StyleSheet.create({
     color: "#555555",
     marginTop: 4,
   },
-  subtitle: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 13,
-    color: "#555555",
-    letterSpacing: 2,
-    marginTop: 4,
+  profileLogo: {
+    width: 90,
+    height: 45,
+    marginTop: 8,
   },
   rolesRow: {
     flexDirection: "row",

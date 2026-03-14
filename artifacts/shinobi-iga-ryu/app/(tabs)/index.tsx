@@ -7,9 +7,9 @@ import {
   Platform,
   Alert,
   ImageSourcePropType,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import FlipCard from "@/components/FlipCard";
 import Colors from "@/constants/colors";
@@ -95,11 +95,12 @@ export default function MartialArtsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerLogoRow}>
-            <View style={styles.miniLogo}>
-              <MaterialCommunityIcons name="ninja" size={24} color="#FFFFFF" />
-            </View>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
             <View>
-              <Text style={styles.headerTitle}>SHINOBI IGA RYU</Text>
               <Text style={styles.headerSubtitle}>武道 · Artes Marciales</Text>
             </View>
           </View>
@@ -143,20 +144,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  miniLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: "#333333",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 18,
-    color: "#FFFFFF",
-    letterSpacing: 3,
+  headerLogo: {
+    width: 52,
+    height: 52,
   },
   headerSubtitle: {
     fontFamily: "NotoSerifJP_400Regular",
