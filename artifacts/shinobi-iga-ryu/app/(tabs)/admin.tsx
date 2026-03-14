@@ -797,123 +797,75 @@ function UsersPanel({
                   />
                 </Pressable>
 
-                {beltSectionOpen[u.id] && (() => {
-                  const userPending = pendingApps.filter((a) => a.userId === u.id);
-                  return (
-                  <View style={styles.beltManageSection}>
-                    {userPending.length > 0 && (
-                      <View style={styles.pendingAppsSection}>
-                        <Text style={styles.pendingAppsLabel}>⟳ POSTULACIONES PENDIENTES</Text>
-                        {userPending.map((app) => {
-                          const cLower = app.targetBeltColor.toLowerCase();
-                          const isDark = cLower === "#000000" || cLower === "#1c1c1c";
-                          const isWh = cLower === "#ffffff";
-                          const barBg = isDark ? "#3a3a3a" : isWh ? "#ccc" : app.targetBeltColor;
-                          const isPunta = app.targetBeltName.toLowerCase().includes("punta negra");
-                          const isFranja = app.targetBeltName.toLowerCase().includes("franja roja");
-                          const isActing = actingOnApp.has(app.id);
-                          return (
-                            <View key={app.id} style={styles.pendingAppRow}>
-                              <View style={[styles.pendingBeltBar, { backgroundColor: barBg, overflow: "hidden" }]}>
-                                {isFranja && <View style={styles.pendingFranjaRoja} />}
-                                {isPunta && <View style={styles.pendingPuntaNegra} />}
-                              </View>
-                              <View style={styles.pendingAppInfo}>
-                                <Text style={styles.pendingBeltName}>{app.targetBeltName}</Text>
-                                <Text style={styles.pendingDiscLabel}>{DISCIPLINE_LABELS[app.discipline] || app.discipline}</Text>
-                              </View>
-                              <View style={styles.pendingAppActions}>
+                {beltSectionOpen[u.id] && (
+                  <View style={styles.beltMiniSection}>
+                    {beltDataLoading ? (
+                      <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 4 }} />
+                    ) : (
+                      ["ninjutsu", "jiujitsu"].map((discipline) => {
+                        const userBelt = userBeltMap[u.id]?.belts.find((b) => b.discipline === discipline);
+                        const pendingApp = pendingApps.find((a) => a.userId === u.id && a.discipline === discipline);
+                        const cLower = userBelt ? userBelt.currentBelt.color.toLowerCase() : "";
+                        const isDark = cLower === "#000000" || cLower === "#1c1c1c";
+                        const isWh = cLower === "#ffffff";
+                        const barColor = userBelt ? (isDark ? "#3a3a3a" : isWh ? "#ccc" : userBelt.currentBelt.color) : "#222";
+                        const pCLower = pendingApp ? pendingApp.targetBeltColor.toLowerCase() : "";
+                        const pIsDark = pCLower === "#000000" || pCLower === "#1c1c1c";
+                        const pIsWh = pCLower === "#ffffff";
+                        const pBarColor = pendingApp ? (pIsDark ? "#3a3a3a" : pIsWh ? "#ccc" : pendingApp.targetBeltColor) : "#222";
+                        const pIsPunta = pendingApp ? pendingApp.targetBeltName.toLowerCase().includes("punta negra") : false;
+                        const pIsFranja = pendingApp ? pendingApp.targetBeltName.toLowerCase().includes("franja roja") : false;
+                        const isActing = pendingApp ? actingOnApp.has(pendingApp.id) : false;
+                        return (
+                          <View key={discipline} style={styles.discMiniRow}>
+                            <View style={styles.discMiniRowMain}>
+                              <View style={[styles.discMiniColorDot, { backgroundColor: barColor }]} />
+                              <Text style={styles.discMiniLabel}>{DISCIPLINE_LABELS[discipline] || discipline}</Text>
+                              <Text style={styles.discMiniBeltName} numberOfLines={1}>
+                                {userBelt ? userBelt.currentBelt.name : "—"}
+                              </Text>
+                              <Pressable
+                                style={styles.discMiniAssignBtn}
+                                onPress={() => setAssignModal({ userId: u.id, discipline })}
+                              >
+                                <Text style={styles.discMiniAssignTxt}>Asignar</Text>
+                              </Pressable>
+                            </View>
+                            {pendingApp && (
+                              <View style={styles.discMiniPendingRow}>
+                                <View style={[styles.discMiniPendingBar, { backgroundColor: pBarColor, overflow: "hidden" }]}>
+                                  {pIsFranja && <View style={styles.pendingFranjaRoja} />}
+                                  {pIsPunta && <View style={styles.pendingPuntaNegra} />}
+                                </View>
+                                <Text style={styles.discMiniPendingTxt} numberOfLines={1}>
+                                  → {pendingApp.targetBeltName}
+                                </Text>
                                 {isActing ? (
                                   <ActivityIndicator size="small" color="#D4AF37" />
                                 ) : (
-                                  <>
+                                  <View style={styles.discMiniActions}>
                                     <Pressable
-                                      style={styles.approveBtn}
-                                      onPress={() => handleActOnApp(app.id, "approve")}
+                                      style={styles.discMiniApproveBtn}
+                                      onPress={() => handleActOnApp(pendingApp.id, "approve")}
                                     >
-                                      <Ionicons name="checkmark" size={14} color="#000" />
+                                      <Ionicons name="checkmark" size={11} color="#000" />
                                     </Pressable>
                                     <Pressable
-                                      style={styles.rejectBtn}
-                                      onPress={() => handleActOnApp(app.id, "reject")}
+                                      style={styles.discMiniRejectBtn}
+                                      onPress={() => handleActOnApp(pendingApp.id, "reject")}
                                     >
-                                      <Ionicons name="close" size={14} color="#fff" />
+                                      <Ionicons name="close" size={11} color="#fff" />
                                     </Pressable>
-                                  </>
+                                  </View>
                                 )}
                               </View>
-                            </View>
-                          );
-                        })}
-                      </View>
+                            )}
+                          </View>
+                        );
+                      })
                     )}
-                    {["ninjutsu", "jiujitsu"].map((discipline) => {
-                      const userBelt = userBeltMap[u.id]?.belts.find((b) => b.discipline === discipline);
-                      const discKey = `${u.id}_${discipline}`;
-                      const isDiscOpen = !!discSectionOpen[discKey];
-                      const beltColorLower = userBelt ? userBelt.currentBelt.color.toLowerCase() : "";
-                      const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
-                      const beltIsWhite = beltColorLower === "#ffffff";
-                      const barColor = userBelt
-                        ? beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : userBelt.currentBelt.color
-                        : "#1a1a1a";
-                      return (
-                        <View key={discipline}>
-                          <Pressable
-                            style={styles.discToggleRow}
-                            onPress={() => toggleDiscSection(u.id, discipline)}
-                          >
-                            <View style={styles.discToggleLabelRow}>
-                              <View style={[styles.discMiniBar, { backgroundColor: barColor }]} />
-                              <Text style={styles.discToggleLabel}>
-                                {DISCIPLINE_LABELS[discipline] || discipline}
-                              </Text>
-                              {userBelt && (
-                                <Text style={styles.discCurrentBeltName} numberOfLines={1}>
-                                  {userBelt.currentBelt.name}
-                                </Text>
-                              )}
-                            </View>
-                            <Ionicons
-                              name={isDiscOpen ? "chevron-up" : "chevron-down"}
-                              size={13}
-                              color="#555"
-                            />
-                          </Pressable>
-                          {isDiscOpen && (
-                            <View style={styles.discExpandedContent}>
-                              {beltDataLoading ? (
-                                <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 6 }} />
-                              ) : (
-                                <>
-                                  <View style={styles.beltManageRow}>
-                                    <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
-                                    <View style={styles.beltManageInfo}>
-                                      <Text style={styles.beltManageName}>
-                                        {userBelt ? userBelt.currentBelt.name : "Sin cinturón asignado"}
-                                      </Text>
-                                      <Text style={styles.beltManageStatus}>
-                                        {userBelt ? "Cinturón actual" : "—"}
-                                      </Text>
-                                    </View>
-                                  </View>
-                                  <Pressable
-                                    style={styles.assignBeltBtn}
-                                    onPress={() => setAssignModal({ userId: u.id, discipline })}
-                                  >
-                                    <Ionicons name="ribbon" size={12} color="#000" />
-                                    <Text style={styles.assignBeltBtnText}>Asignar cinturón</Text>
-                                  </Pressable>
-                                </>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      );
-                    })}
                   </View>
-                  );
-                })()}
+                )}
 
                 <View style={styles.userActionRow}>
                   <Pressable
@@ -2325,6 +2277,85 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#888",
     letterSpacing: 1.5,
+  },
+  beltMiniSection: {
+    paddingVertical: 4,
+    gap: 0,
+  },
+  discMiniRow: {
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#111",
+  },
+  discMiniRowMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  discMiniColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 1,
+  },
+  discMiniLabel: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#777",
+    letterSpacing: 1.2,
+    width: 58,
+  },
+  discMiniBeltName: {
+    flex: 1,
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#AAA",
+  },
+  discMiniAssignBtn: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: "#D4AF3760",
+    borderRadius: 2,
+  },
+  discMiniAssignTxt: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#D4AF37",
+    letterSpacing: 0.5,
+  },
+  discMiniPendingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+    paddingLeft: 16,
+  },
+  discMiniPendingBar: {
+    width: 28,
+    height: 8,
+    borderRadius: 1,
+  },
+  discMiniPendingTxt: {
+    flex: 1,
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#D4AF37",
+  },
+  discMiniActions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  discMiniApproveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    padding: 3,
+  },
+  discMiniRejectBtn: {
+    backgroundColor: "#3a1010",
+    borderRadius: 2,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: "#6a2020",
   },
   beltManageSection: {
     marginBottom: 16,
