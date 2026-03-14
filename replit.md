@@ -33,10 +33,20 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - 3 combinable user roles: admin, profesor, alumno
 - 4 subscription levels: basico, medio, avanzado, personalizado
 - Auth flow: splash -> welcome screen -> login/register -> main app
-- Role-based tab navigation: Admin tab (admin only), Alumnos tab (profesor only), Artes (all), Perfil (all)
+- Role-based tab navigation: Admin tab (admin only), Alumnos tab (profesor only), Artes (all), Cinturones (all), Perfil (all)
 - Admin panel: view all users, toggle roles, change subscription levels
-- Professor view: list of students with subscription badges
+- Professor view: list of assigned students with subscription badges
 - Profile screen: display name, email, roles, subscription, logout
+- Profesor-student assignment model (profesor_students join table)
+
+### Features (Fase 3)
+- Belt system for Ninjutsu (8 belts: Blanco→Amarillo→Naranja→Verde→Azul→Morado→Marrón→Negro) and Jiujitsu (5 belts: Blanco→Azul→Morado→Marrón→Negro)
+- Each belt has specific requirements/exam criteria stored in belt_requirements table
+- Student belt progression screen: shows current belt per discipline, locked/unlocked next level, requirements when unlocked, full belt history
+- Admin belt management: view all students' belt status, unlock next level for a student, promote student to next belt
+- Belt history tracking with dates and promotion notes
+- Admin panel has sub-tabs: "Usuarios" (role/subscription management) and "Cinturones" (belt management)
+- Next level requirements hidden until admin explicitly unlocks them for a specific student
 
 ### Fonts
 - NotoSansJP (400, 500, 700, 900) - Japanese sans-serif
@@ -46,6 +56,11 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 ### Database Schema
 - `users` - User accounts with email, password hash, display name, subscription level (notNull, default basico)
 - `user_roles` - Many-to-many: users can have multiple roles (admin, profesor, alumno), unique index on (user_id, role)
+- `profesor_students` - Join table: profesor-student assignments, unique index on (profesor_id, alumno_id)
+- `belt_definitions` - Belt catalog per discipline with name, color, order_index, description
+- `student_belts` - Current belt per user per discipline, with next_unlocked flag
+- `belt_history` - Historical record of all belt promotions with dates and notes
+- `belt_requirements` - Exam requirements for each belt level
 - `session` - Express session store (auto-created by connect-pg-simple)
 
 ### API Routes
@@ -56,10 +71,17 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - `GET /api/admin/users` - List all users with roles (admin only)
 - `PUT /api/admin/users/:id/roles` - Update user roles (admin only)
 - `PUT /api/admin/users/:id/subscription` - Change subscription level (admin only)
+- `GET /api/admin/profesor/:profesorId/alumnos` - Get professor's assigned students (admin only)
+- `PUT /api/admin/profesor/:profesorId/alumnos` - Update professor's student assignments (admin only)
+- `GET /api/profesor/alumnos` - Professor's assigned students (profesor only)
+- `GET /api/belts/definitions` - All belt definitions (requires auth)
+- `GET /api/belts/me` - Current user's belt progression + history (requires auth)
+- `GET /api/admin/belts/users` - All students with belt info (admin only)
+- `POST /api/admin/belts/unlock` - Unlock next belt level for student (admin only)
+- `POST /api/admin/belts/promote` - Promote student to next belt (admin only)
 - `GET /api/healthz` - Health check
 
 ### Planned Features (Future Phases)
-- Belt System for Ninjutsu & Jiujitsu (Fase 3)
 - Fighter Mode & Fight History (Fase 4)
 - Instagram-style Profile with belts and fight record (Fase 5)
 
@@ -70,12 +92,12 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server
 │   │   ├── src/app.ts      # Express setup with session middleware
-│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts
-│   │   └── src/middlewares/ # auth.ts (requireAuth, requireAdmin)
+│   │   ├── src/routes/     # auth.ts, admin.ts, health.ts, profesor.ts, belts.ts
+│   │   └── src/middlewares/ # auth.ts (requireAuth, requireAdmin, requireProfesor)
 │   └── shinobi-iga-ryu/    # Expo mobile app
 │       ├── app/_layout.tsx  # Root layout with AuthProvider
 │       ├── app/auth.tsx     # Welcome/login/register screen
-│       ├── app/(tabs)/      # Tab screens (index, profile, admin, alumnos)
+│       ├── app/(tabs)/      # Tab screens (index, belts, profile, admin, alumnos)
 │       ├── contexts/        # AuthContext.tsx
 │       └── lib/api.ts       # API client with fetch wrapper
 ├── lib/
@@ -83,6 +105,7 @@ artifacts-monorepo/
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas
 │   └── db/                 # Drizzle ORM schema + DB connection
+│       └── src/schema/     # users.ts, belts.ts
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -101,7 +124,7 @@ Every package extends `tsconfig.base.json` which sets `composite: true`.
 Expo mobile app with file-based routing (Expo Router). Dark theme, Japanese-minimalist design.
 
 - Components: `SplashAnimation.tsx`, `FlipCard.tsx`
-- Screens: auth.tsx, (tabs)/index.tsx, (tabs)/profile.tsx, (tabs)/admin.tsx, (tabs)/alumnos.tsx
+- Screens: auth.tsx, (tabs)/index.tsx, (tabs)/belts.tsx, (tabs)/profile.tsx, (tabs)/admin.tsx, (tabs)/alumnos.tsx
 - Contexts: `AuthContext.tsx` - session state, login/register/logout, hasRole()
 - API client: `lib/api.ts` - fetch wrapper with cookie credentials
 - Fonts: NotoSansJP, NotoSerifJP, Inter
@@ -112,13 +135,15 @@ Express 5 API server with session-based auth.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App: `src/app.ts` — CORS, sessions (connect-pg-simple), JSON parsing
-- Routes: auth (register/login/me/logout), admin (users/roles/subscription), health
-- Middleware: `requireAuth`, `requireAdmin`
+- Routes: auth (register/login/me/logout), admin (users/roles/subscription/belts), profesor (alumnos), belts (definitions/me), health
+- Middleware: `requireAuth`, `requireAdmin`, `requireProfesor`
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 
 ### `lib/db` (`@workspace/db`)
 
 Database layer using Drizzle ORM with PostgreSQL.
 
-- `src/schema/users.ts` — users, user_roles tables with enums
+- `src/schema/users.ts` — users, user_roles, profesor_students tables with enums
+- `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements tables
 - Production migrations handled by Replit. Dev: `pnpm --filter @workspace/db run push`
+- After schema changes, rebuild declarations: `cd lib/db && npx tsc --build --force`

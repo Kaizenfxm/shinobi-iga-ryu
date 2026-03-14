@@ -16,6 +16,8 @@ tags:
     description: Admin operations
   - name: profesor
     description: Professor operations
+  - name: belts
+    description: Belt progression operations
 paths:
   /healthz:
     get:
@@ -269,6 +271,114 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /belts/definitions:
+    get:
+      operationId: getBeltDefinitions
+      tags: [belts]
+      summary: Get all belt definitions
+      responses:
+        "200":
+          description: Belt definitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeltDefinitionsResponse"
+  /belts/me:
+    get:
+      operationId: getMyBelts
+      tags: [belts]
+      summary: Get current user belt progression
+      responses:
+        "200":
+          description: User belt data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyBeltsResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/belts/users:
+    get:
+      operationId: adminGetBeltUsers
+      tags: [admin]
+      summary: Get all students with belt info (admin only)
+      responses:
+        "200":
+          description: Students with belt info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBeltUsersResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/belts/unlock:
+    post:
+      operationId: adminUnlockBelt
+      tags: [admin]
+      summary: Unlock next belt level for a student (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeltActionRequest"
+      responses:
+        "200":
+          description: Belt unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeltUnlockResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/belts/promote:
+    post:
+      operationId: adminPromoteBelt
+      tags: [admin]
+      summary: Promote student to next belt (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeltActionRequest"
+      responses:
+        "200":
+          description: Student promoted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeltPromoteResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /profesor/alumnos:
     get:
       operationId: profesorGetAlumnos
@@ -457,3 +567,183 @@ components:
             $ref: "#/components/schemas/UserData"
       required:
         - students
+    BeltDefinitionData:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+        orderIndex:
+          type: integer
+        description:
+          type: string
+          nullable: true
+        discipline:
+          type: string
+          enum: [ninjutsu, jiujitsu]
+      required:
+        - id
+        - name
+        - color
+        - orderIndex
+    BeltDefinitionsResponse:
+      type: object
+      properties:
+        definitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeltDefinitionData"
+      required:
+        - definitions
+    BeltRequirementData:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        orderIndex:
+          type: integer
+      required:
+        - id
+        - title
+        - orderIndex
+    MyBeltData:
+      type: object
+      properties:
+        discipline:
+          type: string
+        currentBelt:
+          $ref: "#/components/schemas/BeltDefinitionData"
+        nextUnlocked:
+          type: boolean
+        unlockedAt:
+          type: string
+          nullable: true
+        nextBelt:
+          $ref: "#/components/schemas/BeltDefinitionData"
+          nullable: true
+        nextRequirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeltRequirementData"
+      required:
+        - discipline
+        - currentBelt
+        - nextUnlocked
+        - nextRequirements
+    BeltHistoryData:
+      type: object
+      properties:
+        id:
+          type: integer
+        discipline:
+          type: string
+        beltId:
+          type: integer
+        achievedAt:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        beltName:
+          type: string
+        beltColor:
+          type: string
+      required:
+        - id
+        - discipline
+        - beltId
+        - achievedAt
+        - beltName
+        - beltColor
+    MyBeltsResponse:
+      type: object
+      properties:
+        belts:
+          type: array
+          items:
+            $ref: "#/components/schemas/MyBeltData"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeltHistoryData"
+      required:
+        - belts
+        - history
+    AdminBeltUserData:
+      type: object
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        belts:
+          type: array
+          items:
+            type: object
+            properties:
+              discipline:
+                type: string
+              currentBelt:
+                $ref: "#/components/schemas/BeltDefinitionData"
+              nextUnlocked:
+                type: boolean
+      required:
+        - id
+        - displayName
+        - email
+        - roles
+        - belts
+    AdminBeltUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminBeltUserData"
+      required:
+        - users
+    BeltActionRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+        discipline:
+          type: string
+          enum: [ninjutsu, jiujitsu]
+      required:
+        - userId
+        - discipline
+    BeltUnlockResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        nextBelt:
+          $ref: "#/components/schemas/BeltDefinitionData"
+      required:
+        - success
+        - nextBelt
+    BeltPromoteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        newBelt:
+          $ref: "#/components/schemas/BeltDefinitionData"
+      required:
+        - success
+        - newBelt

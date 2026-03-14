@@ -111,3 +111,74 @@ export const adminApi = {
 export const profesorApi = {
   getAlumnos: () => apiFetch<{ students: UserData[] }>("/profesor/alumnos"),
 };
+
+export interface BeltDefinition {
+  id: number;
+  name: string;
+  color: string;
+  orderIndex: number;
+  description: string | null;
+}
+
+export interface BeltRequirement {
+  id: number;
+  title: string;
+  description: string | null;
+  orderIndex: number;
+}
+
+export interface MyBelt {
+  discipline: string;
+  currentBelt: BeltDefinition;
+  nextUnlocked: boolean;
+  unlockedAt: string | null;
+  nextBelt: BeltDefinition | null;
+  nextRequirements: BeltRequirement[];
+}
+
+export interface BeltHistoryItem {
+  id: number;
+  discipline: string;
+  beltId: number;
+  achievedAt: string;
+  notes: string | null;
+  beltName: string;
+  beltColor: string;
+}
+
+export interface AdminBeltUser {
+  id: number;
+  displayName: string;
+  email: string;
+  roles: string[];
+  belts: {
+    discipline: string;
+    currentBelt: {
+      id: number;
+      name: string;
+      color: string;
+      orderIndex: number;
+    };
+    nextUnlocked: boolean;
+  }[];
+}
+
+export const beltsApi = {
+  getMyBelts: () => apiFetch<{ belts: MyBelt[]; history: BeltHistoryItem[] }>("/belts/me"),
+
+  getDefinitions: () => apiFetch<{ definitions: BeltDefinition[] }>("/belts/definitions"),
+
+  adminGetUsers: () => apiFetch<{ users: AdminBeltUser[] }>("/admin/belts/users"),
+
+  adminUnlock: (userId: number, discipline: string) =>
+    apiFetch<{ success: boolean; nextBelt: BeltDefinition }>("/admin/belts/unlock", {
+      method: "POST",
+      body: { userId, discipline },
+    }),
+
+  adminPromote: (userId: number, discipline: string) =>
+    apiFetch<{ success: boolean; newBelt: BeltDefinition }>("/admin/belts/promote", {
+      method: "POST",
+      body: { userId, discipline },
+    }),
+};

@@ -17,11 +17,17 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminBeltUsersResponse,
   AdminUsersResponse,
   AuthResponse,
+  BeltActionRequest,
+  BeltDefinitionsResponse,
+  BeltPromoteResponse,
+  BeltUnlockResponse,
   ErrorResponse,
   HealthStatus,
   LoginRequest,
+  MyBeltsResponse,
   ProfesorAlumnoIdsResponse,
   ProfesorStudentsResponse,
   RegisterRequest,
@@ -872,6 +878,403 @@ export const useAdminUpdateProfesorAlumnos = <
   TContext
 > => {
   return useMutation(getAdminUpdateProfesorAlumnosMutationOptions(options));
+};
+
+/**
+ * @summary Get all belt definitions
+ */
+export const getGetBeltDefinitionsUrl = () => {
+  return `/api/belts/definitions`;
+};
+
+export const getBeltDefinitions = async (
+  options?: RequestInit,
+): Promise<BeltDefinitionsResponse> => {
+  return customFetch<BeltDefinitionsResponse>(getGetBeltDefinitionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBeltDefinitionsQueryKey = () => {
+  return [`/api/belts/definitions`] as const;
+};
+
+export const getGetBeltDefinitionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBeltDefinitions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBeltDefinitions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBeltDefinitionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBeltDefinitions>>
+  > = ({ signal }) => getBeltDefinitions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBeltDefinitions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBeltDefinitionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBeltDefinitions>>
+>;
+export type GetBeltDefinitionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all belt definitions
+ */
+
+export function useGetBeltDefinitions<
+  TData = Awaited<ReturnType<typeof getBeltDefinitions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBeltDefinitions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBeltDefinitionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get current user belt progression
+ */
+export const getGetMyBeltsUrl = () => {
+  return `/api/belts/me`;
+};
+
+export const getMyBelts = async (
+  options?: RequestInit,
+): Promise<MyBeltsResponse> => {
+  return customFetch<MyBeltsResponse>(getGetMyBeltsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyBeltsQueryKey = () => {
+  return [`/api/belts/me`] as const;
+};
+
+export const getGetMyBeltsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyBelts>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyBelts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyBeltsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyBelts>>> = ({
+    signal,
+  }) => getMyBelts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyBelts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyBeltsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyBelts>>
+>;
+export type GetMyBeltsQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get current user belt progression
+ */
+
+export function useGetMyBelts<
+  TData = Awaited<ReturnType<typeof getMyBelts>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyBelts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyBeltsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all students with belt info (admin only)
+ */
+export const getAdminGetBeltUsersUrl = () => {
+  return `/api/admin/belts/users`;
+};
+
+export const adminGetBeltUsers = async (
+  options?: RequestInit,
+): Promise<AdminBeltUsersResponse> => {
+  return customFetch<AdminBeltUsersResponse>(getAdminGetBeltUsersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetBeltUsersQueryKey = () => {
+  return [`/api/admin/belts/users`] as const;
+};
+
+export const getAdminGetBeltUsersQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetBeltUsers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetBeltUsers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetBeltUsersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetBeltUsers>>
+  > = ({ signal }) => adminGetBeltUsers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetBeltUsers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetBeltUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetBeltUsers>>
+>;
+export type AdminGetBeltUsersQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get all students with belt info (admin only)
+ */
+
+export function useAdminGetBeltUsers<
+  TData = Awaited<ReturnType<typeof adminGetBeltUsers>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetBeltUsers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetBeltUsersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Unlock next belt level for a student (admin only)
+ */
+export const getAdminUnlockBeltUrl = () => {
+  return `/api/admin/belts/unlock`;
+};
+
+export const adminUnlockBelt = async (
+  beltActionRequest: BeltActionRequest,
+  options?: RequestInit,
+): Promise<BeltUnlockResponse> => {
+  return customFetch<BeltUnlockResponse>(getAdminUnlockBeltUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(beltActionRequest),
+  });
+};
+
+export const getAdminUnlockBeltMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUnlockBelt>>,
+    TError,
+    { data: BodyType<BeltActionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUnlockBelt>>,
+  TError,
+  { data: BodyType<BeltActionRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminUnlockBelt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUnlockBelt>>,
+    { data: BodyType<BeltActionRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminUnlockBelt(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUnlockBeltMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUnlockBelt>>
+>;
+export type AdminUnlockBeltMutationBody = BodyType<BeltActionRequest>;
+export type AdminUnlockBeltMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Unlock next belt level for a student (admin only)
+ */
+export const useAdminUnlockBelt = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUnlockBelt>>,
+    TError,
+    { data: BodyType<BeltActionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUnlockBelt>>,
+  TError,
+  { data: BodyType<BeltActionRequest> },
+  TContext
+> => {
+  return useMutation(getAdminUnlockBeltMutationOptions(options));
+};
+
+/**
+ * @summary Promote student to next belt (admin only)
+ */
+export const getAdminPromoteBeltUrl = () => {
+  return `/api/admin/belts/promote`;
+};
+
+export const adminPromoteBelt = async (
+  beltActionRequest: BeltActionRequest,
+  options?: RequestInit,
+): Promise<BeltPromoteResponse> => {
+  return customFetch<BeltPromoteResponse>(getAdminPromoteBeltUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(beltActionRequest),
+  });
+};
+
+export const getAdminPromoteBeltMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminPromoteBelt>>,
+    TError,
+    { data: BodyType<BeltActionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminPromoteBelt>>,
+  TError,
+  { data: BodyType<BeltActionRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminPromoteBelt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminPromoteBelt>>,
+    { data: BodyType<BeltActionRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminPromoteBelt(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminPromoteBeltMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminPromoteBelt>>
+>;
+export type AdminPromoteBeltMutationBody = BodyType<BeltActionRequest>;
+export type AdminPromoteBeltMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Promote student to next belt (admin only)
+ */
+export const useAdminPromoteBelt = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminPromoteBelt>>,
+    TError,
+    { data: BodyType<BeltActionRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminPromoteBelt>>,
+  TError,
+  { data: BodyType<BeltActionRequest> },
+  TContext
+> => {
+  return useMutation(getAdminPromoteBeltMutationOptions(options));
 };
 
 /**

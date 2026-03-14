@@ -157,6 +157,142 @@ export const AdminUpdateProfesorAlumnosResponse = zod.object({
 });
 
 /**
+ * @summary Get all belt definitions
+ */
+export const GetBeltDefinitionsResponse = zod.object({
+  definitions: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      color: zod.string(),
+      orderIndex: zod.number(),
+      description: zod.string().nullish(),
+      discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get current user belt progression
+ */
+export const GetMyBeltsResponse = zod.object({
+  belts: zod.array(
+    zod.object({
+      discipline: zod.string(),
+      currentBelt: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        color: zod.string(),
+        orderIndex: zod.number(),
+        description: zod.string().nullish(),
+        discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+      }),
+      nextUnlocked: zod.boolean(),
+      unlockedAt: zod.string().nullish(),
+      nextBelt: zod
+        .object({
+          id: zod.number(),
+          name: zod.string(),
+          color: zod.string(),
+          orderIndex: zod.number(),
+          description: zod.string().nullish(),
+          discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+        })
+        .nullish(),
+      nextRequirements: zod.array(
+        zod.object({
+          id: zod.number(),
+          title: zod.string(),
+          description: zod.string().nullish(),
+          orderIndex: zod.number(),
+        }),
+      ),
+    }),
+  ),
+  history: zod.array(
+    zod.object({
+      id: zod.number(),
+      discipline: zod.string(),
+      beltId: zod.number(),
+      achievedAt: zod.string(),
+      notes: zod.string().nullish(),
+      beltName: zod.string(),
+      beltColor: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get all students with belt info (admin only)
+ */
+export const AdminGetBeltUsersResponse = zod.object({
+  users: zod.array(
+    zod.object({
+      id: zod.number(),
+      displayName: zod.string(),
+      email: zod.string(),
+      roles: zod.array(zod.string()),
+      belts: zod.array(
+        zod.object({
+          discipline: zod.string().optional(),
+          currentBelt: zod
+            .object({
+              id: zod.number(),
+              name: zod.string(),
+              color: zod.string(),
+              orderIndex: zod.number(),
+              description: zod.string().nullish(),
+              discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+            })
+            .optional(),
+          nextUnlocked: zod.boolean().optional(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Unlock next belt level for a student (admin only)
+ */
+export const AdminUnlockBeltBody = zod.object({
+  userId: zod.number(),
+  discipline: zod.enum(["ninjutsu", "jiujitsu"]),
+});
+
+export const AdminUnlockBeltResponse = zod.object({
+  success: zod.boolean(),
+  nextBelt: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    color: zod.string(),
+    orderIndex: zod.number(),
+    description: zod.string().nullish(),
+    discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+  }),
+});
+
+/**
+ * @summary Promote student to next belt (admin only)
+ */
+export const AdminPromoteBeltBody = zod.object({
+  userId: zod.number(),
+  discipline: zod.enum(["ninjutsu", "jiujitsu"]),
+});
+
+export const AdminPromoteBeltResponse = zod.object({
+  success: zod.boolean(),
+  newBelt: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    color: zod.string(),
+    orderIndex: zod.number(),
+    description: zod.string().nullish(),
+    discipline: zod.enum(["ninjutsu", "jiujitsu"]).optional(),
+  }),
+});
+
+/**
  * @summary List students (professor only)
  */
 export const ProfesorGetAlumnosResponse = zod.object({
