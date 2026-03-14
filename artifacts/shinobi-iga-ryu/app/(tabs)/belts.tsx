@@ -38,10 +38,28 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-function BeltColorStrip({ color, size = 40 }: { color: string; size?: number }) {
-  const isBlack = color === "#000000";
-  const isWhite = color === "#FFFFFF";
-  const borderColor = isBlack ? "#2a2a2a" : isWhite ? "#555" : color;
+function getStripeCount(name: string): number {
+  const match = name.match(/(\d+)\s+franja/i);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?: string; size?: number }) {
+  const stripes = getStripeCount(name);
+  const colorLower = color.toLowerCase();
+  const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
+  const isWhite = colorLower === "#ffffff";
+  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#555" : color;
+  const stripeColor = isVeryDark ? "#D4AF37" : "#000000";
+  const height = Math.round(size * 0.45);
+
+  const stripePositions = stripes > 0
+    ? Array.from({ length: stripes }, (_, i) => {
+        const zoneStart = Math.round(size * 0.56);
+        const zoneWidth = Math.round(size * 0.36);
+        const step = zoneWidth / stripes;
+        return Math.round(zoneStart + step * i + step * 0.35);
+      })
+    : [];
 
   return (
     <View
@@ -49,7 +67,7 @@ function BeltColorStrip({ color, size = 40 }: { color: string; size?: number }) 
         beltStripStyles.strip,
         {
           width: size,
-          height: Math.round(size * 0.45),
+          height,
           backgroundColor: color,
           borderColor,
         },
@@ -57,6 +75,20 @@ function BeltColorStrip({ color, size = 40 }: { color: string; size?: number }) 
     >
       <View style={[beltStripStyles.knot, { backgroundColor: borderColor }]} />
       <View style={[beltStripStyles.end, { backgroundColor: borderColor + "40" }]} />
+      {stripePositions.map((leftPx, i) => (
+        <View
+          key={i}
+          style={{
+            position: "absolute",
+            left: leftPx,
+            top: Math.round(height * 0.12),
+            bottom: Math.round(height * 0.12),
+            width: 2,
+            backgroundColor: stripeColor,
+            borderRadius: 1,
+          }}
+        />
+      ))}
     </View>
   );
 }
@@ -341,7 +373,7 @@ function LadderRow({
   return (
     <View style={[rowStyles.container, { borderColor, opacity: rowOpacity }]}>
       <View style={rowStyles.header}>
-        <BeltColorStrip color={belt.color} size={56} />
+        <BeltColorStrip color={belt.color} name={belt.name} size={56} />
         <View style={rowStyles.nameArea}>
           <Text style={[rowStyles.name, status === "current" && rowStyles.nameCurrent]}>
             {belt.name.toUpperCase()}
