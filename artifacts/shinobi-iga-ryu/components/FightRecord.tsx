@@ -7,7 +7,7 @@ export default function FightRecord({ stats }: { stats: FightStats }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.line} />
-        <Text style={styles.title}>戦 RECORD 戦</Text>
+        <Text style={styles.title}>戦 RECORD DE PELEAS 戦</Text>
         <View style={styles.line} />
       </View>
       <View style={styles.recordRow}>

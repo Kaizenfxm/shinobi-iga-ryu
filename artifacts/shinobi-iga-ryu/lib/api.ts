@@ -461,6 +461,86 @@ export const notificationsApi = {
     apiFetch<{ ok: boolean }>(`/notifications/${id}/read`, { method: "POST" }),
 };
 
+export interface TrainingSystem {
+  id: number;
+  key: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+}
+
+export interface ExerciseData {
+  id: number;
+  trainingSystemId: number;
+  title: string;
+  description: string | null;
+  videoUrl: string | null;
+  imageUrl: string | null;
+  durationMinutes: number | null;
+  level: string | null;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface KnowledgeItemData {
+  id: number;
+  trainingSystemId: number;
+  title: string;
+  content: string | null;
+  videoUrl: string | null;
+  imageUrl: string | null;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface TrainingSystemDetail {
+  system: TrainingSystem;
+  exercises: ExerciseData[];
+  knowledge: KnowledgeItemData[];
+}
+
+export const trainingApi = {
+  getSystems: () =>
+    apiFetch<{ systems: TrainingSystem[] }>("/training/systems"),
+
+  getSystem: (key: string) =>
+    apiFetch<TrainingSystemDetail>(`/training/systems/${key}`),
+
+  createExercise: (data: {
+    trainingSystemId: number;
+    title: string;
+    description?: string;
+    videoUrl?: string;
+    imageUrl?: string;
+    durationMinutes?: number;
+    level?: string;
+    orderIndex?: number;
+  }) => apiFetch<{ exercise: ExerciseData }>("/admin/training/exercises", { method: "POST", body: data }),
+
+  updateExercise: (id: number, data: Partial<ExerciseData>) =>
+    apiFetch<{ exercise: ExerciseData }>(`/admin/training/exercises/${id}`, { method: "PUT", body: data }),
+
+  deleteExercise: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/training/exercises/${id}`, { method: "DELETE" }),
+
+  createKnowledge: (data: {
+    trainingSystemId: number;
+    title: string;
+    content?: string;
+    videoUrl?: string;
+    imageUrl?: string;
+    orderIndex?: number;
+  }) => apiFetch<{ item: KnowledgeItemData }>("/admin/training/knowledge", { method: "POST", body: data }),
+
+  updateKnowledge: (id: number, data: Partial<KnowledgeItemData>) =>
+    apiFetch<{ item: KnowledgeItemData }>(`/admin/training/knowledge/${id}`, { method: "PUT", body: data }),
+
+  deleteKnowledge: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/training/knowledge/${id}`, { method: "DELETE" }),
+};
+
 export const fightsApi = {
   getMyFights: () =>
     apiFetch<{ isFighter: boolean; fights: FightData[]; stats: FightStats | null }>("/fights/me"),

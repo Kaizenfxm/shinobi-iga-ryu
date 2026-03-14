@@ -8,6 +8,7 @@ import fightsRouter from "./fights";
 import profileRouter from "./profile";
 import storageRouter from "./storage";
 import notificationsRouter from "./notifications";
+import trainingRouter from "./training";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(fightsRouter);
 router.use(profileRouter);
 router.use(storageRouter);
 router.use(notificationsRouter);
+router.use(trainingRouter);
 
 export default router;

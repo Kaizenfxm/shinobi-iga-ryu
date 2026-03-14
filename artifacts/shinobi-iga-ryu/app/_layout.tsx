@@ -60,6 +60,10 @@ function RootLayoutNav() {
         name="auth"
         options={{ headerShown: false, animation: "fade" }}
       />
+      <Stack.Screen
+        name="entrenamiento/[sistema]"
+        options={{ headerShown: false, animation: "slide_from_right" }}
+      />
     </Stack>
   );
 }
