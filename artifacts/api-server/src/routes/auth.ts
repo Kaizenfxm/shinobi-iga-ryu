@@ -53,34 +53,36 @@ authRouter.post("/auth/register", async (req, res) => {
     });
 
     const disciplines = ["ninjutsu", "jiujitsu"] as const;
-    for (const discipline of disciplines) {
-      const [whiteBelt] = await db
-        .select()
-        .from(beltDefinitionsTable)
-        .where(
-          and(
-            eq(beltDefinitionsTable.discipline, discipline),
-            eq(beltDefinitionsTable.orderIndex, 0)
+    await db.transaction(async (tx) => {
+      for (const discipline of disciplines) {
+        const [whiteBelt] = await tx
+          .select()
+          .from(beltDefinitionsTable)
+          .where(
+            and(
+              eq(beltDefinitionsTable.discipline, discipline),
+              eq(beltDefinitionsTable.orderIndex, 0)
+            )
           )
-        )
-        .limit(1);
+          .limit(1);
 
-      if (whiteBelt) {
-        await db.insert(studentBeltsTable).values({
-          userId: user.id,
-          discipline,
-          currentBeltId: whiteBelt.id,
-          nextUnlocked: false,
-        });
+        if (whiteBelt) {
+          await tx.insert(studentBeltsTable).values({
+            userId: user.id,
+            discipline,
+            currentBeltId: whiteBelt.id,
+            nextUnlocked: false,
+          });
 
-        await db.insert(beltHistoryTable).values({
-          userId: user.id,
-          discipline,
-          beltId: whiteBelt.id,
-          notes: "Cinturón inicial asignado al registro",
-        });
+          await tx.insert(beltHistoryTable).values({
+            userId: user.id,
+            discipline,
+            beltId: whiteBelt.id,
+            notes: "Cinturón inicial asignado al registro",
+          });
+        }
       }
-    }
+    });
 
     req.session.userId = user.id;
 
