@@ -958,13 +958,13 @@ beltsRouter.put("/admin/belts/definitions/:id", requireAdmin, async (req, res) =
     const { name, color, description } = req.body as {
       name?: string;
       color?: string;
-      description?: string;
+      description?: string | null;
     };
 
     const updateData: Partial<{ name: string; color: string; description: string | null }> = {};
     if (name?.trim()) updateData.name = name.trim();
     if (color?.trim()) updateData.color = color.trim();
-    if (description !== undefined) updateData.description = description.trim() || null;
+    if (description !== undefined) updateData.description = description?.trim() || null;
 
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ error: "Sin campos para actualizar" });
@@ -1084,10 +1084,10 @@ beltsRouter.put("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin
       return;
     }
 
-    const { title, description } = req.body as { title?: string; description?: string };
+    const { title, description } = req.body as { title?: string; description?: string | null };
     const updateData: Partial<{ title: string; description: string | null }> = {};
     if (title?.trim()) updateData.title = title.trim();
-    if (description !== undefined) updateData.description = description.trim() || null;
+    if (description !== undefined) updateData.description = description?.trim() || null;
 
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ error: "Sin campos para actualizar" });

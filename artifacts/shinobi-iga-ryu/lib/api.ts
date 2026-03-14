@@ -294,7 +294,7 @@ export const beltsApi = {
   adminCreateBelt: (data: { discipline: string; name: string; color: string; description?: string }) =>
     apiFetch<{ belt: CatalogBelt }>("/admin/belts/definitions", { method: "POST", body: data }),
 
-  adminUpdateBelt: (id: number, data: { name?: string; color?: string; description?: string }) =>
+  adminUpdateBelt: (id: number, data: { name?: string; color?: string; description?: string | null }) =>
     apiFetch<{ belt: CatalogBelt }>(`/admin/belts/definitions/${id}`, { method: "PUT", body: data }),
 
   adminDeleteBelt: (id: number) =>
@@ -306,7 +306,7 @@ export const beltsApi = {
   adminCreateRequirement: (beltId: number, data: { title: string; description?: string }) =>
     apiFetch<{ requirement: CatalogRequirement }>(`/admin/belts/definitions/${beltId}/requirements`, { method: "POST", body: data }),
 
-  adminUpdateRequirement: (beltId: number, reqId: number, data: { title?: string; description?: string }) =>
+  adminUpdateRequirement: (beltId: number, reqId: number, data: { title?: string; description?: string | null }) =>
     apiFetch<{ requirement: CatalogRequirement }>(`/admin/belts/definitions/${beltId}/requirements/${reqId}`, { method: "PUT", body: data }),
 
   adminDeleteRequirement: (beltId: number, reqId: number) =>

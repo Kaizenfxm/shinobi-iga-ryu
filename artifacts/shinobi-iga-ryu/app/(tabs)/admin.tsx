@@ -850,7 +850,7 @@ function BeltCatalogPanel() {
       setSaving(true);
       try {
         await beltsApi.adminUpdateBelt(beltForm.editingId, {
-          description: beltForm.description.trim() || undefined,
+          description: beltForm.description.trim() || null,
         });
         setBeltForm(INIT_BELT_FORM);
         await loadCatalog();
@@ -868,7 +868,7 @@ function BeltCatalogPanel() {
         if (reqForm.editingId) {
           await beltsApi.adminUpdateRequirement(reqForm.beltId, reqForm.editingId, {
             title: reqForm.title.trim(),
-            description: reqForm.description.trim() || undefined,
+            description: reqForm.description.trim() || null,
           });
         } else {
           await beltsApi.adminCreateRequirement(reqForm.beltId, {
