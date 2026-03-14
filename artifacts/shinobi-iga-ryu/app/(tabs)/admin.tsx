@@ -443,6 +443,7 @@ function UsersPanel({
   const [userBeltMap, setUserBeltMap] = useState<Record<number, AdminBeltUser>>({});
   const [beltDataLoading, setBeltDataLoading] = useState(false);
   const beltDataLoaded = useRef(false);
+  const [discSectionOpen, setDiscSectionOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     AsyncStorage.getItem("adminBeltSectionOpen").then((data) => {
@@ -450,7 +451,19 @@ function UsersPanel({
         try { setBeltSectionOpen(JSON.parse(data)); } catch { }
       }
     });
+    AsyncStorage.getItem("adminDiscSectionOpen").then((data) => {
+      if (data) {
+        try { setDiscSectionOpen(JSON.parse(data)); } catch { }
+      }
+    });
   }, []);
+
+  const toggleDiscSection = useCallback((userId: number, discipline: string) => {
+    const key = `${userId}_${discipline}`;
+    const newState = { ...discSectionOpen, [key]: !discSectionOpen[key] };
+    setDiscSectionOpen(newState);
+    AsyncStorage.setItem("adminDiscSectionOpen", JSON.stringify(newState));
+  }, [discSectionOpen]);
 
   const loadBeltData = useCallback(async () => {
     if (beltDataLoaded.current) return;
@@ -733,19 +746,36 @@ function UsersPanel({
                       <Text style={styles.noHistoryText}>Sin cinturones asignados</Text>
                     ) : (
                       userBeltMap[u.id].belts.map((b) => {
+                        const discKey = `${u.id}_${b.discipline}`;
+                        const isDiscOpen = !!discSectionOpen[discKey];
                         const beltColorLower = b.currentBelt.color.toLowerCase();
                         const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
                         const beltIsWhite = beltColorLower === "#ffffff";
                         const barColor = beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : b.currentBelt.color;
                         return (
-                          <View key={b.discipline} style={styles.beltManageRow}>
-                            <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
-                            <View style={styles.beltManageInfo}>
-                              <Text style={styles.beltManageName}>{b.currentBelt.name}</Text>
-                              <Text style={styles.beltManageStatus}>
+                          <View key={b.discipline}>
+                            <Pressable
+                              style={styles.discToggleRow}
+                              onPress={() => toggleDiscSection(u.id, b.discipline)}
+                            >
+                              <Text style={styles.discToggleLabel}>
                                 {DISCIPLINE_LABELS[b.discipline] || b.discipline}
                               </Text>
-                            </View>
+                              <Ionicons
+                                name={isDiscOpen ? "chevron-up" : "chevron-down"}
+                                size={13}
+                                color="#555"
+                              />
+                            </Pressable>
+                            {isDiscOpen && (
+                              <View style={styles.beltManageRow}>
+                                <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
+                                <View style={styles.beltManageInfo}>
+                                  <Text style={styles.beltManageName}>{b.currentBelt.name}</Text>
+                                  <Text style={styles.beltManageStatus}>Cinturón actual</Text>
+                                </View>
+                              </View>
+                            )}
                           </View>
                         );
                       })
@@ -1907,6 +1937,21 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginTop: 4,
     marginBottom: 4,
+  },
+  discToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+    marginBottom: 4,
+  },
+  discToggleLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 10,
+    color: "#888",
+    letterSpacing: 1.5,
   },
   beltManageSection: {
     marginBottom: 16,
