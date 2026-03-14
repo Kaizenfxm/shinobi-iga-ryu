@@ -45,12 +45,18 @@ function getStripeCount(name: string): number {
 
 function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?: string; size?: number }) {
   const stripes = getStripeCount(name);
+  const nameLower = name.toLowerCase();
+  const isPuntaNegra = nameLower.includes("punta negra");
+  const isFranjaRoja = nameLower.includes("franja roja");
   const colorLower = color.toLowerCase();
   const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
   const isWhite = colorLower === "#ffffff";
-  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#555" : color;
+  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : color;
   const stripeColor = isVeryDark ? "#D4AF37" : "#000000";
   const height = Math.round(size * 0.45);
+
+  const showKnot = !isWhite && !isPuntaNegra && !isFranjaRoja;
+  const showEnd = !isWhite && !isPuntaNegra && !isFranjaRoja;
 
   const stripePositions = stripes > 0
     ? Array.from({ length: stripes }, (_, i) => {
@@ -73,8 +79,18 @@ function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?:
         },
       ]}
     >
-      <View style={[beltStripStyles.knot, { backgroundColor: borderColor }]} />
-      <View style={[beltStripStyles.end, { backgroundColor: borderColor + "40" }]} />
+      {showKnot && (
+        <View style={[beltStripStyles.knot, { backgroundColor: borderColor }]} />
+      )}
+      {showEnd && (
+        <View style={[beltStripStyles.end, { backgroundColor: borderColor + "40" }]} />
+      )}
+      {isFranjaRoja && (
+        <View style={beltStripStyles.franjaRoja} />
+      )}
+      {isPuntaNegra && (
+        <View style={beltStripStyles.puntaNegra} />
+      )}
       {stripePositions.map((leftPx, i) => (
         <View
           key={i}
@@ -115,6 +131,22 @@ const beltStripStyles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: "20%",
+  },
+  franjaRoja: {
+    position: "absolute",
+    left: "30%",
+    width: "35%",
+    top: 0,
+    bottom: 0,
+    backgroundColor: "#CC0000",
+  },
+  puntaNegra: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: "30%",
+    backgroundColor: "#000000",
   },
 });
 
