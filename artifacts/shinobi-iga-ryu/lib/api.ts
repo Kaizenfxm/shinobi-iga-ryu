@@ -446,6 +446,9 @@ export const fightsApi = {
   deleteFight: (fightId: number) =>
     apiFetch<{ success: boolean }>(`/fights/${fightId}`, { method: "DELETE" }),
 
+  updateFight: (fightId: number, data: Partial<AddFightData>) =>
+    apiFetch<{ fight: FightData }>(`/fights/${fightId}`, { method: "PUT", body: data }),
+
   toggleFighterMode: (userId: number, isFighter: boolean) =>
     apiFetch<{ success: boolean; isFighter: boolean }>(`/admin/users/${userId}/fighter`, {
       method: "PUT",

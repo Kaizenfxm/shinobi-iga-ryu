@@ -48,40 +48,27 @@ const DISCIPLINE_LABELS: Record<string, string> = {
 function StatsCard({ stats }: { stats: FightStats }) {
   return (
     <View style={styles.statsCard}>
-      <Text style={styles.statsTitle}>Record ({stats.total} peleas)</Text>
+      <Text style={styles.statsTitle}>記録 · {stats.victorias}-{stats.derrotas}-{stats.empates}</Text>
       <View style={styles.recordRow}>
         <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#22C55E" }]}>
-            {stats.victorias}
-          </Text>
-          <Text style={styles.recordLabel}>V</Text>
+          <Text style={[styles.recordNumber, { color: "#22C55E" }]}>{stats.victorias}</Text>
+          <Text style={styles.recordLabel}>勝</Text>
         </View>
-        <Text style={styles.recordSeparator}>-</Text>
+        <Text style={styles.recordSeparator}>·</Text>
         <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#EF4444" }]}>
-            {stats.derrotas}
-          </Text>
-          <Text style={styles.recordLabel}>D</Text>
+          <Text style={[styles.recordNumber, { color: "#EF4444" }]}>{stats.derrotas}</Text>
+          <Text style={styles.recordLabel}>敗</Text>
         </View>
-        <Text style={styles.recordSeparator}>-</Text>
+        <Text style={styles.recordSeparator}>·</Text>
         <View style={styles.recordItem}>
-          <Text style={[styles.recordNumber, { color: "#F59E0B" }]}>
-            {stats.empates}
-          </Text>
-          <Text style={styles.recordLabel}>E</Text>
+          <Text style={[styles.recordNumber, { color: "#F59E0B" }]}>{stats.empates}</Text>
+          <Text style={styles.recordLabel}>分</Text>
         </View>
       </View>
-      <View style={styles.winRateContainer}>
-        <View style={styles.winRateBarBg}>
-          <View
-            style={[
-              styles.winRateBarFill,
-              { width: `${stats.winPercentage}%` },
-            ]}
-          />
-        </View>
-        <Text style={styles.winRateText}>{stats.winPercentage}% victorias</Text>
+      <View style={styles.winRateBarBg}>
+        <View style={[styles.winRateBarFill, { width: `${stats.winPercentage}%` as unknown as number }]} />
       </View>
+      <Text style={styles.winRateText}>{stats.winPercentage}% victorias · {stats.total} peleas</Text>
     </View>
   );
 }
@@ -95,38 +82,20 @@ function FightCard({ fight }: { fight: FightData }) {
   });
 
   return (
-    <View style={styles.fightCard}>
+    <View style={[styles.fightCard, { borderLeftColor: resultColor }]}>
       <View style={styles.fightHeader}>
-        <View style={[styles.resultBadge, { backgroundColor: resultColor + "22", borderColor: resultColor }]}>
-          <Text style={[styles.resultText, { color: resultColor }]}>
-            {RESULT_LABELS[fight.result] || fight.result}
-          </Text>
-        </View>
+        <Text style={[styles.resultText, { color: resultColor }]}>
+          {RESULT_LABELS[fight.result] || fight.result}
+        </Text>
         <Text style={styles.fightDate}>{dateStr}</Text>
       </View>
       <Text style={styles.opponentName}>vs {fight.opponentName}</Text>
-      <View style={styles.fightDetails}>
-        <View style={styles.detailPill}>
-          <Text style={styles.detailText}>
-            {DISCIPLINE_LABELS[fight.discipline] || fight.discipline}
-          </Text>
-        </View>
-        {fight.method && (
-          <View style={styles.detailPill}>
-            <Text style={styles.detailText}>
-              {METHOD_LABELS[fight.method] || fight.method}
-            </Text>
-          </View>
-        )}
-        {fight.rounds && (
-          <View style={styles.detailPill}>
-            <Text style={styles.detailText}>R{fight.rounds}</Text>
-          </View>
-        )}
-      </View>
-      {fight.eventName && (
-        <Text style={styles.eventName}>{fight.eventName}</Text>
-      )}
+      <Text style={styles.fightMeta}>
+        {DISCIPLINE_LABELS[fight.discipline] || fight.discipline}
+        {fight.method ? ` · ${METHOD_LABELS[fight.method] || fight.method}` : ""}
+        {fight.rounds ? ` · R${fight.rounds}` : ""}
+      </Text>
+      {fight.eventName && <Text style={styles.eventName}>{fight.eventName}</Text>}
       {fight.notes && <Text style={styles.notes}>{fight.notes}</Text>}
     </View>
   );
@@ -269,12 +238,12 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 16,
   },
   headerTitle: {
     fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 22,
+    fontSize: 18,
     color: "#D4AF37",
     letterSpacing: 3,
   },
@@ -282,140 +251,122 @@ const styles = StyleSheet.create({
     backgroundColor: "#0A0A0A",
     borderWidth: 1,
     borderColor: "#1A1A1A",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+    borderRadius: 2,
+    padding: 14,
+    marginBottom: 18,
   },
   statsTitle: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 12,
-    color: "#888",
-    letterSpacing: 2,
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 3,
     textTransform: "uppercase",
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: "center",
   },
   recordRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 12,
   },
   recordItem: {
     alignItems: "center",
   },
   recordNumber: {
     fontFamily: "Inter_700Bold",
-    fontSize: 32,
+    fontSize: 28,
   },
   recordLabel: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 11,
-    color: "#666",
-    letterSpacing: 1,
-    marginTop: 2,
+    fontSize: 13,
+    color: "#555",
+    marginTop: 1,
   },
   recordSeparator: {
     fontFamily: "Inter_400Regular",
-    fontSize: 24,
-    color: "#333",
-    marginHorizontal: 4,
-  },
-  winRateContainer: {
-    alignItems: "center",
+    fontSize: 18,
+    color: "#222",
   },
   winRateBarBg: {
-    width: "100%",
-    height: 4,
+    height: 2,
     backgroundColor: "#1A1A1A",
-    borderRadius: 2,
     overflow: "hidden",
-    marginBottom: 6,
+    marginBottom: 5,
   },
   winRateBarFill: {
     height: "100%",
     backgroundColor: "#D4AF37",
-    borderRadius: 2,
   },
   winRateText: {
     fontFamily: "Inter_400Regular",
-    fontSize: 11,
-    color: "#888",
+    fontSize: 10,
+    color: "#555",
+    textAlign: "right",
+    letterSpacing: 1,
   },
   sectionTitle: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 16,
-    color: "#FFFFFF",
-    letterSpacing: 2,
-    marginBottom: 12,
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 11,
+    color: "#555",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+    marginBottom: 10,
   },
   fightCard: {
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#080808",
     borderWidth: 1,
     borderColor: "#1A1A1A",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderRadius: 2,
+    padding: 10,
+    marginBottom: 6,
   },
   fightHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  resultBadge: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    marginBottom: 4,
   },
   resultText: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: "uppercase",
   },
   fightDate: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "#666",
+    fontSize: 10,
+    color: "#444",
   },
   opponentName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 16,
+    fontSize: 14,
     color: "#FFFFFF",
-    marginBottom: 8,
+    marginBottom: 4,
     letterSpacing: 1,
   },
-  fightDetails: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginBottom: 4,
-  },
-  detailPill: {
-    backgroundColor: "#111",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  detailText: {
+  fightMeta: {
     fontFamily: "Inter_400Regular",
     fontSize: 11,
-    color: "#AAA",
+    color: "#555",
+    letterSpacing: 0.5,
   },
   eventName: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "#666",
-    marginTop: 6,
+    fontSize: 11,
+    color: "#444",
+    marginTop: 4,
     fontStyle: "italic",
   },
   notes: {
     fontFamily: "Inter_400Regular",
-    fontSize: 12,
-    color: "#555",
-    marginTop: 4,
+    fontSize: 11,
+    color: "#444",
+    marginTop: 3,
   },
   inactiveContainer: {
     alignItems: "center",
@@ -423,28 +374,28 @@ const styles = StyleSheet.create({
   },
   inactiveTitle: {
     fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 22,
+    fontSize: 20,
     color: "#FFFFFF",
     letterSpacing: 3,
     marginTop: 16,
   },
   inactiveSubtitle: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 14,
-    color: "#555",
-    letterSpacing: 2,
+    fontSize: 12,
+    color: "#444",
+    letterSpacing: 3,
     marginTop: 4,
   },
   divider: {
-    width: 40,
+    width: 30,
     height: 1,
-    backgroundColor: "#222",
+    backgroundColor: "#1A1A1A",
     marginVertical: 20,
   },
   inactiveDesc: {
     fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    color: "#666",
+    fontSize: 12,
+    color: "#555",
     textAlign: "center",
     lineHeight: 20,
     paddingHorizontal: 20,
@@ -455,8 +406,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 14,
-    color: "#555",
+    fontSize: 12,
+    color: "#444",
     marginTop: 12,
     textAlign: "center",
   },

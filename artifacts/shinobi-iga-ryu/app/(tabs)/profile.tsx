@@ -605,6 +605,13 @@ export default function ProfileScreen() {
         </ViewShot>
 
         <View style={styles.actionsSection}>
+          {!editing && (
+            <Pressable style={styles.editProfileBtn} onPress={handleEditOpen}>
+              <Ionicons name="pencil-outline" size={15} color="#D4AF37" />
+              <Text style={styles.editProfileBtnText}>Editar Perfil</Text>
+            </Pressable>
+          )}
+
           {editing && (
             <View style={styles.editForm}>
               <Text style={styles.editFormTitle}>Editar Perfil</Text>
@@ -911,6 +918,26 @@ const styles = StyleSheet.create({
   },
   fighterToggleTextActive: {
     color: "#000000",
+  },
+  editProfileBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+    borderRadius: 2,
+    marginBottom: 10,
+    backgroundColor: "#0A0800",
+  },
+  editProfileBtnText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#D4AF37",
+    letterSpacing: 2,
   },
   shareButton: {
     flexDirection: "row",
