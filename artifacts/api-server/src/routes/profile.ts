@@ -190,4 +190,21 @@ profileRouter.put("/profile/me/avatar", requireAuth, async (req, res) => {
   }
 });
 
+profileRouter.put("/profile/me/fighter", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { isFighter } = req.body as { isFighter: boolean };
+    const [updated] = await db
+      .update(usersTable)
+      .set({ isFighter: !!isFighter, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId))
+      .returning({ isFighter: usersTable.isFighter });
+    if (!updated) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
+    res.json({ success: true, isFighter: updated.isFighter });
+  } catch (error) {
+    console.error("Toggle fighter error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 export default profileRouter;

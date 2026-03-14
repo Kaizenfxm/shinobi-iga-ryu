@@ -88,29 +88,29 @@ const beltCardStyles = StyleSheet.create({
     backgroundColor: "#0A0A0A",
     borderWidth: 1,
     borderColor: "#1A1A1A",
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    minWidth: 140,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    minWidth: 0,
   },
   kanji: {
     fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 28,
+    fontSize: 18,
     color: "#D4AF37",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   disciplineName: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 11,
+    fontSize: 8,
     color: "#666",
-    letterSpacing: 3,
+    letterSpacing: 2,
     textTransform: "uppercase",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   beltVisual: {
-    width: 120,
-    height: 28,
-    marginBottom: 10,
+    width: 80,
+    height: 18,
+    marginBottom: 6,
   },
   beltStrip: {
     width: "100%",
@@ -152,8 +152,8 @@ const beltCardStyles = StyleSheet.create({
   },
   beltName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 13,
-    letterSpacing: 2,
+    fontSize: 9,
+    letterSpacing: 1.5,
     textTransform: "uppercase",
   },
 });
@@ -312,6 +312,7 @@ export default function ProfileScreen() {
   const [editPhone, setEditPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [togglingFighter, setTogglingFighter] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
 
   useEffect(() => {
@@ -337,6 +338,20 @@ export default function ProfileScreen() {
       loadProfile();
     }
   }, [isAuthenticated, loadProfile]);
+
+  const handleToggleFighter = async () => {
+    if (!profile && !user) return;
+    const current = profile?.isFighter ?? false;
+    setTogglingFighter(true);
+    try {
+      const res = await profileApi.toggleFighterMode(!current);
+      setProfile((prev) => prev ? { ...prev, isFighter: res.isFighter } : prev);
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el modo peleador");
+    } finally {
+      setTogglingFighter(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -651,6 +666,27 @@ export default function ProfileScreen() {
           )}
 
           <Pressable
+            style={[styles.fighterToggleButton, data.isFighter && styles.fighterToggleButtonActive]}
+            onPress={handleToggleFighter}
+            disabled={togglingFighter}
+          >
+            {togglingFighter ? (
+              <ActivityIndicator size="small" color={data.isFighter ? "#000" : "#D4AF37"} />
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="sword-cross"
+                  size={16}
+                  color={data.isFighter ? "#000" : "#D4AF37"}
+                />
+                <Text style={[styles.fighterToggleText, data.isFighter && styles.fighterToggleTextActive]}>
+                  {data.isFighter ? "Desactivar modo peleador" : "Activar modo peleador"}
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          <Pressable
             style={styles.shareButton}
             onPress={handleShare}
             disabled={sharing}
@@ -850,6 +886,31 @@ const styles = StyleSheet.create({
   actionsSection: {
     marginTop: 24,
     gap: 12,
+  },
+  fighterToggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#D4AF3750",
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  fighterToggleButtonActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  fighterToggleText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#D4AF37",
+    letterSpacing: 1,
+  },
+  fighterToggleTextActive: {
+    color: "#000000",
   },
   shareButton: {
     flexDirection: "row",

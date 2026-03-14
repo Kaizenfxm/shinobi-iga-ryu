@@ -223,6 +223,19 @@ export interface AdminBeltUser {
   }[];
 }
 
+export interface PendingBeltApplication {
+  id: number;
+  userId: number;
+  userDisplayName: string;
+  userEmail: string;
+  userAvatarUrl: string | null;
+  discipline: string;
+  targetBeltId: number;
+  targetBeltName: string;
+  targetBeltColor: string;
+  appliedAt: string;
+}
+
 export interface CatalogRequirement {
   id: number;
   beltId: number;
@@ -263,6 +276,15 @@ export const beltsApi = {
   getDefinitions: () => apiFetch<{ definitions: BeltDefinition[] }>("/belts/definitions"),
 
   adminGetUsers: () => apiFetch<{ users: AdminBeltUser[] }>("/admin/belts/users"),
+
+  adminGetPendingApplications: () =>
+    apiFetch<{ applications: PendingBeltApplication[] }>("/admin/belts/applications/pending"),
+
+  adminActOnApplication: (id: number, action: "approve" | "reject") =>
+    apiFetch<{ success: boolean; action: string }>(`/admin/belts/applications/${id}`, {
+      method: "PUT",
+      body: { action },
+    }),
 
   adminGetHistory: (userId: number) =>
     apiFetch<{ history: BeltHistoryItem[] }>(`/admin/belts/users/${userId}/history`),
@@ -383,6 +405,11 @@ export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
   updateProfile: (data: { displayName?: string; phone?: string | null }) =>
     apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
+  toggleFighterMode: (isFighter: boolean) =>
+    apiFetch<{ success: boolean; isFighter: boolean }>("/profile/me/fighter", {
+      method: "PUT",
+      body: { isFighter },
+    }),
 };
 
 export const avatarApi = {
