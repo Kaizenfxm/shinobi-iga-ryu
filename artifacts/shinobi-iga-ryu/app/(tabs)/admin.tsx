@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, fightsApi, type UserData, type AdminBeltUser, type BeltHistoryItem, type FightData, type FightStats, type AddFightData } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -236,354 +236,456 @@ function UsersPanel({
   );
 }
 
-function BeltsPanel({
-  beltUsers,
-  onRefresh,
-}: {
-  beltUsers: AdminBeltUser[];
-  onRefresh: () => Promise<void>;
-}) {
-  const [expandedUser, setExpandedUser] = useState<number | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [userHistory, setUserHistory] = useState<Record<number, BeltHistoryItem[]>>({});
-  const [historyLoading, setHistoryLoading] = useState<number | null>(null);
+function BeltCatalogPanel() {
+    const [catalog, setCatalog] = useState<CatalogDiscipline[]>([]);
+    const [loadingCatalog, setLoadingCatalog] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [expandedDisc, setExpandedDisc] = useState<string | null>("ninjutsu");
+    const [expandedBelt, setExpandedBelt] = useState<number | null>(null);
 
-  const filteredUsers = beltUsers.filter((u) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      u.displayName.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    );
-  });
+    const initBeltForm = { visible: false, discipline: "ninjutsu", editingId: null as number | null, name: "", color: "", description: "" };
+    const initReqForm = { visible: false, beltId: null as number | null, editingId: null as number | null, title: "", description: "" };
+    const [beltForm, setBeltForm] = useState(initBeltForm);
+    const [reqForm, setReqForm] = useState(initReqForm);
 
-  const loadHistory = async (userId: number) => {
-    if (userHistory[userId]) return;
-    setHistoryLoading(userId);
-    try {
-      const data = await beltsApi.adminGetHistory(userId);
-      setUserHistory((prev) => ({ ...prev, [userId]: data.history }));
-    } catch {
-      // silent
-    } finally {
-      setHistoryLoading(null);
-    }
-  };
+    const loadCatalog = useCallback(async () => {
+      try {
+        const data = await beltsApi.adminGetCatalog();
+        setCatalog(data.catalog);
+      } catch {
+        Alert.alert("Error", "No se pudo cargar el catálogo");
+      } finally {
+        setLoadingCatalog(false);
+      }
+    }, []);
 
-  const handleExpand = (userId: number) => {
-    const isExpanded = expandedUser === userId;
-    setExpandedUser(isExpanded ? null : userId);
-    if (!isExpanded) {
-      loadHistory(userId);
-    }
-  };
+    useEffect(() => { loadCatalog(); }, [loadCatalog]);
 
-  const handleUnlock = async (userId: number, discipline: string) => {
-    const key = `unlock-${userId}-${discipline}`;
-    setActionLoading(key);
-    try {
-      const result = await beltsApi.adminUnlock(userId, discipline);
-      await onRefresh();
-      setActionLoading(null);
+    const saveBelt = async () => {
+      if (!beltForm.name.trim() || !beltForm.color.trim()) {
+        Alert.alert("Error", "Nombre y color son requeridos");
+        return;
+      }
+      setSaving(true);
+      try {
+        if (beltForm.editingId) {
+          await beltsApi.adminUpdateBelt(beltForm.editingId, {
+            name: beltForm.name.trim(),
+            color: beltForm.color.trim(),
+            description: beltForm.description.trim() || undefined,
+          });
+        } else {
+          await beltsApi.adminCreateBelt({
+            discipline: beltForm.discipline,
+            name: beltForm.name.trim(),
+            color: beltForm.color.trim(),
+            description: beltForm.description.trim() || undefined,
+          });
+        }
+        setBeltForm(initBeltForm);
+        await loadCatalog();
+      } catch (e: unknown) {
+        Alert.alert("Error", e instanceof Error ? e.message : "Error al guardar");
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const deleteBelt = (belt: CatalogBelt) => {
       Alert.alert(
-        "Nivel Desbloqueado",
-        `Se desbloqueó el acceso al cinturón ${result.nextBelt.name}`
+        "Eliminar Cinturón",
+        `¿Eliminar "${belt.name}"? Esta acción no se puede deshacer si no hay alumnos asignados.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Eliminar",
+            style: "destructive",
+            onPress: async () => {
+              setSaving(true);
+              try {
+                await beltsApi.adminDeleteBelt(belt.id);
+                if (expandedBelt === belt.id) setExpandedBelt(null);
+                await loadCatalog();
+              } catch (e: unknown) {
+                Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+              } finally {
+                setSaving(false);
+              }
+            },
+          },
+        ]
       );
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error al desbloquear";
-      setActionLoading(null);
-      Alert.alert("Error", msg);
-    }
-  };
+    };
 
-  const handlePromote = async (userId: number, discipline: string, userName: string) => {
-    Alert.alert(
-      "Confirmar Promoción",
-      `¿Promover a ${userName} al siguiente cinturón de ${DISCIPLINE_LABELS[discipline] || discipline}?`,
-      [
+    const reorderBelt = async (discipline: string, beltId: number, direction: "up" | "down") => {
+      const disc = catalog.find((d) => d.discipline === discipline);
+      if (!disc) return;
+      const idx = disc.belts.findIndex((b) => b.id === beltId);
+      if (direction === "up" && idx === 0) return;
+      if (direction === "down" && idx === disc.belts.length - 1) return;
+
+      const newBelts = [...disc.belts];
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      [newBelts[idx], newBelts[swapIdx]] = [newBelts[swapIdx], newBelts[idx]];
+      const order = newBelts.map((b, i) => ({ id: b.id, orderIndex: i }));
+
+      setCatalog((prev) =>
+        prev.map((d) =>
+          d.discipline === discipline
+            ? { ...d, belts: newBelts.map((b, i) => ({ ...b, orderIndex: i })) }
+            : d
+        )
+      );
+
+      try {
+        await beltsApi.adminReorderBelts(discipline, order);
+      } catch {
+        await loadCatalog();
+        Alert.alert("Error", "No se pudo reordenar");
+      }
+    };
+
+    const saveRequirement = async () => {
+      if (!reqForm.title.trim() || !reqForm.beltId) return;
+      setSaving(true);
+      try {
+        if (reqForm.editingId) {
+          await beltsApi.adminUpdateRequirement(reqForm.beltId, reqForm.editingId, {
+            title: reqForm.title.trim(),
+            description: reqForm.description.trim() || undefined,
+          });
+        } else {
+          await beltsApi.adminCreateRequirement(reqForm.beltId, {
+            title: reqForm.title.trim(),
+            description: reqForm.description.trim() || undefined,
+          });
+        }
+        setReqForm(initReqForm);
+        await loadCatalog();
+      } catch (e: unknown) {
+        Alert.alert("Error", e instanceof Error ? e.message : "Error al guardar");
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const deleteRequirement = (beltId: number, req: CatalogRequirement) => {
+      Alert.alert("Eliminar Requerimiento", `¿Eliminar "${req.title}"?`, [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Promover",
+          text: "Eliminar",
+          style: "destructive",
           onPress: async () => {
-            const key = `promote-${userId}-${discipline}`;
-            setActionLoading(key);
+            setSaving(true);
             try {
-              const result = await beltsApi.adminPromote(userId, discipline);
-              Alert.alert(
-                "Promoción Exitosa",
-                `${userName} ahora tiene cinturón ${result.newBelt.name}`
-              );
-              setUserHistory((prev) => {
-                const copy = { ...prev };
-                delete copy[userId];
-                return copy;
-              });
-              await onRefresh();
-              loadHistory(userId);
+              await beltsApi.adminDeleteRequirement(beltId, req.id);
+              await loadCatalog();
             } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : "Error al promover";
-              Alert.alert("Error", msg);
+              Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
             } finally {
-              setActionLoading(null);
+              setSaving(false);
             }
           },
         },
-      ]
-    );
-  };
+      ]);
+    };
 
-  return (
-    <>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={16} color="#555" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar alumno..."
-          placeholderTextColor="#444"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-        />
-        {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={16} color="#555" />
-          </Pressable>
-        )}
-      </View>
-
-      {filteredUsers.length === 0 ? (
+    if (loadingCatalog) {
+      return (
         <View style={styles.emptyState}>
-          <MaterialCommunityIcons name="karate" size={48} color="#333" />
-          <Text style={styles.emptyText}>
-            {searchQuery ? "Sin resultados" : "No hay alumnos con cinturones"}
-          </Text>
+          <ActivityIndicator color="#D4AF37" size="large" />
         </View>
-      ) : (
-        filteredUsers.map((u) => {
-          const isExpanded = expandedUser === u.id;
-          const history = userHistory[u.id] || [];
+      );
+    }
+
+    return (
+      <View>
+        {catalog.map((disc) => {
+          const isDiscOpen = expandedDisc === disc.discipline;
+          const discLabel = DISCIPLINE_LABELS[disc.discipline] || disc.discipline;
 
           return (
-            <Pressable
-              key={u.id}
-              style={styles.userCard}
-              onPress={() => handleExpand(u.id)}
-            >
-              <View style={styles.userHeader}>
-                <View style={styles.userAvatar}>
-                  <Ionicons name="person" size={20} color="#666" />
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{u.displayName}</Text>
-                  <Text style={styles.userEmail}>{u.email}</Text>
-                  <View style={styles.roleBadges}>
-                    {u.belts.map((b) => (
-                      <View key={b.discipline} style={styles.beltMiniCard}>
-                        <View
-                          style={[
-                            styles.beltDot,
-                            {
-                              backgroundColor:
-                                b.currentBelt.color === "#FFFFFF"
-                                  ? "#AAA"
-                                  : b.currentBelt.color === "#000000"
-                                  ? "#333"
-                                  : b.currentBelt.color,
-                            },
-                          ]}
-                        />
-                        <Text style={styles.beltMiniText}>
-                          {b.currentBelt.name} · {DISCIPLINE_LABELS[b.discipline] || b.discipline}
-                        </Text>
-                        {b.nextUnlocked && (
-                          <MaterialCommunityIcons
-                            name="lock-open-variant"
-                            size={10}
-                            color="#D4AF37"
-                          />
-                        )}
-                      </View>
-                    ))}
+            <View key={disc.discipline} style={styles.catalogSection}>
+              <Pressable
+                style={styles.catalogDiscHeader}
+                onPress={() => setExpandedDisc(isDiscOpen ? null : disc.discipline)}
+              >
+                <View style={styles.catalogDiscLeft}>
+                  <MaterialCommunityIcons name="karate" size={18} color="#D4AF37" />
+                  <Text style={styles.catalogDiscTitle}>{discLabel}</Text>
+                  <View style={styles.catalogBeltCount}>
+                    <Text style={styles.catalogBeltCountText}>{disc.belts.length}</Text>
                   </View>
                 </View>
-                <Ionicons
-                  name={isExpanded ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color="#555"
-                />
-              </View>
+                <Ionicons name={isDiscOpen ? "chevron-up" : "chevron-down"} size={18} color="#555" />
+              </Pressable>
 
-              {isExpanded && (
-                <View style={styles.expandedContent}>
-                  <View style={styles.sectionDivider} />
-
-                  {u.belts.length === 0 && (
-                    <View style={styles.noBeltsContainer}>
-                      <Text style={styles.noBeltsText}>Sin cinturones asignados</Text>
-                      <Pressable
-                        style={styles.beltActionButton}
-                        onPress={async () => {
-                          try {
-                            setActionLoading(`init-${u.id}`);
-                            await beltsApi.adminInitialize(u.id);
-                            Alert.alert("Éxito", "Cinturones iniciales asignados");
-                            onRefresh();
-                          } catch (e: unknown) {
-                            const msg = e instanceof Error ? e.message : "Error al asignar cinturones";
-                            Alert.alert("Error", msg);
-                          } finally {
-                            setActionLoading(null);
-                          }
-                        }}
-                        disabled={actionLoading === `init-${u.id}`}
-                      >
-                        {actionLoading === `init-${u.id}` ? (
-                          <ActivityIndicator size="small" color="#D4AF37" />
-                        ) : (
-                          <>
-                            <MaterialCommunityIcons name="plus-circle" size={14} color="#D4AF37" />
-                            <Text style={styles.beltActionText}>Asignar Cinturones</Text>
-                          </>
-                        )}
-                      </Pressable>
-                    </View>
+              {isDiscOpen && (
+                <View style={styles.catalogDiscContent}>
+                  {disc.belts.length === 0 && (
+                    <Text style={styles.noHistoryText}>Sin cinturones. Agrega el primero.</Text>
                   )}
 
-                  {u.belts.map((b) => {
-                    const unlockKey = `unlock-${u.id}-${b.discipline}`;
-                    const promoteKey = `promote-${u.id}-${b.discipline}`;
+                  {disc.belts.map((belt, beltIdx) => {
+                    const isBeltOpen = expandedBelt === belt.id;
+                    const isEditingBelt = beltForm.visible && beltForm.editingId === belt.id;
+                    const isAddingReq = reqForm.visible && reqForm.beltId === belt.id && !reqForm.editingId;
+                    const beltBarColor =
+                      belt.color === "#FFFFFF" ? "#CCCCCC"
+                      : belt.color === "#000000" ? "#333333"
+                      : belt.color;
 
                     return (
-                      <View key={b.discipline} style={styles.beltManageSection}>
-                        <Text style={styles.sectionLabel}>
-                          {(DISCIPLINE_LABELS[b.discipline] || b.discipline).toUpperCase()}
-                        </Text>
-                        <View style={styles.beltManageRow}>
-                          <View
-                            style={[
-                              styles.beltColorBar,
-                              {
-                                backgroundColor:
-                                  b.currentBelt.color === "#FFFFFF"
-                                    ? "#AAA"
-                                    : b.currentBelt.color === "#000000"
-                                    ? "#333"
-                                    : b.currentBelt.color,
-                              },
-                            ]}
-                          />
-                          <View style={styles.beltManageInfo}>
-                            <Text style={styles.beltManageName}>
-                              Cinturón {b.currentBelt.name}
-                            </Text>
-                            <Text style={styles.beltManageStatus}>
-                              {b.nextUnlocked
-                                ? "Siguiente nivel desbloqueado"
-                                : "Siguiente nivel bloqueado"}
-                            </Text>
+                      <View key={belt.id} style={styles.catalogBeltItem}>
+                        <Pressable
+                          style={styles.catalogBeltHeader}
+                          onPress={() => setExpandedBelt(isBeltOpen ? null : belt.id)}
+                        >
+                          <View style={[styles.catalogBeltColorBar, { backgroundColor: beltBarColor }]} />
+                          <Text style={styles.catalogBeltName} numberOfLines={1}>{belt.name}</Text>
+                          <View style={styles.catalogBeltActions}>
+                            <Pressable
+                              style={styles.catalogIconBtn}
+                              onPress={() => reorderBelt(disc.discipline, belt.id, "up")}
+                              disabled={beltIdx === 0}
+                            >
+                              <Ionicons name="chevron-up-circle" size={20} color={beltIdx === 0 ? "#2A2A2A" : "#555"} />
+                            </Pressable>
+                            <Pressable
+                              style={styles.catalogIconBtn}
+                              onPress={() => reorderBelt(disc.discipline, belt.id, "down")}
+                              disabled={beltIdx === disc.belts.length - 1}
+                            >
+                              <Ionicons name="chevron-down-circle" size={20} color={beltIdx === disc.belts.length - 1 ? "#2A2A2A" : "#555"} />
+                            </Pressable>
+                            <Pressable
+                              style={styles.catalogIconBtn}
+                              onPress={() => {
+                                setExpandedBelt(belt.id);
+                                setBeltForm({
+                                  visible: true,
+                                  discipline: disc.discipline,
+                                  editingId: belt.id,
+                                  name: belt.name,
+                                  color: belt.color,
+                                  description: belt.description || "",
+                                });
+                              }}
+                            >
+                              <Ionicons name="pencil" size={16} color="#D4AF37" />
+                            </Pressable>
+                            <Pressable style={styles.catalogIconBtn} onPress={() => deleteBelt(belt)}>
+                              <Ionicons name="trash-outline" size={16} color="#555" />
+                            </Pressable>
+                            <Ionicons
+                              name={isBeltOpen ? "chevron-up" : "chevron-down"}
+                              size={16}
+                              color="#333"
+                            />
                           </View>
-                        </View>
-                        <View style={styles.beltActions}>
-                          {!b.nextUnlocked && (
-                            <Pressable
-                              style={styles.beltActionButton}
-                              onPress={() => handleUnlock(u.id, b.discipline)}
-                              disabled={actionLoading === unlockKey}
-                            >
-                              {actionLoading === unlockKey ? (
-                                <ActivityIndicator size="small" color="#D4AF37" />
-                              ) : (
-                                <>
-                                  <MaterialCommunityIcons
-                                    name="lock-open-variant"
-                                    size={14}
-                                    color="#D4AF37"
-                                  />
-                                  <Text style={styles.beltActionText}>Desbloquear</Text>
-                                </>
-                              )}
-                            </Pressable>
-                          )}
-                          {b.nextUnlocked && (
-                            <Pressable
-                              style={[styles.beltActionButton, styles.beltPromoteButton]}
-                              onPress={() =>
-                                handlePromote(u.id, b.discipline, u.displayName)
-                              }
-                              disabled={actionLoading === promoteKey}
-                            >
-                              {actionLoading === promoteKey ? (
-                                <ActivityIndicator size="small" color="#000" />
-                              ) : (
-                                <>
-                                  <MaterialCommunityIcons
-                                    name="arrow-up-bold"
-                                    size={14}
-                                    color="#000"
-                                  />
-                                  <Text style={styles.beltPromoteText}>Promover</Text>
-                                </>
-                              )}
-                            </Pressable>
-                          )}
-                        </View>
+                        </Pressable>
+
+                        {isEditingBelt && (
+                          <View style={styles.catalogForm}>
+                            <Text style={styles.catalogFormTitle}>Editar Cinturón</Text>
+                            <TextInput
+                              style={styles.catalogFormInput}
+                              placeholder="Nombre del cinturón"
+                              placeholderTextColor="#444"
+                              value={beltForm.name}
+                              onChangeText={(v) => setBeltForm((f) => ({ ...f, name: v }))}
+                            />
+                            <TextInput
+                              style={styles.catalogFormInput}
+                              placeholder="Color hex (#FF0000)"
+                              placeholderTextColor="#444"
+                              value={beltForm.color}
+                              onChangeText={(v) => setBeltForm((f) => ({ ...f, color: v }))}
+                              autoCapitalize="characters"
+                            />
+                            <TextInput
+                              style={styles.catalogFormInput}
+                              placeholder="Descripción (opcional)"
+                              placeholderTextColor="#444"
+                              value={beltForm.description}
+                              onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
+                            />
+                            <View style={styles.catalogFormActions}>
+                              <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(initBeltForm)}>
+                                <Text style={styles.catalogFormCancelText}>Cancelar</Text>
+                              </Pressable>
+                              <Pressable style={styles.catalogFormSave} onPress={saveBelt} disabled={saving}>
+                                {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.catalogFormSaveText}>Guardar</Text>}
+                              </Pressable>
+                            </View>
+                          </View>
+                        )}
+
+                        {isBeltOpen && (
+                          <View style={styles.catalogBeltContent}>
+                            {belt.description ? (
+                              <Text style={styles.catalogBeltDesc}>{belt.description}</Text>
+                            ) : null}
+
+                            <Text style={styles.sectionLabel}>REQUERIMIENTOS</Text>
+
+                            {belt.requirements.length === 0 && (
+                              <Text style={styles.noHistoryText}>Sin requerimientos.</Text>
+                            )}
+
+                            {belt.requirements.map((req) => {
+                              const isEditingReq = reqForm.visible && reqForm.editingId === req.id;
+                              return (
+                                <View key={req.id} style={styles.catalogReqItem}>
+                                  {isEditingReq ? (
+                                    <View style={styles.catalogForm}>
+                                      <TextInput
+                                        style={styles.catalogFormInput}
+                                        placeholder="Título"
+                                        placeholderTextColor="#444"
+                                        value={reqForm.title}
+                                        onChangeText={(v) => setReqForm((f) => ({ ...f, title: v }))}
+                                      />
+                                      <TextInput
+                                        style={styles.catalogFormInput}
+                                        placeholder="Descripción (opcional)"
+                                        placeholderTextColor="#444"
+                                        value={reqForm.description}
+                                        onChangeText={(v) => setReqForm((f) => ({ ...f, description: v }))}
+                                      />
+                                      <View style={styles.catalogFormActions}>
+                                        <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(initReqForm)}>
+                                          <Text style={styles.catalogFormCancelText}>Cancelar</Text>
+                                        </Pressable>
+                                        <Pressable style={styles.catalogFormSave} onPress={saveRequirement} disabled={saving}>
+                                          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.catalogFormSaveText}>Guardar</Text>}
+                                        </Pressable>
+                                      </View>
+                                    </View>
+                                  ) : (
+                                    <View style={styles.catalogReqRow}>
+                                      <View style={styles.catalogReqDot} />
+                                      <View style={{ flex: 1 }}>
+                                        <Text style={styles.catalogReqTitle}>{req.title}</Text>
+                                        {req.description ? (
+                                          <Text style={styles.catalogReqDesc}>{req.description}</Text>
+                                        ) : null}
+                                      </View>
+                                      <Pressable
+                                        style={styles.catalogIconBtn}
+                                        onPress={() => setReqForm({
+                                          visible: true,
+                                          beltId: belt.id,
+                                          editingId: req.id,
+                                          title: req.title,
+                                          description: req.description || "",
+                                        })}
+                                      >
+                                        <Ionicons name="pencil" size={14} color="#888" />
+                                      </Pressable>
+                                      <Pressable
+                                        style={styles.catalogIconBtn}
+                                        onPress={() => deleteRequirement(belt.id, req)}
+                                      >
+                                        <Ionicons name="trash-outline" size={14} color="#555" />
+                                      </Pressable>
+                                    </View>
+                                  )}
+                                </View>
+                              );
+                            })}
+
+                            {isAddingReq ? (
+                              <View style={styles.catalogForm}>
+                                <TextInput
+                                  style={styles.catalogFormInput}
+                                  placeholder="Título del requerimiento"
+                                  placeholderTextColor="#444"
+                                  value={reqForm.title}
+                                  onChangeText={(v) => setReqForm((f) => ({ ...f, title: v }))}
+                                />
+                                <TextInput
+                                  style={styles.catalogFormInput}
+                                  placeholder="Descripción (opcional)"
+                                  placeholderTextColor="#444"
+                                  value={reqForm.description}
+                                  onChangeText={(v) => setReqForm((f) => ({ ...f, description: v }))}
+                                />
+                                <View style={styles.catalogFormActions}>
+                                  <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(initReqForm)}>
+                                    <Text style={styles.catalogFormCancelText}>Cancelar</Text>
+                                  </Pressable>
+                                  <Pressable style={styles.catalogFormSave} onPress={saveRequirement} disabled={saving}>
+                                    {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.catalogFormSaveText}>Agregar</Text>}
+                                  </Pressable>
+                                </View>
+                              </View>
+                            ) : (
+                              <Pressable
+                                style={[styles.beltActionButton, { marginTop: 6 }]}
+                                onPress={() => setReqForm({ visible: true, beltId: belt.id, editingId: null, title: "", description: "" })}
+                              >
+                                <Ionicons name="add-circle" size={14} color="#D4AF37" />
+                                <Text style={styles.beltActionText}>Agregar Requerimiento</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                        )}
                       </View>
                     );
                   })}
 
-                  <View style={styles.sectionDivider} />
-                  <Text style={styles.sectionLabel}>HISTORIAL</Text>
-                  {historyLoading === u.id ? (
-                    <ActivityIndicator size="small" color="#555" style={{ marginVertical: 8 }} />
-                  ) : history.length > 0 ? (
-                    history.map((h) => {
-                      const date = new Date(h.achievedAt);
-                      const dateStr = date.toLocaleDateString("es-ES", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      });
-                      return (
-                        <View key={h.id} style={styles.historyItem}>
-                          <View
-                            style={[
-                              styles.historyDot,
-                              {
-                                backgroundColor:
-                                  h.beltColor === "#FFFFFF"
-                                    ? "#555"
-                                    : h.beltColor === "#000000"
-                                    ? "#333"
-                                    : h.beltColor,
-                              },
-                            ]}
-                          />
-                          <View style={styles.historyContent}>
-                            <Text style={styles.historyBeltName}>
-                              {h.beltName} · {DISCIPLINE_LABELS[h.discipline] || h.discipline}
-                            </Text>
-                            <Text style={styles.historyDate}>{dateStr}</Text>
-                            {h.notes && (
-                              <Text style={styles.historyNotes}>{h.notes}</Text>
-                            )}
-                          </View>
-                        </View>
-                      );
-                    })
+                  {beltForm.visible && !beltForm.editingId && beltForm.discipline === disc.discipline ? (
+                    <View style={[styles.catalogForm, { marginTop: 8 }]}>
+                      <Text style={styles.catalogFormTitle}>Nuevo Cinturón · {discLabel}</Text>
+                      <TextInput
+                        style={styles.catalogFormInput}
+                        placeholder="Nombre del cinturón"
+                        placeholderTextColor="#444"
+                        value={beltForm.name}
+                        onChangeText={(v) => setBeltForm((f) => ({ ...f, name: v }))}
+                      />
+                      <TextInput
+                        style={styles.catalogFormInput}
+                        placeholder="Color hex (#FF0000)"
+                        placeholderTextColor="#444"
+                        value={beltForm.color}
+                        onChangeText={(v) => setBeltForm((f) => ({ ...f, color: v }))}
+                        autoCapitalize="characters"
+                      />
+                      <TextInput
+                        style={styles.catalogFormInput}
+                        placeholder="Descripción (opcional)"
+                        placeholderTextColor="#444"
+                        value={beltForm.description}
+                        onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
+                      />
+                      <View style={styles.catalogFormActions}>
+                        <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(initBeltForm)}>
+                          <Text style={styles.catalogFormCancelText}>Cancelar</Text>
+                        </Pressable>
+                        <Pressable style={styles.catalogFormSave} onPress={saveBelt} disabled={saving}>
+                          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.catalogFormSaveText}>Agregar</Text>}
+                        </Pressable>
+                      </View>
+                    </View>
                   ) : (
-                    <Text style={styles.noHistoryText}>Sin historial</Text>
+                    <Pressable
+                      style={[styles.beltActionButton, { marginTop: 8 }]}
+                      onPress={() => setBeltForm({ visible: true, discipline: disc.discipline, editingId: null, name: "", color: "", description: "" })}
+                    >
+                      <Ionicons name="add-circle" size={14} color="#D4AF37" />
+                      <Text style={styles.beltActionText}>Agregar Cinturón</Text>
+                    </Pressable>
                   )}
                 </View>
               )}
-            </Pressable>
+            </View>
           );
-        })
-      )}
-    </>
-  );
-}
-
+        })}
+      </View>
+    );
+  }
 function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUsers: () => Promise<void> }) {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [fights, setFights] = useState<FightData[]>([]);
@@ -968,20 +1070,15 @@ export default function AdminScreen() {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>("usuarios");
   const [users, setUsers] = useState<UserData[]>([]);
-  const [beltUsers, setBeltUsers] = useState<AdminBeltUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [usersRes, beltsRes] = await Promise.all([
-        adminApi.getUsers(),
-        beltsApi.adminGetUsers(),
-      ]);
+      const usersRes = await adminApi.getUsers();
       setUsers(usersRes.users);
-      setBeltUsers(beltsRes.users);
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "No se pudieron cargar los datos");
     }
   }, []);
@@ -994,15 +1091,6 @@ export default function AdminScreen() {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
-  };
-
-  const refreshBelts = async () => {
-    try {
-      const beltsRes = await beltsApi.adminGetUsers();
-      setBeltUsers(beltsRes.users);
-    } catch {
-      // silent
-    }
   };
 
   if (loading) {
@@ -1097,7 +1185,7 @@ export default function AdminScreen() {
             setUsers={setUsers}
           />
         ) : activeTab === "cinturones" ? (
-          <BeltsPanel beltUsers={beltUsers} onRefresh={refreshBelts} />
+          <BeltCatalogPanel />
         ) : (
           <FightsPanel users={users} onRefreshUsers={async () => {
             const res = await adminApi.getUsers();
@@ -1529,5 +1617,181 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#DDD",
     flex: 1,
+  },
+  catalogSection: {
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  catalogDiscHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0A0A0A",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  catalogDiscLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  catalogDiscTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 15,
+    color: "#FFFFFF",
+    letterSpacing: 1,
+  },
+  catalogBeltCount: {
+    backgroundColor: "#1A1500",
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  catalogBeltCountText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+  },
+  catalogDiscContent: {
+    backgroundColor: "#050505",
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
+    gap: 4,
+  },
+  catalogBeltItem: {
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 8,
+    marginBottom: 6,
+    overflow: "hidden",
+  },
+  catalogBeltHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: "#0D0D0D",
+  },
+  catalogBeltColorBar: {
+    width: 5,
+    height: 28,
+    borderRadius: 3,
+  },
+  catalogBeltName: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#DDD",
+    flex: 1,
+  },
+  catalogBeltActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  catalogIconBtn: {
+    padding: 4,
+  },
+  catalogBeltContent: {
+    backgroundColor: "#080808",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  catalogBeltDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#555",
+    fontStyle: "italic",
+    marginBottom: 4,
+  },
+  catalogReqItem: {
+    marginBottom: 4,
+  },
+  catalogReqRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  catalogReqDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#D4AF37",
+    marginTop: 6,
+  },
+  catalogReqTitle: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#CCC",
+  },
+  catalogReqDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+  },
+  catalogForm: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 6,
+    gap: 8,
+  },
+  catalogFormTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#D4AF37",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  catalogFormInput: {
+    backgroundColor: "#000",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#FFFFFF",
+  },
+  catalogFormActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  catalogFormCancel: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: "center",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  catalogFormCancelText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#666",
+  },
+  catalogFormSave: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: "center",
+    backgroundColor: "#D4AF37",
+    borderRadius: 6,
+  },
+  catalogFormSaveText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#000",
   },
 });

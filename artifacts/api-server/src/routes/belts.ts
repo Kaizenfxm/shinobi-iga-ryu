@@ -523,4 +523,316 @@ beltsRouter.get("/admin/belts/unlocks/:userId", requireAdmin, async (req, res) =
   }
 });
 
+beltsRouter.get("/admin/belts/catalog", requireAdmin, async (_req, res) => {
+  try {
+    const definitions = await db
+      .select()
+      .from(beltDefinitionsTable)
+      .orderBy(asc(beltDefinitionsTable.discipline), asc(beltDefinitionsTable.orderIndex));
+
+    const requirements = await db
+      .select()
+      .from(beltRequirementsTable)
+      .orderBy(asc(beltRequirementsTable.beltId), asc(beltRequirementsTable.orderIndex));
+
+    const reqsByBeltId: Record<number, typeof requirements> = {};
+    for (const req of requirements) {
+      if (!reqsByBeltId[req.beltId]) reqsByBeltId[req.beltId] = [];
+      reqsByBeltId[req.beltId].push(req);
+    }
+
+    const disciplineMap: Record<string, typeof definitions> = {};
+    for (const belt of definitions) {
+      if (!disciplineMap[belt.discipline]) disciplineMap[belt.discipline] = [];
+      disciplineMap[belt.discipline].push(belt);
+    }
+
+    const catalog = (["ninjutsu", "jiujitsu"] as const).map((disc) => ({
+      discipline: disc,
+      belts: (disciplineMap[disc] || []).map((belt) => ({
+        ...belt,
+        requirements: reqsByBeltId[belt.id] || [],
+      })),
+    }));
+
+    res.json({ catalog });
+  } catch (error) {
+    console.error("Admin get catalog error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.post("/admin/belts/definitions", requireAdmin, async (req, res) => {
+  try {
+    const { discipline, name, color, description } = req.body as {
+      discipline: "ninjutsu" | "jiujitsu";
+      name: string;
+      color: string;
+      description?: string;
+    };
+
+    if (!discipline || !name?.trim() || !color?.trim()) {
+      res.status(400).json({ error: "discipline, name y color son requeridos" });
+      return;
+    }
+    if (!["ninjutsu", "jiujitsu"].includes(discipline)) {
+      res.status(400).json({ error: "discipline inválida" });
+      return;
+    }
+
+    const existing = await db
+      .select({ orderIndex: beltDefinitionsTable.orderIndex })
+      .from(beltDefinitionsTable)
+      .where(eq(beltDefinitionsTable.discipline, discipline))
+      .orderBy(desc(beltDefinitionsTable.orderIndex))
+      .limit(1);
+
+    const nextOrder = existing.length > 0 ? existing[0].orderIndex + 1 : 0;
+
+    const [belt] = await db.insert(beltDefinitionsTable).values({
+      discipline,
+      name: name.trim(),
+      color: color.trim(),
+      description: description?.trim() || null,
+      orderIndex: nextOrder,
+    }).returning();
+
+    const reqs = await db
+      .select()
+      .from(beltRequirementsTable)
+      .where(eq(beltRequirementsTable.beltId, belt.id))
+      .orderBy(asc(beltRequirementsTable.orderIndex));
+
+    res.json({ belt: { ...belt, requirements: reqs } });
+  } catch (error) {
+    console.error("Admin create belt error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.put("/admin/belts/definitions/reorder", requireAdmin, async (req, res) => {
+  try {
+    const { discipline, order } = req.body as {
+      discipline: string;
+      order: { id: number; orderIndex: number }[];
+    };
+
+    if (!discipline || !order || !Array.isArray(order)) {
+      res.status(400).json({ error: "discipline y order son requeridos" });
+      return;
+    }
+
+    await db.transaction(async (tx) => {
+      for (const item of order) {
+        await tx
+          .update(beltDefinitionsTable)
+          .set({ orderIndex: -(item.orderIndex + 1) })
+          .where(and(
+            eq(beltDefinitionsTable.id, item.id),
+            eq(beltDefinitionsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          ));
+      }
+      for (const item of order) {
+        await tx
+          .update(beltDefinitionsTable)
+          .set({ orderIndex: item.orderIndex })
+          .where(and(
+            eq(beltDefinitionsTable.id, item.id),
+            eq(beltDefinitionsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          ));
+      }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin reorder belts error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.put("/admin/belts/definitions/:id", requireAdmin, async (req, res) => {
+  try {
+    const beltId = parseInt(req.params.id as string, 10);
+    if (isNaN(beltId)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    const { name, color, description } = req.body as {
+      name?: string;
+      color?: string;
+      description?: string;
+    };
+
+    const updateData: Partial<{ name: string; color: string; description: string | null }> = {};
+    if (name?.trim()) updateData.name = name.trim();
+    if (color?.trim()) updateData.color = color.trim();
+    if (description !== undefined) updateData.description = description.trim() || null;
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "Sin campos para actualizar" });
+      return;
+    }
+
+    const [belt] = await db
+      .update(beltDefinitionsTable)
+      .set(updateData)
+      .where(eq(beltDefinitionsTable.id, beltId))
+      .returning();
+
+    if (!belt) {
+      res.status(404).json({ error: "Cinturón no encontrado" });
+      return;
+    }
+
+    const reqs = await db
+      .select()
+      .from(beltRequirementsTable)
+      .where(eq(beltRequirementsTable.beltId, beltId))
+      .orderBy(asc(beltRequirementsTable.orderIndex));
+
+    res.json({ belt: { ...belt, requirements: reqs } });
+  } catch (error) {
+    console.error("Admin update belt error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.delete("/admin/belts/definitions/:id", requireAdmin, async (req, res) => {
+  try {
+    const beltId = parseInt(req.params.id as string, 10);
+    if (isNaN(beltId)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    const [studentWithBelt] = await db
+      .select({ id: studentBeltsTable.id })
+      .from(studentBeltsTable)
+      .where(eq(studentBeltsTable.currentBeltId, beltId))
+      .limit(1);
+
+    if (studentWithBelt) {
+      res.status(409).json({ error: "No se puede eliminar: hay alumnos con este cinturón activo" });
+      return;
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(beltRequirementsTable).where(eq(beltRequirementsTable.beltId, beltId));
+      await tx.delete(beltExamsTable).where(eq(beltExamsTable.beltId, beltId));
+      await tx.delete(beltDefinitionsTable).where(eq(beltDefinitionsTable.id, beltId));
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin delete belt error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.post("/admin/belts/definitions/:id/requirements", requireAdmin, async (req, res) => {
+  try {
+    const beltId = parseInt(req.params.id as string, 10);
+    if (isNaN(beltId)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    const { title, description } = req.body as { title: string; description?: string };
+    if (!title?.trim()) {
+      res.status(400).json({ error: "title es requerido" });
+      return;
+    }
+
+    const [belt] = await db
+      .select({ id: beltDefinitionsTable.id })
+      .from(beltDefinitionsTable)
+      .where(eq(beltDefinitionsTable.id, beltId))
+      .limit(1);
+
+    if (!belt) {
+      res.status(404).json({ error: "Cinturón no encontrado" });
+      return;
+    }
+
+    const existingReqs = await db
+      .select({ orderIndex: beltRequirementsTable.orderIndex })
+      .from(beltRequirementsTable)
+      .where(eq(beltRequirementsTable.beltId, beltId))
+      .orderBy(desc(beltRequirementsTable.orderIndex))
+      .limit(1);
+
+    const nextOrder = existingReqs.length > 0 ? existingReqs[0].orderIndex + 1 : 1;
+
+    const [requirement] = await db.insert(beltRequirementsTable).values({
+      beltId,
+      title: title.trim(),
+      description: description?.trim() || null,
+      orderIndex: nextOrder,
+    }).returning();
+
+    res.json({ requirement });
+  } catch (error) {
+    console.error("Admin create requirement error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.put("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin, async (req, res) => {
+  try {
+    const beltId = parseInt(req.params.id as string, 10);
+    const reqId = parseInt(req.params.reqId as string, 10);
+    if (isNaN(beltId) || isNaN(reqId)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    const { title, description } = req.body as { title?: string; description?: string };
+    const updateData: Partial<{ title: string; description: string | null }> = {};
+    if (title?.trim()) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description.trim() || null;
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: "Sin campos para actualizar" });
+      return;
+    }
+
+    const [requirement] = await db
+      .update(beltRequirementsTable)
+      .set(updateData)
+      .where(and(eq(beltRequirementsTable.id, reqId), eq(beltRequirementsTable.beltId, beltId)))
+      .returning();
+
+    if (!requirement) {
+      res.status(404).json({ error: "Requerimiento no encontrado" });
+      return;
+    }
+
+    res.json({ requirement });
+  } catch (error) {
+    console.error("Admin update requirement error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+beltsRouter.delete("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin, async (req, res) => {
+  try {
+    const beltId = parseInt(req.params.id as string, 10);
+    const reqId = parseInt(req.params.reqId as string, 10);
+    if (isNaN(beltId) || isNaN(reqId)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    await db
+      .delete(beltRequirementsTable)
+      .where(and(eq(beltRequirementsTable.id, reqId), eq(beltRequirementsTable.beltId, beltId)));
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin delete requirement error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 export default beltsRouter;

@@ -4,21 +4,17 @@ import { eq, and } from "drizzle-orm";
 const NINJUTSU_BELTS = [
   { name: "Blanco", color: "#FFFFFF", orderIndex: 0, description: "Inicio del camino ninja" },
   { name: "Amarillo", color: "#FFD700", orderIndex: 1, description: "Primer rayo de sol" },
-  { name: "Naranja", color: "#FF8C00", orderIndex: 2, description: "Fuego interior" },
-  { name: "Verde", color: "#228B22", orderIndex: 3, description: "Conexión con la naturaleza" },
-  { name: "Azul", color: "#1E90FF", orderIndex: 4, description: "Fluidez del agua" },
-  { name: "Morado", color: "#800080", orderIndex: 5, description: "Sabiduría profunda" },
+  { name: "Azul", color: "#1E90FF", orderIndex: 2, description: "Fluidez del agua" },
+  { name: "Azul franja roja", color: "#1E90FF", orderIndex: 3, description: "Transición avanzada — cinturón azul con franja roja" },
+  { name: "Rojo", color: "#CC0000", orderIndex: 4, description: "Fuego del guerrero" },
+  { name: "Verde", color: "#228B22", orderIndex: 5, description: "Conexión con la naturaleza" },
   { name: "Marrón", color: "#8B4513", orderIndex: 6, description: "Raíces del guerrero" },
-  { name: "Negro", color: "#000000", orderIndex: 7, description: "Dominio del arte" },
+  { name: "Violeta", color: "#6A0DAD", orderIndex: 7, description: "Sabiduría profunda" },
+  { name: "Violeta punta negra", color: "#4B0082", orderIndex: 8, description: "A las puertas del dominio" },
+  { name: "Negro", color: "#000000", orderIndex: 9, description: "Dominio del arte" },
 ];
 
-const JIUJITSU_BELTS = [
-  { name: "Blanco", color: "#FFFFFF", orderIndex: 0, description: "Inicio del camino suave" },
-  { name: "Azul", color: "#1E90FF", orderIndex: 1, description: "Comprensión de las bases" },
-  { name: "Morado", color: "#800080", orderIndex: 2, description: "Técnica refinada" },
-  { name: "Marrón", color: "#8B4513", orderIndex: 3, description: "Maestría cercana" },
-  { name: "Negro", color: "#000000", orderIndex: 4, description: "Arte perfeccionado" },
-];
+const JIUJITSU_BELTS: typeof NINJUTSU_BELTS = [];
 
 const NINJUTSU_REQUIREMENTS: Record<string, { title: string; description: string }[]> = {
   Amarillo: [
@@ -27,35 +23,47 @@ const NINJUTSU_REQUIREMENTS: Record<string, { title: string; description: string
     { title: "Bloqueos", description: "Uke waza básicos" },
     { title: "Caídas", description: "Ukemi básico" },
   ],
-  Naranja: [
+  Azul: [
     { title: "Patadas básicas", description: "Mae geri, yoko geri" },
     { title: "Combinaciones", description: "Secuencias de golpe-patada" },
     { title: "Esquivas", description: "Tai sabaki" },
     { title: "Kata básica", description: "Forma de demostración" },
   ],
-  Verde: [
+  "Azul franja roja": [
+    { title: "Armas tradicionales — introducción", description: "Bo, shuriken, kunai básico" },
+    { title: "Técnicas de sigilo — iniciación", description: "Shinobi iri básico" },
+    { title: "Combate intermedio", description: "Randori básico controlado" },
+    { title: "Kata intermedia", description: "Forma de transición" },
+  ],
+  Rojo: [
     { title: "Proyecciones", description: "Nage waza fundamentales" },
     { title: "Luxaciones", description: "Kansetsu waza básicas" },
     { title: "Defensa personal", description: "Escenarios de calle" },
-    { title: "Kata intermedia", description: "Forma con armas" },
+    { title: "Kata avanzada", description: "Forma con armas" },
   ],
-  Azul: [
-    { title: "Armas tradicionales", description: "Bo, shuriken, kunai" },
-    { title: "Técnicas de sigilo", description: "Shinobi iri" },
+  Verde: [
+    { title: "Armas tradicionales", description: "Bo, shuriken, kunai dominio" },
+    { title: "Técnicas de sigilo", description: "Shinobi iri avanzado" },
     { title: "Combate avanzado", description: "Randori controlado" },
     { title: "Estrategia", description: "Sun Tzu aplicado" },
   ],
-  Morado: [
+  Marrón: [
+    { title: "Dominio de armas", description: "Todas las armas tradicionales" },
+    { title: "Combate múltiple", description: "Defensa contra múltiples oponentes" },
+    { title: "Filosofía marcial", description: "Ninpō ikkan" },
+    { title: "Liderazgo", description: "Dirigir entrenamientos" },
+  ],
+  Violeta: [
     { title: "Técnicas de espionaje", description: "Chōhō jutsu" },
     { title: "Medicina de campo", description: "Kusurigaku" },
     { title: "Supervivencia", description: "Inton jutsu" },
     { title: "Enseñanza", description: "Capacidad de instrucción" },
   ],
-  "Marrón": [
-    { title: "Dominio de armas", description: "Todas las armas tradicionales" },
-    { title: "Combate múltiple", description: "Defensa contra múltiples oponentes" },
-    { title: "Filosofía marcial", description: "Ninpō ikkan" },
-    { title: "Liderazgo", description: "Dirigir entrenamientos" },
+  "Violeta punta negra": [
+    { title: "Integración completa", description: "Dominio de todas las técnicas anteriores" },
+    { title: "Mentoring", description: "Guía de alumnos de rangos inferiores" },
+    { title: "Filosofía avanzada", description: "Ninpō en la vida cotidiana" },
+    { title: "Kata maestra", description: "Creación de forma personal" },
   ],
   Negro: [
     { title: "Examen completo", description: "Demostración total del arte" },
@@ -65,47 +73,30 @@ const NINJUTSU_REQUIREMENTS: Record<string, { title: string; description: string
   ],
 };
 
-const JIUJITSU_REQUIREMENTS: Record<string, { title: string; description: string }[]> = {
-  Azul: [
-    { title: "Guard passes", description: "Pasajes de guardia fundamentales" },
-    { title: "Submissions", description: "Armbar, triangle, rear naked choke" },
-    { title: "Sweeps", description: "Barridas desde guardia cerrada y abierta" },
-    { title: "Examen de rol", description: "Sparring evaluado" },
-  ],
-  Morado: [
-    { title: "Half guard", description: "Juego completo de media guardia" },
-    { title: "Back control", description: "Dominio de la espalda" },
-    { title: "Leg locks", description: "Straight ankle lock, kneebar" },
-    { title: "Competition", description: "Participación en torneo" },
-  ],
-  "Marrón": [
-    { title: "Instrucción", description: "Capacidad de enseñar técnicas" },
-    { title: "Advanced submissions", description: "Heel hook, toe hold, calf slicer" },
-    { title: "Wrestling", description: "Takedowns y control de pie" },
-    { title: "Game plan", description: "Estrategia personal de competición" },
-  ],
-  Negro: [
-    { title: "Mastery", description: "Dominio completo de todas las posiciones" },
-    { title: "Teaching", description: "Programa de enseñanza propio" },
-    { title: "Competition record", description: "Historial competitivo demostrable" },
-    { title: "Thesis", description: "Contribución al arte" },
-  ],
-};
+const JIUJITSU_REQUIREMENTS: Record<string, { title: string; description: string }[]> = {};
 
 function getExamForBelt(name: string, discipline: string): { title: string; description: string; durationMinutes: number; passingScore: number } {
   const disc = discipline === "ninjutsu" ? "Ninjutsu" : "Jiujitsu";
   const descriptions: Record<string, string> = {
     Blanco: "Evaluación de conocimientos básicos y aptitud física para ingreso a la disciplina.",
     Amarillo: "Evaluación teórico-práctica de técnicas del nivel correspondiente. Incluye demostración de kata y combate controlado.",
-    Naranja: "Evaluación teórico-práctica de técnicas del nivel correspondiente. Incluye demostración de kata y combate controlado.",
-    Verde: "Evaluación teórico-práctica de técnicas del nivel correspondiente. Incluye demostración de kata y combate controlado.",
-    Azul: "Examen avanzado con evaluación de técnicas complejas, estrategia de combate y enseñanza básica.",
-    Morado: "Examen avanzado con evaluación de técnicas complejas, estrategia de combate y enseñanza básica.",
-    "Marrón": "Examen de maestría con evaluación exhaustiva de técnicas, liderazgo y capacidad de instrucción.",
+    Azul: "Evaluación teórico-práctica de técnicas del nivel correspondiente. Incluye demostración de kata y combate controlado.",
+    "Azul franja roja": "Evaluación de transición con énfasis en sigilo y armas básicas.",
+    Rojo: "Evaluación avanzada con proyecciones, luxaciones y defensa personal.",
+    Verde: "Examen avanzado con evaluación de técnicas complejas, estrategia de combate y enseñanza básica.",
+    Marrón: "Examen de maestría con evaluación exhaustiva de técnicas, liderazgo y capacidad de instrucción.",
+    Violeta: "Examen avanzado con técnicas de espionaje, supervivencia y enseñanza.",
+    "Violeta punta negra": "Examen de integración: dominio completo, mentoring y filosofía.",
     Negro: "Examen final de dan. Demostración completa del arte marcial, defensa personal avanzada y filosofía marcial.",
   };
-  const durations: Record<string, number> = { Blanco: 30, Amarillo: 45, Naranja: 45, Verde: 60, Azul: 60, Morado: 90, "Marrón": 90, Negro: 120 };
-  const scores: Record<string, number> = { Blanco: 60, Amarillo: 65, Naranja: 65, Verde: 70, Azul: 70, Morado: 75, "Marrón": 75, Negro: 80 };
+  const durations: Record<string, number> = {
+    Blanco: 30, Amarillo: 45, Azul: 45, "Azul franja roja": 60,
+    Rojo: 60, Verde: 60, Marrón: 90, Violeta: 90, "Violeta punta negra": 90, Negro: 120,
+  };
+  const scores: Record<string, number> = {
+    Blanco: 60, Amarillo: 65, Azul: 65, "Azul franja roja": 68,
+    Rojo: 70, Verde: 70, Marrón: 75, Violeta: 75, "Violeta punta negra": 78, Negro: 80,
+  };
 
   return {
     title: name === "Blanco" ? `Examen de Ingreso ${disc}` : `Examen Cinturón ${name} ${disc}`,
