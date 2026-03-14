@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AddFightRequest,
   AdminBeltHistoryResponse,
   AdminBeltUsersResponse,
   AdminUnlockRecordsResponse,
@@ -29,19 +30,24 @@ import type {
   BeltPromoteResponse,
   BeltUnlockResponse,
   ErrorResponse,
+  FightResponse,
   HealthStatus,
   LoginRequest,
   MyBeltsResponse,
+  MyFightsResponse,
   ProfesorAlumnoIdsResponse,
   ProfesorStudentsResponse,
   RegisterRequest,
   SuccessResponse,
+  ToggleFighterRequest,
+  ToggleFighterResponse,
   UpdateProfesorAlumnosRequest,
   UpdateProfesorAlumnosResponse,
   UpdateRolesRequest,
   UpdateRolesResponse,
   UpdateSubscriptionRequest,
   UpdateSubscriptionResponse,
+  UserFightsResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1625,3 +1631,425 @@ export function useProfesorGetAlumnos<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Toggle fighter mode for a user (admin only)
+ */
+export const getAdminToggleFighterModeUrl = (userId: number) => {
+  return `/api/admin/users/${userId}/fighter`;
+};
+
+export const adminToggleFighterMode = async (
+  userId: number,
+  toggleFighterRequest: ToggleFighterRequest,
+  options?: RequestInit,
+): Promise<ToggleFighterResponse> => {
+  return customFetch<ToggleFighterResponse>(
+    getAdminToggleFighterModeUrl(userId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(toggleFighterRequest),
+    },
+  );
+};
+
+export const getAdminToggleFighterModeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminToggleFighterMode>>,
+    TError,
+    { userId: number; data: BodyType<ToggleFighterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminToggleFighterMode>>,
+  TError,
+  { userId: number; data: BodyType<ToggleFighterRequest> },
+  TContext
+> => {
+  const mutationKey = ["adminToggleFighterMode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminToggleFighterMode>>,
+    { userId: number; data: BodyType<ToggleFighterRequest> }
+  > = (props) => {
+    const { userId, data } = props ?? {};
+
+    return adminToggleFighterMode(userId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminToggleFighterModeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminToggleFighterMode>>
+>;
+export type AdminToggleFighterModeMutationBody = BodyType<ToggleFighterRequest>;
+export type AdminToggleFighterModeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Toggle fighter mode for a user (admin only)
+ */
+export const useAdminToggleFighterMode = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminToggleFighterMode>>,
+    TError,
+    { userId: number; data: BodyType<ToggleFighterRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminToggleFighterMode>>,
+  TError,
+  { userId: number; data: BodyType<ToggleFighterRequest> },
+  TContext
+> => {
+  return useMutation(getAdminToggleFighterModeMutationOptions(options));
+};
+
+/**
+ * @summary Register a fight (admin/profesor only)
+ */
+export const getAddFightUrl = () => {
+  return `/api/fights`;
+};
+
+export const addFight = async (
+  addFightRequest: AddFightRequest,
+  options?: RequestInit,
+): Promise<FightResponse> => {
+  return customFetch<FightResponse>(getAddFightUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(addFightRequest),
+  });
+};
+
+export const getAddFightMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addFight>>,
+    TError,
+    { data: BodyType<AddFightRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addFight>>,
+  TError,
+  { data: BodyType<AddFightRequest> },
+  TContext
+> => {
+  const mutationKey = ["addFight"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addFight>>,
+    { data: BodyType<AddFightRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return addFight(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddFightMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addFight>>
+>;
+export type AddFightMutationBody = BodyType<AddFightRequest>;
+export type AddFightMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Register a fight (admin/profesor only)
+ */
+export const useAddFight = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addFight>>,
+    TError,
+    { data: BodyType<AddFightRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addFight>>,
+  TError,
+  { data: BodyType<AddFightRequest> },
+  TContext
+> => {
+  return useMutation(getAddFightMutationOptions(options));
+};
+
+/**
+ * @summary Get current user fight history and stats
+ */
+export const getGetMyFightsUrl = () => {
+  return `/api/fights/me`;
+};
+
+export const getMyFights = async (
+  options?: RequestInit,
+): Promise<MyFightsResponse> => {
+  return customFetch<MyFightsResponse>(getGetMyFightsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyFightsQueryKey = () => {
+  return [`/api/fights/me`] as const;
+};
+
+export const getGetMyFightsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyFights>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyFights>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyFightsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFights>>> = ({
+    signal,
+  }) => getMyFights({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyFights>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyFightsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyFights>>
+>;
+export type GetMyFightsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current user fight history and stats
+ */
+
+export function useGetMyFights<
+  TData = Awaited<ReturnType<typeof getMyFights>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyFights>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyFightsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a fighter's history and stats (admin/profesor only)
+ */
+export const getGetUserFightsUrl = (userId: number) => {
+  return `/api/fights/user/${userId}`;
+};
+
+export const getUserFights = async (
+  userId: number,
+  options?: RequestInit,
+): Promise<UserFightsResponse> => {
+  return customFetch<UserFightsResponse>(getGetUserFightsUrl(userId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUserFightsQueryKey = (userId: number) => {
+  return [`/api/fights/user/${userId}`] as const;
+};
+
+export const getGetUserFightsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUserFights>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUserFights>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetUserFightsQueryKey(userId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserFights>>> = ({
+    signal,
+  }) => getUserFights(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getUserFights>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetUserFightsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUserFights>>
+>;
+export type GetUserFightsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a fighter's history and stats (admin/profesor only)
+ */
+
+export function useGetUserFights<
+  TData = Awaited<ReturnType<typeof getUserFights>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUserFights>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUserFightsQueryOptions(userId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a fight record (admin/profesor only)
+ */
+export const getDeleteFightUrl = (fightId: number) => {
+  return `/api/fights/${fightId}`;
+};
+
+export const deleteFight = async (
+  fightId: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteFightUrl(fightId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteFightMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFight>>,
+    TError,
+    { fightId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteFight>>,
+  TError,
+  { fightId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteFight"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteFight>>,
+    { fightId: number }
+  > = (props) => {
+    const { fightId } = props ?? {};
+
+    return deleteFight(fightId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteFightMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteFight>>
+>;
+
+export type DeleteFightMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a fight record (admin/profesor only)
+ */
+export const useDeleteFight = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFight>>,
+    TError,
+    { fightId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteFight>>,
+  TError,
+  { fightId: number },
+  TContext
+> => {
+  return useMutation(getDeleteFightMutationOptions(options));
+};

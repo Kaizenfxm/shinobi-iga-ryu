@@ -54,6 +54,7 @@ export interface UserData {
   displayName: string;
   avatarUrl?: string | null;
   subscriptionLevel: UserDataSubscriptionLevel;
+  isFighter: boolean;
   roles: UserDataRolesItem[];
 }
 
@@ -247,4 +248,140 @@ export interface AdminUnlockRecordData {
 
 export interface AdminUnlockRecordsResponse {
   unlocks: AdminUnlockRecordData[];
+}
+
+export interface ToggleFighterRequest {
+  isFighter: boolean;
+}
+
+export interface ToggleFighterResponse {
+  success: boolean;
+  isFighter: boolean;
+}
+
+export type FightDataResult =
+  (typeof FightDataResult)[keyof typeof FightDataResult];
+
+export const FightDataResult = {
+  victoria: "victoria",
+  derrota: "derrota",
+  empate: "empate",
+} as const;
+
+export type FightDataMethod =
+  | (typeof FightDataMethod)[keyof typeof FightDataMethod]
+  | null;
+
+export const FightDataMethod = {
+  ko: "ko",
+  tko: "tko",
+  sumision: "sumision",
+  decision: "decision",
+  decision_unanime: "decision_unanime",
+  decision_dividida: "decision_dividida",
+  descalificacion: "descalificacion",
+  no_contest: "no_contest",
+} as const;
+
+export type FightDataDiscipline =
+  (typeof FightDataDiscipline)[keyof typeof FightDataDiscipline];
+
+export const FightDataDiscipline = {
+  mma: "mma",
+  box: "box",
+  jiujitsu: "jiujitsu",
+  muay_thai: "muay_thai",
+  ninjutsu: "ninjutsu",
+  otro: "otro",
+} as const;
+
+export interface FightData {
+  id: number;
+  userId: number;
+  opponentName: string;
+  eventName?: string | null;
+  fightDate: string;
+  result: FightDataResult;
+  method?: FightDataMethod;
+  discipline: FightDataDiscipline;
+  rounds?: number | null;
+  notes?: string | null;
+  registeredBy: number;
+  createdAt: string;
+}
+
+export interface FightStats {
+  total: number;
+  victorias: number;
+  derrotas: number;
+  empates: number;
+  winPercentage: number;
+}
+
+export type AddFightRequestResult =
+  (typeof AddFightRequestResult)[keyof typeof AddFightRequestResult];
+
+export const AddFightRequestResult = {
+  victoria: "victoria",
+  derrota: "derrota",
+  empate: "empate",
+} as const;
+
+export type AddFightRequestMethod =
+  (typeof AddFightRequestMethod)[keyof typeof AddFightRequestMethod];
+
+export const AddFightRequestMethod = {
+  ko: "ko",
+  tko: "tko",
+  sumision: "sumision",
+  decision: "decision",
+  decision_unanime: "decision_unanime",
+  decision_dividida: "decision_dividida",
+  descalificacion: "descalificacion",
+  no_contest: "no_contest",
+} as const;
+
+export type AddFightRequestDiscipline =
+  (typeof AddFightRequestDiscipline)[keyof typeof AddFightRequestDiscipline];
+
+export const AddFightRequestDiscipline = {
+  mma: "mma",
+  box: "box",
+  jiujitsu: "jiujitsu",
+  muay_thai: "muay_thai",
+  ninjutsu: "ninjutsu",
+  otro: "otro",
+} as const;
+
+export interface AddFightRequest {
+  userId: number;
+  opponentName: string;
+  eventName?: string;
+  fightDate: string;
+  result: AddFightRequestResult;
+  method?: AddFightRequestMethod;
+  discipline: AddFightRequestDiscipline;
+  rounds?: number;
+  notes?: string;
+}
+
+export interface FightResponse {
+  fight: FightData;
+}
+
+export interface MyFightsResponse {
+  isFighter: boolean;
+  fights: FightData[];
+  stats?: FightStats | null;
+}
+
+export interface FighterInfo {
+  id: number;
+  displayName: string;
+}
+
+export interface UserFightsResponse {
+  fighter: FighterInfo;
+  fights: FightData[];
+  stats: FightStats;
 }

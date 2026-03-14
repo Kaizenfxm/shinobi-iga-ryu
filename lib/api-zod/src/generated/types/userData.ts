@@ -14,5 +14,6 @@ export interface UserData {
   displayName: string;
   avatarUrl?: string | null;
   subscriptionLevel: UserDataSubscriptionLevel;
+  isFighter: boolean;
   roles: UserDataRolesItem[];
 }

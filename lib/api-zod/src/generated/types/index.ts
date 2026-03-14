@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./addFightRequest";
+export * from "./addFightRequestDiscipline";
+export * from "./addFightRequestMethod";
+export * from "./addFightRequestResult";
 export * from "./adminBeltHistoryResponse";
 export * from "./adminBeltUserData";
 export * from "./adminBeltUserDataBeltsItem";
@@ -27,14 +31,24 @@ export * from "./beltPromoteResponse";
 export * from "./beltRequirementData";
 export * from "./beltUnlockResponse";
 export * from "./errorResponse";
+export * from "./fightData";
+export * from "./fightDataDiscipline";
+export * from "./fightDataMethod";
+export * from "./fightDataResult";
+export * from "./fighterInfo";
+export * from "./fightResponse";
+export * from "./fightStats";
 export * from "./healthStatus";
 export * from "./loginRequest";
 export * from "./myBeltData";
 export * from "./myBeltsResponse";
+export * from "./myFightsResponse";
 export * from "./profesorAlumnoIdsResponse";
 export * from "./profesorStudentsResponse";
 export * from "./registerRequest";
 export * from "./successResponse";
+export * from "./toggleFighterRequest";
+export * from "./toggleFighterResponse";
 export * from "./updateProfesorAlumnosRequest";
 export * from "./updateProfesorAlumnosResponse";
 export * from "./updateRolesRequest";
@@ -46,3 +60,4 @@ export * from "./updateSubscriptionResponse";
 export * from "./userData";
 export * from "./userDataRolesItem";
 export * from "./userDataSubscriptionLevel";
+export * from "./userFightsResponse";
