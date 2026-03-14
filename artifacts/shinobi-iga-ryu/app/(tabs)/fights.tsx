@@ -132,7 +132,7 @@ function FightCard({ fight }: { fight: FightData }) {
   );
 }
 
-export default function FightsScreen() {
+export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: boolean }) {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const { user, isAuthenticated } = useAuth();
@@ -172,7 +172,7 @@ export default function FightsScreen() {
   if (!isAuthenticated || !user) {
     return (
       <View style={styles.container}>
-        <View style={[styles.centered, { paddingTop: (isWeb ? 67 : insets.top) + 24 }]}>
+        <View style={[styles.centered, { paddingTop: skipSafeArea ? 24 : (isWeb ? 67 : insets.top) + 24 }]}>
           <MaterialCommunityIcons name="boxing-glove" size={48} color="#333" />
           <Text style={styles.emptyText}>Inicia sesión para ver tu modo peleador</Text>
         </View>
@@ -183,7 +183,7 @@ export default function FightsScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={[styles.centered, { paddingTop: (isWeb ? 67 : insets.top) + 24 }]}>
+        <View style={[styles.centered, { paddingTop: skipSafeArea ? 24 : (isWeb ? 67 : insets.top) + 24 }]}>
           <ActivityIndicator size="large" color="#D4AF37" />
         </View>
       </View>
@@ -196,7 +196,7 @@ export default function FightsScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.centered,
-            { paddingTop: (isWeb ? 67 : insets.top) + 24, paddingBottom: 100 },
+            { paddingTop: skipSafeArea ? 24 : (isWeb ? 67 : insets.top) + 24, paddingBottom: 100 },
           ]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#D4AF37" />
@@ -222,7 +222,7 @@ export default function FightsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
+          { paddingTop: skipSafeArea ? 8 : (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#D4AF37" />

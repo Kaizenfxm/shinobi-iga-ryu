@@ -1211,6 +1211,58 @@ beltsRouter.put("/admin/belts/applications/:id", requireAdmin, async (req, res) 
   }
 });
 
+beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
+  try {
+    const { userId, discipline, beltDefinitionId, notes } = req.body as {
+      userId: number;
+      discipline: string;
+      beltDefinitionId: number;
+      notes?: string;
+    };
+    if (!userId || !discipline || !beltDefinitionId) {
+      res.status(400).json({ error: "Faltan datos requeridos" }); return;
+    }
+    const adminId = req.session.userId!;
+    const [targetBelt] = await db
+      .select()
+      .from(beltDefinitionsTable)
+      .where(eq(beltDefinitionsTable.id, beltDefinitionId))
+      .limit(1);
+    if (!targetBelt) { res.status(404).json({ error: "Cinturón no encontrado" }); return; }
+
+    await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(studentBeltsTable)
+        .where(and(eq(studentBeltsTable.userId, userId), eq(studentBeltsTable.discipline, discipline)))
+        .limit(1);
+      if (existing) {
+        await tx.update(studentBeltsTable)
+          .set({ currentBeltId: beltDefinitionId, nextUnlocked: false, updatedAt: new Date() })
+          .where(eq(studentBeltsTable.id, existing.id));
+      } else {
+        await tx.insert(studentBeltsTable).values({
+          userId,
+          discipline,
+          currentBeltId: beltDefinitionId,
+          nextUnlocked: false,
+        });
+      }
+      await tx.insert(beltHistoryTable).values({
+        userId,
+        discipline,
+        beltId: beltDefinitionId,
+        promotedBy: adminId,
+        notes: notes?.trim() || "Asignado por administrador",
+      });
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Belt assign error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 beltsRouter.delete("/admin/belts/definitions/:id/requirements/:reqId", requireAdmin, async (req, res) => {
   try {
     const beltId = parseInt(req.params.id as string, 10);

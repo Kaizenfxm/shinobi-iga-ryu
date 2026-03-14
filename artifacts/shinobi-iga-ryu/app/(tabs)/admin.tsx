@@ -468,17 +468,16 @@ function UsersPanel({
 
   const [pendingApps, setPendingApps] = useState<PendingBeltApplication[]>([]);
   const [actingOnApp, setActingOnApp] = useState<Set<number>>(new Set());
-  const pendingAppsLoaded = useRef(false);
+  const [beltCatalog, setBeltCatalog] = useState<CatalogDiscipline[]>([]);
+  const [assignModal, setAssignModal] = useState<{ userId: number; discipline: string } | null>(null);
+  const [assigning, setAssigning] = useState(false);
 
   const loadPendingApps = useCallback(async () => {
-    if (pendingAppsLoaded.current) return;
-    pendingAppsLoaded.current = true;
     try {
       const { applications } = await beltsApi.adminGetPendingApplications();
       setPendingApps(applications);
     } catch (e) {
       console.error("[UsersPanel] loadPendingApps error:", e instanceof Error ? e.message : e);
-      pendingAppsLoaded.current = false;
     }
   }, []);
 
@@ -487,10 +486,14 @@ function UsersPanel({
     beltDataLoaded.current = true;
     setBeltDataLoading(true);
     try {
-      const { users: beltUsers } = await beltsApi.adminGetUsers();
+      const [{ users: beltUsers }, { catalog }] = await Promise.all([
+        beltsApi.adminGetUsers(),
+        beltsApi.adminGetCatalog(),
+      ]);
       const map: Record<number, AdminBeltUser> = {};
       beltUsers.forEach((u) => { map[u.id] = u; });
       setUserBeltMap(map);
+      setBeltCatalog(catalog);
     } catch (e) {
       console.error("[UsersPanel] loadBeltData error:", e instanceof Error ? e.message : e);
       beltDataLoaded.current = false;
@@ -505,13 +508,29 @@ function UsersPanel({
       await beltsApi.adminActOnApplication(appId, action);
       setPendingApps((prev) => prev.filter((a) => a.id !== appId));
       beltDataLoaded.current = false;
-      await loadBeltData();
+      await Promise.all([loadBeltData(), loadPendingApps()]);
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo procesar la postulación");
     } finally {
       setActingOnApp((s) => { const ns = new Set(s); ns.delete(appId); return ns; });
     }
-  }, [loadBeltData]);
+  }, [loadBeltData, loadPendingApps]);
+
+  const handleAssignBelt = useCallback(async (beltId: number, beltName: string) => {
+    if (!assignModal) return;
+    setAssigning(true);
+    try {
+      await beltsApi.adminAssignBelt(assignModal.userId, assignModal.discipline, beltId);
+      beltDataLoaded.current = false;
+      await loadBeltData();
+      setAssignModal(null);
+      Alert.alert("Listo", `${beltName} asignado correctamente`);
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo asignar el cinturón");
+    } finally {
+      setAssigning(false);
+    }
+  }, [assignModal, loadBeltData]);
 
   const toggleBeltSection = useCallback(async (userId: number) => {
     const willOpen = !beltSectionOpen[userId];
@@ -519,6 +538,7 @@ function UsersPanel({
     setBeltSectionOpen(newState);
     AsyncStorage.setItem("adminBeltSectionOpen", JSON.stringify(newState));
     if (willOpen) {
+      beltDataLoaded.current = false;
       loadBeltData();
       loadPendingApps();
     }
@@ -829,24 +849,27 @@ function UsersPanel({
                     )}
                     {beltDataLoading ? (
                       <ActivityIndicator size="small" color="#D4AF37" />
-                    ) : !userBeltMap[u.id] || userBeltMap[u.id].belts.length === 0 ? (
-                      <Text style={styles.noHistoryText}>Sin cinturones asignados</Text>
+                    ) : beltCatalog.length === 0 ? (
+                      <Text style={styles.noHistoryText}>Sin disciplinas configuradas</Text>
                     ) : (
-                      userBeltMap[u.id].belts.map((b) => {
-                        const discKey = `${u.id}_${b.discipline}`;
+                      beltCatalog.map((disc) => {
+                        const userBelt = userBeltMap[u.id]?.belts.find((b) => b.discipline === disc.discipline);
+                        const discKey = `${u.id}_${disc.discipline}`;
                         const isDiscOpen = !!discSectionOpen[discKey];
-                        const beltColorLower = b.currentBelt.color.toLowerCase();
+                        const beltColorLower = userBelt ? userBelt.currentBelt.color.toLowerCase() : "";
                         const beltIsVeryDark = beltColorLower === "#000000" || beltColorLower === "#1c1c1c";
                         const beltIsWhite = beltColorLower === "#ffffff";
-                        const barColor = beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : b.currentBelt.color;
+                        const barColor = userBelt
+                          ? beltIsVeryDark ? "#3a3a3a" : beltIsWhite ? "#ccc" : userBelt.currentBelt.color
+                          : "#1a1a1a";
                         return (
-                          <View key={b.discipline}>
+                          <View key={disc.discipline}>
                             <Pressable
                               style={styles.discToggleRow}
-                              onPress={() => toggleDiscSection(u.id, b.discipline)}
+                              onPress={() => toggleDiscSection(u.id, disc.discipline)}
                             >
                               <Text style={styles.discToggleLabel}>
-                                {DISCIPLINE_LABELS[b.discipline] || b.discipline}
+                                {DISCIPLINE_LABELS[disc.discipline] || disc.discipline}
                               </Text>
                               <Ionicons
                                 name={isDiscOpen ? "chevron-up" : "chevron-down"}
@@ -855,12 +878,25 @@ function UsersPanel({
                               />
                             </Pressable>
                             {isDiscOpen && (
-                              <View style={styles.beltManageRow}>
-                                <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
-                                <View style={styles.beltManageInfo}>
-                                  <Text style={styles.beltManageName}>{b.currentBelt.name}</Text>
-                                  <Text style={styles.beltManageStatus}>Cinturón actual</Text>
+                              <View style={styles.discExpandedContent}>
+                                <View style={styles.beltManageRow}>
+                                  <View style={[styles.beltColorBar, { backgroundColor: barColor }]} />
+                                  <View style={styles.beltManageInfo}>
+                                    <Text style={styles.beltManageName}>
+                                      {userBelt ? userBelt.currentBelt.name : "Sin cinturón asignado"}
+                                    </Text>
+                                    <Text style={styles.beltManageStatus}>
+                                      {userBelt ? "Cinturón actual" : "—"}
+                                    </Text>
+                                  </View>
                                 </View>
+                                <Pressable
+                                  style={styles.assignBeltBtn}
+                                  onPress={() => setAssignModal({ userId: u.id, discipline: disc.discipline })}
+                                >
+                                  <Ionicons name="ribbon" size={12} color="#000" />
+                                  <Text style={styles.assignBeltBtnText}>Asignar cinturón</Text>
+                                </Pressable>
                               </View>
                             )}
                           </View>
@@ -894,6 +930,65 @@ function UsersPanel({
           </Pressable>
         );
       })}
+
+      {/* Belt Assignment Modal */}
+      <Modal
+        visible={!!assignModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAssignModal(null)}
+      >
+        <View style={styles.assignModalOverlay}>
+          <View style={styles.assignModalSheet}>
+            <View style={styles.assignModalHeader}>
+              <Text style={styles.assignModalTitle}>
+                Asignar cinturón
+              </Text>
+              {assignModal && (
+                <Text style={styles.assignModalSubtitle}>
+                  {DISCIPLINE_LABELS[assignModal.discipline] || assignModal.discipline}
+                </Text>
+              )}
+              <Pressable
+                style={styles.assignModalClose}
+                onPress={() => setAssignModal(null)}
+              >
+                <Ionicons name="close" size={20} color="#666" />
+              </Pressable>
+            </View>
+            {assigning ? (
+              <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 32 }} />
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {assignModal && beltCatalog
+                  .find((d) => d.discipline === assignModal.discipline)
+                  ?.belts.map((belt) => {
+                    const cLower = belt.color.toLowerCase();
+                    const isDark = cLower === "#000000" || cLower === "#1c1c1c";
+                    const isWh = cLower === "#ffffff";
+                    const barBg = isDark ? "#3a3a3a" : isWh ? "#ccc" : belt.color;
+                    const isPunta = belt.name.toLowerCase().includes("punta negra");
+                    const isFranja = belt.name.toLowerCase().includes("franja roja");
+                    return (
+                      <Pressable
+                        key={belt.id}
+                        style={styles.assignBeltOption}
+                        onPress={() => handleAssignBelt(belt.id, belt.name)}
+                      >
+                        <View style={[styles.assignBeltBarLg, { backgroundColor: barBg, overflow: "hidden" }]}>
+                          {isFranja && <View style={styles.pendingFranjaRoja} />}
+                          {isPunta && <View style={styles.pendingPuntaNegra} />}
+                        </View>
+                        <Text style={styles.assignBeltOptionName}>{belt.name}</Text>
+                        <Ionicons name="chevron-forward" size={14} color="#444" />
+                      </Pressable>
+                    );
+                  })}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -1970,6 +2065,87 @@ const styles = StyleSheet.create({
     padding: 5,
     borderWidth: 1,
     borderColor: "#6a2020",
+  },
+  discExpandedContent: {
+    paddingLeft: 8,
+    paddingBottom: 8,
+  },
+  assignBeltBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#D4AF37",
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 6,
+    alignSelf: "flex-start",
+  },
+  assignBeltBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#000",
+    letterSpacing: 0.5,
+  },
+  assignModalOverlay: {
+    flex: 1,
+    backgroundColor: "#000000BB",
+    justifyContent: "flex-end",
+  },
+  assignModalSheet: {
+    backgroundColor: "#0A0A0A",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#D4AF3730",
+    maxHeight: "80%",
+    paddingBottom: 40,
+  },
+  assignModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1A1A1A",
+  },
+  assignModalTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    color: "#FFFFFF",
+    flex: 1,
+  },
+  assignModalSubtitle: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  assignModalClose: {
+    padding: 4,
+  },
+  assignBeltOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#111",
+  },
+  assignBeltBarLg: {
+    width: 44,
+    height: 18,
+    borderRadius: 2,
+    position: "relative",
+  },
+  assignBeltOptionName: {
+    flex: 1,
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#CCC",
   },
   userInfo: {
     flex: 1,
