@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -344,7 +345,26 @@ function LadderRow({
   togglingReqs: Set<number>;
 }) {
   const status = belt.status as BeltStatus;
-  const isExpanded = status === "current" || status === "available" || status === "applied";
+  const [reqsOpen, setReqsOpen] = useState(false);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    AsyncStorage.getItem(`belt_reqs_open_${belt.id}`).then((val) => {
+      if (val === "1") setReqsOpen(true);
+    });
+  }, [belt.id]);
+
+  const toggleReqs = () => {
+    const next = !reqsOpen;
+    setReqsOpen(next);
+    AsyncStorage.setItem(`belt_reqs_open_${belt.id}`, next ? "1" : "0");
+  };
+
+  const showInfo = status === "current" || status === "available" || status === "applied";
+  const hasReqs = belt.requirements.length > 0;
+  const showReqsToggle = (status === "available" || status === "applied") && hasReqs;
 
   const borderColor = (() => {
     if (status === "current") return "#D4AF37";
@@ -355,77 +375,79 @@ function LadderRow({
 
   const rowOpacity = status === "locked" ? 0.4 : status === "earned" ? 0.7 : 1;
 
-  const StatusBadge = () => {
-    if (status === "earned") {
-      return (
-        <View style={rowStyles.badgeEarned}>
-          <MaterialCommunityIcons name="check-circle" size={12} color="#4a9" />
-          <Text style={rowStyles.badgeEarnedText}>APROBADO</Text>
-        </View>
-      );
-    }
-    if (status === "current") {
-      return (
-        <View style={rowStyles.badgeCurrent}>
-          <Text style={rowStyles.badgeCurrentText}>ACTUAL</Text>
-        </View>
-      );
-    }
-    if (status === "available") {
-      return (
-        <Pressable
-          style={[rowStyles.applyBtn, applying && rowStyles.applyBtnLoading]}
-          onPress={onApply}
-          disabled={applying}
-        >
-          {applying ? (
-            <ActivityIndicator size={12} color="#000" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="send" size={12} color="#000" />
-              <Text style={rowStyles.applyBtnText}>POSTULARME</Text>
-            </>
-          )}
-        </Pressable>
-      );
-    }
-    if (status === "applied") {
-      return (
-        <View style={rowStyles.badgeApplied}>
-          <MaterialCommunityIcons name="clock-outline" size={11} color="#D4AF37" />
-          <Text style={rowStyles.badgeAppliedText}>POSTULADO</Text>
-        </View>
-      );
-    }
-    return (
-      <MaterialCommunityIcons name="lock" size={16} color="#333" />
-    );
-  };
-
   return (
     <View style={[rowStyles.container, { borderColor, opacity: rowOpacity }]}>
       <View style={rowStyles.header}>
         <BeltColorStrip color={belt.color} name={belt.name} size={56} />
+
+        {status === "available" && (
+          <Pressable
+            style={[rowStyles.applyBtn, applying && rowStyles.applyBtnLoading]}
+            onPress={onApply}
+            disabled={applying}
+          >
+            {applying ? (
+              <ActivityIndicator size={12} color="#000" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="send" size={12} color="#000" />
+                <Text style={rowStyles.applyBtnText}>POSTULARME</Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
         <View style={rowStyles.nameArea}>
           <Text style={[rowStyles.name, status === "current" && rowStyles.nameCurrent]}>
             {belt.name.toUpperCase()}
           </Text>
-          {isExpanded && belt.description && (
+          {showInfo && belt.description && (
             <Text style={rowStyles.desc} numberOfLines={2}>{belt.description}</Text>
           )}
         </View>
-        <StatusBadge />
+
+        {status === "earned" && (
+          <View style={rowStyles.badgeEarned}>
+            <MaterialCommunityIcons name="check-circle" size={12} color="#4a9" />
+            <Text style={rowStyles.badgeEarnedText}>APROBADO</Text>
+          </View>
+        )}
+        {status === "current" && (
+          <View style={rowStyles.badgeCurrent}>
+            <Text style={rowStyles.badgeCurrentText}>ACTUAL</Text>
+          </View>
+        )}
+        {status === "applied" && (
+          <View style={rowStyles.badgeApplied}>
+            <MaterialCommunityIcons name="clock-outline" size={11} color="#D4AF37" />
+            <Text style={rowStyles.badgeAppliedText}>POSTULADO</Text>
+          </View>
+        )}
+        {status === "locked" && (
+          <MaterialCommunityIcons name="lock" size={16} color="#333" />
+        )}
       </View>
 
-      {(status === "available" || status === "applied") && belt.requirements.length > 0 && (
-        <View style={rowStyles.expandedContent}>
-          <GoldRule />
-          <RequirementsChecklist
-            requirements={belt.requirements}
-            onToggle={onToggleReq}
-            toggling={togglingReqs}
-          />
-        </View>
+      {showReqsToggle && (
+        <>
+          <Pressable style={rowStyles.reqsToggle} onPress={toggleReqs}>
+            <Text style={rowStyles.reqsToggleText}>REQUISITOS</Text>
+            <MaterialCommunityIcons
+              name={reqsOpen ? "chevron-up" : "chevron-down"}
+              size={14}
+              color="#555"
+            />
+          </Pressable>
+          {reqsOpen && (
+            <View style={rowStyles.expandedContent}>
+              <RequirementsChecklist
+                requirements={belt.requirements}
+                onToggle={onToggleReq}
+                toggling={togglingReqs}
+              />
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -532,7 +554,24 @@ const rowStyles = StyleSheet.create({
     color: "#D4AF37",
     letterSpacing: 1,
   },
-  expandedContent: {},
+  expandedContent: {
+    marginTop: 4,
+  },
+  reqsToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#1a1a1a",
+  },
+  reqsToggleText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#555",
+    letterSpacing: 2,
+  },
 });
 
 function DisciplineSection({
