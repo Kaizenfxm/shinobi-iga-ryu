@@ -5,9 +5,7 @@ import { requireAdmin } from "../middlewares/auth";
 
 const adminRouter = Router();
 
-adminRouter.use(requireAdmin);
-
-adminRouter.get("/admin/users", async (_req, res) => {
+adminRouter.get("/admin/users", requireAdmin, async (_req, res) => {
   try {
     const users = await db
       .select({
@@ -47,9 +45,9 @@ adminRouter.get("/admin/users", async (_req, res) => {
   }
 });
 
-adminRouter.put("/admin/users/:id/roles", async (req, res) => {
+adminRouter.put("/admin/users/:id/roles", requireAdmin, async (req, res) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = parseInt(String(req.params.id), 10);
     if (isNaN(userId)) {
       res.status(400).json({ error: "ID de usuario inválido" });
       return;
@@ -98,9 +96,9 @@ adminRouter.put("/admin/users/:id/roles", async (req, res) => {
   }
 });
 
-adminRouter.put("/admin/users/:id/subscription", async (req, res) => {
+adminRouter.put("/admin/users/:id/subscription", requireAdmin, async (req, res) => {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId = parseInt(String(req.params.id), 10);
     if (isNaN(userId)) {
       res.status(400).json({ error: "ID de usuario inválido" });
       return;
@@ -137,9 +135,9 @@ adminRouter.put("/admin/users/:id/subscription", async (req, res) => {
   }
 });
 
-adminRouter.get("/admin/profesor/:profesorId/alumnos", async (req, res) => {
+adminRouter.get("/admin/profesor/:profesorId/alumnos", requireAdmin, async (req, res) => {
   try {
-    const profesorId = parseInt(req.params.profesorId, 10);
+    const profesorId = parseInt(String(req.params.profesorId), 10);
     if (isNaN(profesorId)) {
       res.status(400).json({ error: "ID de profesor inválido" });
       return;
@@ -159,9 +157,9 @@ adminRouter.get("/admin/profesor/:profesorId/alumnos", async (req, res) => {
   }
 });
 
-adminRouter.put("/admin/profesor/:profesorId/alumnos", async (req, res) => {
+adminRouter.put("/admin/profesor/:profesorId/alumnos", requireAdmin, async (req, res) => {
   try {
-    const profesorId = parseInt(req.params.profesorId, 10);
+    const profesorId = parseInt(String(req.params.profesorId), 10);
     if (isNaN(profesorId)) {
       res.status(400).json({ error: "ID de profesor inválido" });
       return;

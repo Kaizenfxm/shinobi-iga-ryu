@@ -5,9 +5,7 @@ import { requireProfesor } from "../middlewares/auth";
 
 const profesorRouter = Router();
 
-profesorRouter.use(requireProfesor);
-
-profesorRouter.get("/profesor/alumnos", async (req, res) => {
+profesorRouter.get("/profesor/alumnos", requireProfesor, async (req, res) => {
   try {
     const profesorId = req.session.userId!;
 
