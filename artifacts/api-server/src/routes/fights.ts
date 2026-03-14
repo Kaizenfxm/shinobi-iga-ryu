@@ -265,6 +265,73 @@ fightsRouter.get("/fights/me", requireAuth, async (req, res) => {
   }
 });
 
+fightsRouter.put("/fights/:fightId", requireAdminOrProfesor, async (req, res) => {
+  try {
+    const fightId = parseInt(req.params.fightId as string, 10);
+    if (isNaN(fightId)) {
+      res.status(400).json({ error: "ID de pelea inválido" });
+      return;
+    }
+
+    const [fight] = await db.select().from(fightsTable).where(eq(fightsTable.id, fightId)).limit(1);
+    if (!fight) {
+      res.status(404).json({ error: "Pelea no encontrada" });
+      return;
+    }
+
+    const roles = res.locals.userRoles as string[];
+    const hasAccess = await verifyProfesorOwnership(req.session.userId!, fight.userId, roles);
+    if (!hasAccess) {
+      res.status(403).json({ error: "No tienes acceso a esta pelea" });
+      return;
+    }
+
+    const { opponentName, eventName, fightDate, result, method, discipline, rounds, notes } = req.body;
+
+    const validResults = ["victoria", "derrota", "empate"] as const;
+    const validDisciplines = ["mma", "box", "jiujitsu", "muay_thai", "ninjutsu", "otro"] as const;
+    const validMethods = ["ko", "tko", "sumision", "decision", "decision_unanime", "decision_dividida", "descalificacion", "no_contest"] as const;
+
+    if (result !== undefined && !validResults.includes(result)) {
+      res.status(400).json({ error: "Resultado inválido" });
+      return;
+    }
+    if (discipline !== undefined && !validDisciplines.includes(discipline)) {
+      res.status(400).json({ error: "Disciplina inválida" });
+      return;
+    }
+    if (method && !validMethods.includes(method)) {
+      res.status(400).json({ error: "Método inválido" });
+      return;
+    }
+    if (fightDate && (!/^\d{4}-\d{2}-\d{2}$/.test(fightDate) || isNaN(Date.parse(fightDate)))) {
+      res.status(400).json({ error: "Fecha inválida (formato: YYYY-MM-DD)" });
+      return;
+    }
+
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (opponentName !== undefined) updates.opponentName = String(opponentName).trim();
+    if (eventName !== undefined) updates.eventName = eventName?.trim() || null;
+    if (fightDate !== undefined) updates.fightDate = fightDate;
+    if (result !== undefined) updates.result = result;
+    if (method !== undefined) updates.method = method || null;
+    if (discipline !== undefined) updates.discipline = discipline;
+    if (rounds !== undefined) updates.rounds = rounds ? parseInt(String(rounds), 10) : null;
+    if (notes !== undefined) updates.notes = notes?.trim() || null;
+
+    const [updatedFight] = await db
+      .update(fightsTable)
+      .set(updates)
+      .where(eq(fightsTable.id, fightId))
+      .returning();
+
+    res.json({ fight: updatedFight });
+  } catch (error) {
+    console.error("Update fight error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 fightsRouter.delete("/fights/:fightId", requireAdminOrProfesor, async (req, res) => {
   try {
     const fightId = parseInt(req.params.fightId as string, 10);
