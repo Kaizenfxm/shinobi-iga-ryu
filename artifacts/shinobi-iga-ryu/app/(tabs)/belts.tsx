@@ -364,7 +364,7 @@ function LadderRow({
 
   const showInfo = status === "current" || status === "available" || status === "applied";
   const hasReqs = belt.requirements.length > 0;
-  const showReqsToggle = (status === "available" || status === "applied") && hasReqs;
+  const showReqsToggle = status === "applied" && hasReqs;
 
   const borderColor = (() => {
     if (status === "current") return "#D4AF37";
