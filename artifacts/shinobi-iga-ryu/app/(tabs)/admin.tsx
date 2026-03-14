@@ -40,8 +40,18 @@ const SUB_LABELS: Record<string, string> = {
 };
 
 const DISCIPLINE_LABELS: Record<string, string> = {
-  ninjutsu: "Ninjutsu",
-  jiujitsu: "Jiujitsu",
+  ninjutsu: "NINJUTSU",
+  jiujitsu: "JIUJITSU",
+};
+
+const DISCIPLINE_KANJI: Record<string, string> = {
+  ninjutsu: "忍術",
+  jiujitsu: "柔術",
+};
+
+const DISCIPLINE_SUBTITLE: Record<string, string> = {
+  ninjutsu: "El arte del ninja",
+  jiujitsu: "El arte suave",
 };
 
 type AdminTab = "usuarios" | "cinturones" | "peleas";
@@ -809,23 +819,30 @@ function BeltCatalogPanel() {
           const isDiscOpen = expandedDisc === disc.discipline;
           const discLabel = DISCIPLINE_LABELS[disc.discipline] || disc.discipline;
 
+          const discKanji = DISCIPLINE_KANJI[disc.discipline] || "";
+          const discSubtitle = DISCIPLINE_SUBTITLE[disc.discipline] || "";
+
           return (
             <View key={disc.discipline} style={styles.catalogSection}>
               <Pressable
                 style={styles.catalogDiscHeader}
                 onPress={() => setExpandedDisc(isDiscOpen ? null : disc.discipline)}
               >
+                <Text style={styles.catalogDiscKanjiWatermark}>{discKanji}</Text>
                 <View style={styles.catalogDiscLeft}>
-                  <MaterialCommunityIcons
-                    name={disc.discipline === "ninjutsu" ? "star-four-points" : "feather"}
-                    size={16}
-                    color="#D4AF37"
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text style={styles.catalogDiscTitle}>{discLabel}</Text>
-                  <View style={styles.catalogBeltCount}>
-                    <Text style={styles.catalogBeltCountText}>{disc.belts.length}</Text>
+                  <View style={styles.catalogDiscPill}>
+                    <MaterialCommunityIcons
+                      name={disc.discipline === "ninjutsu" ? "star-four-points" : "feather"}
+                      size={11}
+                      color="#D4AF37"
+                    />
+                    <Text style={styles.catalogDiscPillText}>{discLabel}</Text>
+                    <View style={styles.catalogBeltCount}>
+                      <Text style={styles.catalogBeltCountText}>{disc.belts.length}</Text>
+                    </View>
                   </View>
+                  <Text style={styles.catalogDiscKanji}>{discKanji}</Text>
+                  <Text style={styles.catalogDiscSubtitle}>{discSubtitle}</Text>
                 </View>
                 <Ionicons name={isDiscOpen ? "chevron-up" : "chevron-down"} size={18} color="#555" />
               </Pressable>
@@ -851,8 +868,10 @@ function BeltCatalogPanel() {
                           style={styles.catalogBeltHeader}
                           onPress={() => setExpandedBelt(isBeltOpen ? null : belt.id)}
                         >
-                          <View style={[styles.catalogBeltColorBar, { backgroundColor: beltBarColor }]} />
-                          <Text style={styles.catalogBeltName} numberOfLines={1}>{belt.name}</Text>
+                          <View style={[styles.catalogBeltColorBar, { backgroundColor: beltBarColor }]}>
+                            <View style={[styles.catalogBeltColorStripe, { backgroundColor: beltBarColor + "55" }]} />
+                          </View>
+                          <Text style={styles.catalogBeltName} numberOfLines={1}>{belt.name.toUpperCase()}</Text>
                           <View style={styles.catalogBeltActions}>
                             <Pressable
                               style={styles.catalogIconBtn}
@@ -866,11 +885,11 @@ function BeltCatalogPanel() {
                                 });
                               }}
                             >
-                              <Ionicons name="pencil" size={16} color="#D4AF37" />
+                              <Ionicons name="pencil" size={15} color="#D4AF37" />
                             </Pressable>
                             <Ionicons
                               name={isBeltOpen ? "chevron-up" : "chevron-down"}
-                              size={16}
+                              size={15}
                               color="#333"
                             />
                           </View>
@@ -905,13 +924,13 @@ function BeltCatalogPanel() {
                               <Text style={styles.catalogBeltDesc}>{belt.description}</Text>
                             ) : null}
 
-                            <Text style={styles.sectionLabel}>REQUERIMIENTOS</Text>
+                            <Text style={styles.catalogReqSectionLabel}>要件 · REQUERIMIENTOS</Text>
 
                             {belt.requirements.length === 0 && (
                               <Text style={styles.noHistoryText}>Sin requerimientos.</Text>
                             )}
 
-                            {belt.requirements.map((req) => {
+                            {belt.requirements.map((req, reqIdx) => {
                               const isEditingReq = reqForm.visible && reqForm.editingId === req.id;
                               return (
                                 <View key={req.id} style={styles.catalogReqItem}>
@@ -942,7 +961,9 @@ function BeltCatalogPanel() {
                                     </View>
                                   ) : (
                                     <View style={styles.catalogReqRow}>
-                                      <View style={styles.catalogReqDot} />
+                                      <View style={styles.catalogReqNum}>
+                                        <Text style={styles.catalogReqNumText}>{reqIdx + 1}</Text>
+                                      </View>
                                       <View style={{ flex: 1 }}>
                                         <Text style={styles.catalogReqTitle}>{req.title}</Text>
                                         {req.description ? (
@@ -1953,34 +1974,72 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   catalogSection: {
-    marginBottom: 12,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderRadius: 12,
+    borderColor: "#1C1C1C",
+    borderRadius: 2,
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
     overflow: "hidden",
   },
   catalogDiscHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    backgroundColor: "#0A0A0A",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    backgroundColor: "#060606",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    overflow: "hidden",
+    position: "relative",
+  },
+  catalogDiscKanjiWatermark: {
+    position: "absolute",
+    right: -8,
+    top: -20,
+    fontFamily: "NotoSerifJP_900Black",
+    fontSize: 100,
+    color: "#0F0F0F",
   },
   catalogDiscLeft: {
+    gap: 4,
+    flex: 1,
+  },
+  catalogDiscPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 5,
+    alignSelf: "flex-start",
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#2a2000",
+    borderRadius: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginBottom: 4,
   },
-  catalogDiscTitle: {
+  catalogDiscPillText: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 15,
+    fontSize: 9,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  catalogDiscKanji: {
+    fontFamily: "NotoSerifJP_700Bold",
+    fontSize: 36,
     color: "#FFFFFF",
+    lineHeight: 40,
+  },
+  catalogDiscSubtitle: {
+    fontFamily: "NotoSerifJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    fontStyle: "italic",
     letterSpacing: 1,
   },
   catalogBeltCount: {
     backgroundColor: "#1A1500",
-    borderRadius: 10,
+    borderRadius: 2,
     paddingHorizontal: 7,
     paddingVertical: 2,
     minWidth: 24,
@@ -1988,109 +2047,142 @@ const styles = StyleSheet.create({
   },
   catalogBeltCountText: {
     fontFamily: "Inter_700Bold",
-    fontSize: 11,
+    fontSize: 10,
     color: "#D4AF37",
   },
   catalogDiscContent: {
     backgroundColor: "#050505",
     paddingHorizontal: 12,
     paddingBottom: 12,
-    paddingTop: 8,
-    gap: 4,
+    paddingTop: 10,
+    gap: 6,
   },
   catalogBeltItem: {
     borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderRadius: 8,
+    borderColor: "#141414",
+    borderRadius: 2,
     marginBottom: 6,
     overflow: "hidden",
   },
   catalogBeltHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: "#0D0D0D",
+    paddingVertical: 11,
+    backgroundColor: "#0A0A0A",
   },
   catalogBeltColorBar: {
-    width: 5,
-    height: 28,
-    borderRadius: 3,
+    width: 36,
+    height: 18,
+    borderRadius: 2,
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  catalogBeltColorStripe: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 8,
   },
   catalogBeltName: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 13,
-    color: "#DDD",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#CCC",
     flex: 1,
+    letterSpacing: 2,
   },
   catalogBeltActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   catalogIconBtn: {
     padding: 4,
   },
   catalogBeltContent: {
     backgroundColor: "#080808",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#111",
   },
   catalogBeltDesc: {
-    fontFamily: "NotoSansJP_400Regular",
+    fontFamily: "NotoSerifJP_400Regular",
     fontSize: 12,
     color: "#555",
     fontStyle: "italic",
-    marginBottom: 4,
+    lineHeight: 18,
+  },
+  catalogReqSectionLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#444",
+    letterSpacing: 3,
+    marginTop: 2,
   },
   catalogReqItem: {
-    marginBottom: 4,
+    marginBottom: 2,
   },
   catalogReqRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
+    gap: 10,
   },
-  catalogReqDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "#D4AF37",
-    marginTop: 6,
+  catalogReqNum: {
+    width: 20,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: "#0D0A00",
+    borderWidth: 1,
+    borderColor: "#2a2000",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 1,
+  },
+  catalogReqNumText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#D4AF37",
   },
   catalogReqTitle: {
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 12,
     color: "#CCC",
+    lineHeight: 17,
   },
   catalogReqDesc: {
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 11,
     color: "#555",
+    lineHeight: 16,
   },
   catalogForm: {
-    backgroundColor: "#111",
+    backgroundColor: "#0A0A00",
     borderWidth: 1,
-    borderColor: "#222",
-    borderRadius: 8,
+    borderColor: "#1E1800",
+    borderRadius: 2,
+    borderLeftWidth: 2,
+    borderLeftColor: "#D4AF37",
     padding: 12,
-    marginTop: 6,
+    marginTop: 4,
     gap: 8,
   },
   catalogFormTitle: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 12,
+    fontSize: 11,
     color: "#D4AF37",
-    letterSpacing: 1,
+    letterSpacing: 2,
     marginBottom: 2,
   },
   catalogFormInput: {
     backgroundColor: "#000",
     borderWidth: 1,
-    borderColor: "#222",
-    borderRadius: 6,
+    borderColor: "#1C1C1C",
+    borderRadius: 2,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontFamily: "NotoSansJP_400Regular",
@@ -2106,22 +2198,22 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     alignItems: "center",
-    backgroundColor: "#1A1A1A",
-    borderRadius: 6,
+    backgroundColor: "#111",
+    borderRadius: 2,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: "#1A1A1A",
   },
   catalogFormCancelText: {
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 12,
-    color: "#666",
+    color: "#555",
   },
   catalogFormSave: {
     flex: 1,
     paddingVertical: 9,
     alignItems: "center",
     backgroundColor: "#D4AF37",
-    borderRadius: 6,
+    borderRadius: 2,
   },
   catalogFormSaveText: {
     fontFamily: "NotoSansJP_700Bold",
