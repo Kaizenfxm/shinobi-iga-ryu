@@ -27,6 +27,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const mottoOpacity = useRef(new Animated.Value(1)).current;
@@ -90,7 +91,7 @@ export default function AuthScreen() {
     setLoading(true);
     setError("");
     try {
-      await register(email.trim(), password, displayName.trim());
+      await register(email.trim(), password, displayName.trim(), phone.trim() || undefined);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
@@ -183,6 +184,20 @@ export default function AuthScreen() {
               placeholderTextColor="#444"
               autoCapitalize="words"
               autoComplete="name"
+            />
+          </View>
+        )}
+        {mode === "register" && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Teléfono (opcional)</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+57 300 000 0000"
+              placeholderTextColor="#444"
+              keyboardType="phone-pad"
+              autoComplete="tel"
             />
           </View>
         )}

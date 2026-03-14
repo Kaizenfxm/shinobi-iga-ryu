@@ -12,6 +12,7 @@ export const usersTable = pgTable("users", {
   displayName: varchar("display_name", { length: 255 }).notNull(),
   avatarUrl: text("avatar_url"),
   subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico").notNull(),
+  phone: varchar("phone", { length: 50 }),
   isFighter: boolean("is_fighter").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

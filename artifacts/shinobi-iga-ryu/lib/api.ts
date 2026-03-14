@@ -73,6 +73,7 @@ export interface UserData {
   displayName: string;
   avatarUrl: string | null;
   subscriptionLevel: string;
+  phone: string | null;
   isFighter: boolean;
   roles: string[];
 }
@@ -82,7 +83,7 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  register: (data: { email: string; password: string; displayName: string }) =>
+  register: (data: { email: string; password: string; displayName: string; phone?: string }) =>
     apiFetch<AuthResponse>("/auth/register", { method: "POST", body: data }),
 
   login: (data: { email: string; password: string }) =>
@@ -311,6 +312,7 @@ export interface ProfileData {
   displayName: string;
   avatarUrl: string | null;
   subscriptionLevel: string;
+  phone: string | null;
   isFighter: boolean;
   roles: string[];
   belts: ProfileBelt[];
@@ -319,6 +321,8 @@ export interface ProfileData {
 
 export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
+  updateProfile: (data: { displayName?: string; phone?: string | null }) =>
+    apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
 };
 
 export const fightsApi = {

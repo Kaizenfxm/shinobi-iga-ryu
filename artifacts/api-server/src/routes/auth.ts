@@ -8,7 +8,7 @@ const authRouter = Router();
 
 authRouter.post("/auth/register", async (req, res) => {
   try {
-    const { email, password, displayName } = req.body;
+    const { email, password, displayName, phone } = req.body;
 
     if (!email || !password || !displayName) {
       res.status(400).json({ error: "Email, contraseña y nombre son requeridos" });
@@ -39,6 +39,7 @@ authRouter.post("/auth/register", async (req, res) => {
         email: email.toLowerCase().trim(),
         passwordHash,
         displayName: displayName.trim(),
+        phone: phone?.trim() || null,
       })
       .returning({
         id: usersTable.id,
@@ -46,6 +47,7 @@ authRouter.post("/auth/register", async (req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        phone: usersTable.phone,
         isFighter: usersTable.isFighter,
       });
 
@@ -145,6 +147,7 @@ authRouter.post("/auth/login", async (req, res) => {
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
         subscriptionLevel: user.subscriptionLevel,
+        phone: user.phone,
         isFighter: user.isFighter,
         roles: roles.map((r) => r.role),
       },
@@ -164,6 +167,7 @@ authRouter.get("/auth/me", requireAuth, async (req, res) => {
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
+        phone: usersTable.phone,
         isFighter: usersTable.isFighter,
       })
       .from(usersTable)
