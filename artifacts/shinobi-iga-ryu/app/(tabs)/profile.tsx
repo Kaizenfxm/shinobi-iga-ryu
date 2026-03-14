@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { profileApi, type ProfileData, type ProfileBelt, type FightStats } from "@/lib/api";
 import ViewShot, { captureRef } from "react-native-view-shot";
@@ -272,11 +273,18 @@ const fightStyles = StyleSheet.create({
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/auth");
+    }
+  }, [isAuthenticated, authLoading]);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
