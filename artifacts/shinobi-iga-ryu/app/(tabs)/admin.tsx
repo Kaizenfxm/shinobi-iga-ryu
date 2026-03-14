@@ -123,9 +123,43 @@ function UsersPanel({
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredUsers = searchQuery.trim() === ""
+    ? users
+    : users.filter(
+        (u) =>
+          u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          u.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
   return (
     <>
-      {users.map((u) => {
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={16} color="#666" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nombre o email..."
+          placeholderTextColor="#444"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          clearButtonMode="while-editing"
+        />
+        {searchQuery.length > 0 && Platform.OS !== "ios" && (
+          <Pressable onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={16} color="#666" />
+          </Pressable>
+        )}
+      </View>
+      {filteredUsers.length === 0 && searchQuery.trim() !== "" && (
+        <View style={{ alignItems: "center", paddingVertical: 24 }}>
+          <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 14 }}>
+            Sin resultados para "{searchQuery}"
+          </Text>
+        </View>
+      )}
+      {filteredUsers.map((u) => {
         const isExpanded = expandedUser === u.id;
         const isCurrentUser = u.id === currentUser?.id;
 
