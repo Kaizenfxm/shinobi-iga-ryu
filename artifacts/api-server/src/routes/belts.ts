@@ -207,8 +207,7 @@ beltsRouter.get("/admin/belts/users", requireAdmin, async (_req, res) => {
 
 beltsRouter.get("/admin/belts/users/:userId/history", requireAdmin, async (req, res) => {
   try {
-    const userIdParam = req.params.userId;
-    const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam, 10);
+    const userId = parseInt(req.params.userId as string, 10);
     if (isNaN(userId)) {
       res.status(400).json({ error: "ID de usuario inválido" });
       return;
@@ -488,8 +487,7 @@ beltsRouter.post("/admin/belts/initialize", requireAdmin, async (req, res) => {
 
 beltsRouter.get("/admin/belts/unlocks/:userId", requireAdmin, async (req, res) => {
   try {
-    const userIdParam = req.params.userId;
-    const userId = parseInt(Array.isArray(userIdParam) ? userIdParam[0] : userIdParam, 10);
+    const userId = parseInt(req.params.userId as string, 10);
     if (isNaN(userId)) {
       res.status(400).json({ error: "ID de usuario inválido" });
       return;
