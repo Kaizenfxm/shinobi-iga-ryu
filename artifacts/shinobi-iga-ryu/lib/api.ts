@@ -173,6 +173,29 @@ export interface AdminBeltUser {
   }[];
 }
 
+export interface CatalogRequirement {
+  id: number;
+  beltId: number;
+  title: string;
+  description: string | null;
+  orderIndex: number;
+}
+
+export interface CatalogBelt {
+  id: number;
+  discipline: string;
+  name: string;
+  color: string;
+  orderIndex: number;
+  description: string | null;
+  requirements: CatalogRequirement[];
+}
+
+export interface CatalogDiscipline {
+  discipline: string;
+  belts: CatalogBelt[];
+}
+
 export const beltsApi = {
   getMyBelts: () => apiFetch<{ belts: MyBelt[]; history: BeltHistoryItem[] }>("/belts/me"),
 
@@ -203,6 +226,30 @@ export const beltsApi = {
 
   adminGetUnlocks: (userId: number) =>
     apiFetch<{ unlocks: UnlockRecord[] }>(`/admin/belts/unlocks/${userId}`),
+
+  adminGetCatalog: () =>
+    apiFetch<{ catalog: CatalogDiscipline[] }>("/admin/belts/catalog"),
+
+  adminCreateBelt: (data: { discipline: string; name: string; color: string; description?: string }) =>
+    apiFetch<{ belt: CatalogBelt }>("/admin/belts/definitions", { method: "POST", body: data }),
+
+  adminUpdateBelt: (id: number, data: { name?: string; color?: string; description?: string }) =>
+    apiFetch<{ belt: CatalogBelt }>(`/admin/belts/definitions/${id}`, { method: "PUT", body: data }),
+
+  adminDeleteBelt: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/belts/definitions/${id}`, { method: "DELETE" }),
+
+  adminReorderBelts: (discipline: string, order: { id: number; orderIndex: number }[]) =>
+    apiFetch<{ success: boolean }>("/admin/belts/definitions/reorder", { method: "PUT", body: { discipline, order } }),
+
+  adminCreateRequirement: (beltId: number, data: { title: string; description?: string }) =>
+    apiFetch<{ requirement: CatalogRequirement }>(`/admin/belts/definitions/${beltId}/requirements`, { method: "POST", body: data }),
+
+  adminUpdateRequirement: (beltId: number, reqId: number, data: { title?: string; description?: string }) =>
+    apiFetch<{ requirement: CatalogRequirement }>(`/admin/belts/definitions/${beltId}/requirements/${reqId}`, { method: "PUT", body: data }),
+
+  adminDeleteRequirement: (beltId: number, reqId: number) =>
+    apiFetch<{ success: boolean }>(`/admin/belts/definitions/${beltId}/requirements/${reqId}`, { method: "DELETE" }),
 };
 
 export interface UnlockRecord {
