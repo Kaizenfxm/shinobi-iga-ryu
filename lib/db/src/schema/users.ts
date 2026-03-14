@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, varchar, pgEnum, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -18,7 +18,7 @@ export const usersTable = pgTable("users", {
 
 export const userRolesTable = pgTable("user_roles", {
   id: serial("id").primaryKey(),
-  userId: serial("user_id").references(() => usersTable.id).notNull(),
+  userId: integer("user_id").references(() => usersTable.id).notNull(),
   role: roleEnum("role").notNull(),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
 });

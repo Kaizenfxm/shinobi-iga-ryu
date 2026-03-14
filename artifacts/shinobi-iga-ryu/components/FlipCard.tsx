@@ -6,6 +6,8 @@ import {
   Pressable,
   Dimensions,
   Platform,
+  Image,
+  ImageSourcePropType,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -14,19 +16,17 @@ import Animated, {
   interpolate,
   Easing,
 } from "react-native-reanimated";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.85;
 const CARD_HEIGHT = 180;
 
-type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-
 interface FlipCardProps {
   title: string;
   subtitle: string;
-  icon: IconName;
+  backgroundImage: ImageSourcePropType;
   onKnowledgePress: () => void;
   onExercisesPress: () => void;
   index: number;
@@ -35,7 +35,7 @@ interface FlipCardProps {
 export default function FlipCard({
   title,
   subtitle,
-  icon,
+  backgroundImage,
   onKnowledgePress,
   onExercisesPress,
   index,
@@ -74,15 +74,14 @@ export default function FlipCard({
   return (
     <Pressable onPress={handleFlip} style={styles.container}>
       <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+        <Image
+          source={backgroundImage}
+          style={styles.bgImage}
+          resizeMode="cover"
+        />
+        <View style={styles.bgImageOverlay} />
         <View style={styles.frontOverlay}>
-          <MaterialCommunityIcons
-            name={icon}
-            size={48}
-            color="rgba(255, 255, 255, 0.08)"
-            style={styles.bgIcon}
-          />
           <View style={styles.frontContent}>
-            <MaterialCommunityIcons name={icon} size={36} color="#FFFFFF" />
             <View style={styles.titleGroup}>
               <Text style={styles.cardTitle}>{title}</Text>
               <Text style={styles.cardSubtitle}>{subtitle}</Text>
@@ -164,16 +163,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#222222",
   },
+  bgImage: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0.15,
+  },
+  bgImageOverlay: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
   frontOverlay: {
     flex: 1,
     justifyContent: "center",
     padding: 24,
-  },
-  bgIcon: {
-    position: "absolute",
-    right: 20,
-    top: 20,
-    transform: [{ scale: 2.5 }],
   },
   frontContent: {
     flexDirection: "row",
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontFamily: "NotoSerifJP_400Regular",
     fontSize: 13,
-    color: "#666666",
+    color: "#888888",
     letterSpacing: 1,
     marginTop: 2,
   },

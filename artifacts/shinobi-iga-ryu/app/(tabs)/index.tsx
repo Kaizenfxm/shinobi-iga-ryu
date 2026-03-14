@@ -6,6 +6,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  ImageSourcePropType,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -13,13 +14,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import FlipCard from "@/components/FlipCard";
 import Colors from "@/constants/colors";
 
-type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-
 interface MartialArt {
   id: string;
   title: string;
   subtitle: string;
-  icon: IconName;
+  image: ImageSourcePropType;
 }
 
 const MARTIAL_ARTS: MartialArt[] = [
@@ -27,37 +26,37 @@ const MARTIAL_ARTS: MartialArt[] = [
     id: "ninjutsu",
     title: "NINJUTSU",
     subtitle: "忍術 · El arte del ninja",
-    icon: "ninja",
+    image: require("@/assets/images/arts/ninjutsu.jpg"),
   },
   {
     id: "mma",
     title: "MMA",
     subtitle: "総合格闘技 · Artes marciales mixtas",
-    icon: "mixed-martial-arts",
+    image: require("@/assets/images/arts/mma.jpg"),
   },
   {
     id: "box",
     title: "BOX",
     subtitle: "ボクシング · El arte del puño",
-    icon: "boxing-glove",
+    image: require("@/assets/images/arts/box.jpg"),
   },
   {
     id: "jiujitsu",
     title: "JIUJITSU",
     subtitle: "柔術 · El arte suave",
-    icon: "karate",
+    image: require("@/assets/images/arts/jiujitsu.jpg"),
   },
   {
     id: "muaythai",
     title: "MUAY THAI",
     subtitle: "ムエタイ · El arte de los ocho miembros",
-    icon: "human-handsup",
+    image: require("@/assets/images/arts/muaythai.jpg"),
   },
   {
     id: "funcional",
     title: "FUNCIONAL",
     subtitle: "機能訓練 · Entrenamiento funcional",
-    icon: "dumbbell",
+    image: require("@/assets/images/arts/funcional.jpg"),
   },
 ];
 
@@ -113,7 +112,7 @@ export default function MartialArtsScreen() {
             key={art.id}
             title={art.title}
             subtitle={art.subtitle}
-            icon={art.icon}
+            backgroundImage={art.image}
             index={index}
             onKnowledgePress={() => handleKnowledge(art.id)}
             onExercisesPress={() => handleExercises(art.id)}
