@@ -60,6 +60,12 @@ const MARTIAL_ARTS: MartialArt[] = [
     subtitle: "機能訓練 · Entrenamiento funcional",
     image: require("@/assets/images/arts/funcional.jpg"),
   },
+  {
+    id: "kickboxing",
+    title: "KICK BOXING",
+    subtitle: "キックボクシング · El arte del golpe y la patada",
+    image: require("@/assets/images/arts/kickboxing.png"),
+  },
 ];
 
 export default function MartialArtsScreen() {
