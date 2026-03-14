@@ -1597,7 +1597,7 @@ function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUs
         const stats = entry?.stats;
         const fights = entry?.fights ?? [];
         const isLoading = entry?.loading ?? false;
-        const vde = stats ? `${stats.victorias}-${stats.derrotas}-${stats.empates}` : isLoading ? "…" : "—";
+        const vde = stats ? `V${stats.victorias}-D${stats.derrotas}-E${stats.empates}` : isLoading ? "…" : "—";
 
         return (
           <View key={f.id} style={styles.fighterRow}>
@@ -2109,7 +2109,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 12,
+    fontSize: 14,
     color: "#FFFFFF",
     letterSpacing: 0.5,
   },
@@ -2125,7 +2125,7 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontFamily: "Inter_400Regular",
-    fontSize: 10,
+    fontSize: 12,
     color: "#444",
   },
   roleBadges: {
@@ -2142,7 +2142,7 @@ const styles = StyleSheet.create({
   },
   roleBadgeText: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 8,
+    fontSize: 10,
     color: "#888",
     letterSpacing: 0.8,
   },
@@ -2156,7 +2156,7 @@ const styles = StyleSheet.create({
   },
   subBadgeText: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 8,
+    fontSize: 10,
     color: "#D4AF37",
     letterSpacing: 0.8,
   },
@@ -2170,7 +2170,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 8,
+    fontSize: 10,
     color: "#444",
     letterSpacing: 2.5,
     marginBottom: 5,
@@ -2202,7 +2202,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 10,
+    fontSize: 12,
     color: "#666",
   },
   toggleTextActive: {
@@ -2246,7 +2246,7 @@ const styles = StyleSheet.create({
   },
   discToggleLabel: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 10,
+    fontSize: 12,
     color: "#888",
     letterSpacing: 1.5,
   },
@@ -2271,15 +2271,15 @@ const styles = StyleSheet.create({
   },
   discMiniLabel: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
+    fontSize: 11,
     color: "#777",
     letterSpacing: 1.2,
-    width: 58,
+    width: 66,
   },
   discMiniBeltName: {
     flex: 1,
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
+    fontSize: 12,
     color: "#AAA",
   },
   discMiniAssignBtn: {
@@ -2291,7 +2291,7 @@ const styles = StyleSheet.create({
   },
   discMiniAssignTxt: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
+    fontSize: 11,
     color: "#D4AF37",
     letterSpacing: 0.5,
   },
@@ -2310,7 +2310,7 @@ const styles = StyleSheet.create({
   discMiniPendingTxt: {
     flex: 1,
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
+    fontSize: 12,
     color: "#D4AF37",
   },
   discMiniActions: {
@@ -2480,13 +2480,13 @@ const styles = StyleSheet.create({
   },
   fighterRowName: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 12,
+    fontSize: 14,
     color: "#FFF",
     letterSpacing: 1,
   },
   fighterRowRecord: {
     fontFamily: "Inter_700Bold",
-    fontSize: 12,
+    fontSize: 14,
     color: "#D4AF37",
     letterSpacing: 2,
     marginLeft: 8,
@@ -2537,7 +2537,7 @@ const styles = StyleSheet.create({
   },
   fightFormLabel: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 11,
+    fontSize: 13,
     color: "#888",
     letterSpacing: 2,
     marginTop: 4,
@@ -2614,7 +2614,7 @@ const styles = StyleSheet.create({
   },
   catalogDiscPillText: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
+    fontSize: 11,
     color: "#D4AF37",
     letterSpacing: 2,
   },
@@ -2683,7 +2683,7 @@ const styles = StyleSheet.create({
   },
   catalogBeltName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 11,
+    fontSize: 13,
     color: "#CCC",
     flex: 1,
     letterSpacing: 2,
@@ -2713,7 +2713,7 @@ const styles = StyleSheet.create({
   },
   catalogReqSectionLabel: {
     fontFamily: "NotoSansJP_500Medium",
-    fontSize: 9,
+    fontSize: 11,
     color: "#444",
     letterSpacing: 3,
     marginTop: 2,
@@ -2851,7 +2851,7 @@ const styles = StyleSheet.create({
   editUserBtnText: {
     color: "#D4AF37",
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
   deleteUserBtn: {
@@ -2867,7 +2867,7 @@ const styles = StyleSheet.create({
   deleteUserBtnText: {
     color: "#FF4444",
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
 });

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable } from "@workspace/db";
 import { eq, and, or, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -215,6 +215,8 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
     }
 
     await db.transaction(async (tx) => {
+      await tx.delete(studentRequirementChecksTable).where(eq(studentRequirementChecksTable.userId, userId));
+      await tx.delete(beltApplicationsTable).where(eq(beltApplicationsTable.userId, userId));
       await tx.delete(studentBeltUnlocksTable).where(
         or(eq(studentBeltUnlocksTable.userId, userId), eq(studentBeltUnlocksTable.unlockedBy, userId))
       );
