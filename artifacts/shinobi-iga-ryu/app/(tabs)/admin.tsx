@@ -236,28 +236,33 @@ function UsersPanel({
   );
 }
 
+const INIT_BELT_FORM = { visible: false, discipline: "ninjutsu", editingId: null as number | null, name: "", color: "", description: "" };
+const INIT_REQ_FORM = { visible: false, beltId: null as number | null, editingId: null as number | null, title: "", description: "" };
+
 function BeltCatalogPanel() {
-    const [catalog, setCatalog] = useState<CatalogDiscipline[]>([]);
-    const [loadingCatalog, setLoadingCatalog] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [expandedDisc, setExpandedDisc] = useState<string | null>("ninjutsu");
-    const [expandedBelt, setExpandedBelt] = useState<number | null>(null);
+  const [catalog, setCatalog] = useState<CatalogDiscipline[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [expandedDisc, setExpandedDisc] = useState<string | null>("ninjutsu");
+  const [expandedBelt, setExpandedBelt] = useState<number | null>(null);
+  const [beltForm, setBeltForm] = useState(INIT_BELT_FORM);
+  const [reqForm, setReqForm] = useState(INIT_REQ_FORM);
 
-    const initBeltForm = { visible: false, discipline: "ninjutsu", editingId: null as number | null, name: "", color: "", description: "" };
-    const initReqForm = { visible: false, beltId: null as number | null, editingId: null as number | null, title: "", description: "" };
-    const [beltForm, setBeltForm] = useState(initBeltForm);
-    const [reqForm, setReqForm] = useState(initReqForm);
-
-    const loadCatalog = useCallback(async () => {
-      try {
-        const data = await beltsApi.adminGetCatalog();
-        setCatalog(data.catalog);
-      } catch {
-        Alert.alert("Error", "No se pudo cargar el catálogo");
-      } finally {
-        setLoadingCatalog(false);
-      }
-    }, []);
+  const loadCatalog = useCallback(async () => {
+    setCatalogError(null);
+    setLoadingCatalog(true);
+    try {
+      const data = await beltsApi.adminGetCatalog();
+      setCatalog(data.catalog);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error desconocido";
+      console.error("[BeltCatalogPanel] loadCatalog error:", msg, e);
+      setCatalogError(msg);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  }, []);
 
     useEffect(() => { loadCatalog(); }, [loadCatalog]);
 
@@ -282,7 +287,7 @@ function BeltCatalogPanel() {
             description: beltForm.description.trim() || undefined,
           });
         }
-        setBeltForm(initBeltForm);
+        setBeltForm(INIT_BELT_FORM);
         await loadCatalog();
       } catch (e: unknown) {
         Alert.alert("Error", e instanceof Error ? e.message : "Error al guardar");
@@ -360,7 +365,7 @@ function BeltCatalogPanel() {
             description: reqForm.description.trim() || undefined,
           });
         }
-        setReqForm(initReqForm);
+        setReqForm(INIT_REQ_FORM);
         await loadCatalog();
       } catch (e: unknown) {
         Alert.alert("Error", e instanceof Error ? e.message : "Error al guardar");
@@ -394,6 +399,20 @@ function BeltCatalogPanel() {
       return (
         <View style={styles.emptyState}>
           <ActivityIndicator color="#D4AF37" size="large" />
+        </View>
+      );
+    }
+
+    if (catalogError) {
+      return (
+        <View style={styles.emptyState}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#D4AF37" />
+          <Text style={{ color: "#FFF", fontSize: 15, fontWeight: "600", marginTop: 8 }}>No se pudo cargar el catálogo</Text>
+          <Text style={{ color: "#666", fontSize: 11, marginTop: 4, textAlign: "center" }}>{catalogError}</Text>
+          <Pressable style={[styles.catalogFormSave, { marginTop: 16, paddingHorizontal: 24 }]} onPress={loadCatalog}>
+            <MaterialCommunityIcons name="refresh" size={16} color="#000" />
+            <Text style={styles.catalogFormSaveText}>Reintentar</Text>
+          </Pressable>
         </View>
       );
     }
@@ -511,7 +530,7 @@ function BeltCatalogPanel() {
                               onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
                             />
                             <View style={styles.catalogFormActions}>
-                              <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(initBeltForm)}>
+                              <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(INIT_BELT_FORM)}>
                                 <Text style={styles.catalogFormCancelText}>Cancelar</Text>
                               </Pressable>
                               <Pressable style={styles.catalogFormSave} onPress={saveBelt} disabled={saving}>
@@ -554,7 +573,7 @@ function BeltCatalogPanel() {
                                         onChangeText={(v) => setReqForm((f) => ({ ...f, description: v }))}
                                       />
                                       <View style={styles.catalogFormActions}>
-                                        <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(initReqForm)}>
+                                        <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(INIT_REQ_FORM)}>
                                           <Text style={styles.catalogFormCancelText}>Cancelar</Text>
                                         </Pressable>
                                         <Pressable style={styles.catalogFormSave} onPress={saveRequirement} disabled={saving}>
@@ -612,7 +631,7 @@ function BeltCatalogPanel() {
                                   onChangeText={(v) => setReqForm((f) => ({ ...f, description: v }))}
                                 />
                                 <View style={styles.catalogFormActions}>
-                                  <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(initReqForm)}>
+                                  <Pressable style={styles.catalogFormCancel} onPress={() => setReqForm(INIT_REQ_FORM)}>
                                     <Text style={styles.catalogFormCancelText}>Cancelar</Text>
                                   </Pressable>
                                   <Pressable style={styles.catalogFormSave} onPress={saveRequirement} disabled={saving}>
@@ -661,7 +680,7 @@ function BeltCatalogPanel() {
                         onChangeText={(v) => setBeltForm((f) => ({ ...f, description: v }))}
                       />
                       <View style={styles.catalogFormActions}>
-                        <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(initBeltForm)}>
+                        <Pressable style={styles.catalogFormCancel} onPress={() => setBeltForm(INIT_BELT_FORM)}>
                           <Text style={styles.catalogFormCancelText}>Cancelar</Text>
                         </Pressable>
                         <Pressable style={styles.catalogFormSave} onPress={saveBelt} disabled={saving}>
