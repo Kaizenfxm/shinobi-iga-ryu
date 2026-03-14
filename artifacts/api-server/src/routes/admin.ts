@@ -49,6 +49,10 @@ adminRouter.get("/admin/users", async (_req, res) => {
 adminRouter.put("/admin/users/:id/roles", async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
     const { roles } = req.body;
 
     if (!Array.isArray(roles)) {
@@ -96,6 +100,10 @@ adminRouter.put("/admin/users/:id/roles", async (req, res) => {
 adminRouter.put("/admin/users/:id/subscription", async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
     const { subscriptionLevel } = req.body;
 
     const validLevels = ["basico", "medio", "avanzado", "personalizado"] as const;
@@ -131,6 +139,10 @@ adminRouter.put("/admin/users/:id/subscription", async (req, res) => {
 adminRouter.get("/admin/profesor/:profesorId/alumnos", async (req, res) => {
   try {
     const profesorId = parseInt(req.params.profesorId, 10);
+    if (isNaN(profesorId)) {
+      res.status(400).json({ error: "ID de profesor inválido" });
+      return;
+    }
 
     const assignments = await db
       .select({
@@ -149,6 +161,10 @@ adminRouter.get("/admin/profesor/:profesorId/alumnos", async (req, res) => {
 adminRouter.put("/admin/profesor/:profesorId/alumnos", async (req, res) => {
   try {
     const profesorId = parseInt(req.params.profesorId, 10);
+    if (isNaN(profesorId)) {
+      res.status(400).json({ error: "ID de profesor inválido" });
+      return;
+    }
     const { alumnoIds } = req.body;
 
     if (!Array.isArray(alumnoIds)) {
