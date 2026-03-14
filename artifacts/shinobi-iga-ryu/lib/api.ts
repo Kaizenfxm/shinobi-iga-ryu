@@ -2,14 +2,14 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 function getBaseUrl(): string {
-  if (Platform.OS === "web") {
-    return "";
-  }
   const devDomain = Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN
     ?? process.env.EXPO_PUBLIC_DOMAIN
     ?? "";
   if (devDomain) {
     return `https://${devDomain}`;
+  }
+  if (Platform.OS === "web") {
+    return "";
   }
   return "http://localhost:8080";
 }
