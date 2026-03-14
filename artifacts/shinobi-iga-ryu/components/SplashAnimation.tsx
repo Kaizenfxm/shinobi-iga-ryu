@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
 import Animated, {
   useSharedValue,
@@ -17,8 +17,28 @@ interface SplashAnimationProps {
 
 function WebSplash({ onFinish }: SplashAnimationProps) {
   const [phase, setPhase] = useState(0);
+  const containerRef = useRef<View>(null);
+  const logoRef = useRef<View>(null);
+  const line1Ref = useRef<View>(null);
+  const line2Ref = useRef<View>(null);
+  const textRef = useRef<View>(null);
+  const subtitleRef = useRef<View>(null);
 
   useEffect(() => {
+    const applyWebTransition = (ref: React.RefObject<View | null>, transition: string) => {
+      if (ref.current) {
+        const el = ref.current as unknown as HTMLElement;
+        if (el.style) el.style.transition = transition;
+      }
+    };
+
+    applyWebTransition(containerRef, "opacity 0.5s ease-in");
+    applyWebTransition(logoRef, "opacity 0.8s ease-out, transform 1s ease-out");
+    applyWebTransition(line1Ref, "width 0.6s ease-out, opacity 0.6s ease-out");
+    applyWebTransition(line2Ref, "width 0.6s ease-out, opacity 0.6s ease-out");
+    applyWebTransition(textRef, "opacity 0.6s ease-out, transform 0.6s ease-out");
+    applyWebTransition(subtitleRef, "opacity 0.6s ease-out");
+
     requestAnimationFrame(() => setPhase(1));
     const t1 = setTimeout(() => setPhase(2), 600);
     const t2 = setTimeout(() => setPhase(3), 1200);
@@ -32,48 +52,23 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
     };
   }, []);
 
-  const containerWebStyle = Platform.select({
-    web: { transition: "opacity 0.5s ease-in" },
-    default: {},
-  });
-
-  const logoWebStyle = Platform.select({
-    web: { transition: "opacity 0.8s ease-out, transform 1s ease-out" },
-    default: {},
-  });
-
-  const lineWebStyle = Platform.select({
-    web: { transition: "width 0.6s ease-out, opacity 0.6s ease-out" },
-    default: {},
-  });
-
-  const textWebStyle = Platform.select({
-    web: { transition: "opacity 0.6s ease-out, transform 0.6s ease-out" },
-    default: {},
-  });
-
-  const subtitleWebStyle = Platform.select({
-    web: { transition: "opacity 0.6s ease-out" },
-    default: {},
-  });
-
   return (
     <View
+      ref={containerRef}
       style={[
         styles.container,
         { opacity: phase >= 4 ? 0 : 1 },
-        containerWebStyle,
       ]}
     >
       <View style={styles.content}>
         <View
+          ref={logoRef}
           style={[
             styles.logoContainer,
             {
               opacity: phase >= 1 ? 1 : 0,
               transform: [{ scale: phase >= 1 ? 1 : 0.3 }],
             },
-            logoWebStyle,
           ]}
         >
           <View style={styles.logoCircle}>
@@ -82,23 +77,23 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
         </View>
 
         <View
+          ref={line1Ref}
           style={[
             styles.line,
             {
               width: phase >= 2 ? width * 0.4 : 0,
               opacity: phase >= 2 ? 1 : 0,
             },
-            lineWebStyle,
           ]}
         />
 
         <View
+          ref={textRef}
           style={[
             {
               opacity: phase >= 2 ? 1 : 0,
               transform: [{ translateY: phase >= 2 ? 0 : 20 }],
             },
-            textWebStyle,
           ]}
         >
           <Text style={styles.academyName}>SHINOBI</Text>
@@ -107,20 +102,20 @@ function WebSplash({ onFinish }: SplashAnimationProps) {
         </View>
 
         <View
+          ref={line2Ref}
           style={[
             styles.line,
             {
               width: phase >= 2 ? width * 0.4 : 0,
               opacity: phase >= 2 ? 1 : 0,
             },
-            lineWebStyle,
           ]}
         />
 
         <View
+          ref={subtitleRef}
           style={[
             { opacity: phase >= 3 ? 1 : 0 },
-            subtitleWebStyle,
           ]}
         >
           <Text style={styles.motto}>忍者は永遠に</Text>
