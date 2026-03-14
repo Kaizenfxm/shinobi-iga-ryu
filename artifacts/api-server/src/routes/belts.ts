@@ -92,30 +92,58 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
         const disciplineDefs = allDefinitions.filter((d) => d.discipline === discipline);
 
         if (!belt || disciplineDefs.length === 0) {
-          const ladder = disciplineDefs.map((def) => ({
-            id: def.id,
-            name: def.name,
-            color: def.color,
-            orderIndex: def.orderIndex,
-            description: def.description,
-            status: "locked" as const,
-            requirements: (reqsByBeltId.get(def.id) ?? []).map((r) => ({
-              id: r.id,
-              title: r.title,
-              description: r.description,
-              orderIndex: r.orderIndex,
-              checked: false,
-            })),
-          }));
+          const firstBelt = disciplineDefs[0] ?? null;
+          const firstApp = firstBelt ? applicationsByDiscipline.get(discipline) : null;
+          const firstApplied = !!(firstApp && firstBelt && firstApp.targetBeltId === firstBelt.id);
+
+          const ladder = disciplineDefs.map((def) => {
+            let status: "earned" | "current" | "available" | "applied" | "locked";
+            if (firstBelt && def.id === firstBelt.id) {
+              status = firstApplied ? "applied" : "available";
+            } else {
+              status = "locked";
+            }
+            return {
+              id: def.id,
+              name: def.name,
+              color: def.color,
+              orderIndex: def.orderIndex,
+              description: def.description,
+              status,
+              requirements: (reqsByBeltId.get(def.id) ?? []).map((r) => ({
+                id: r.id,
+                title: r.title,
+                description: r.description,
+                orderIndex: r.orderIndex,
+                checked: checkedReqIds.has(r.id),
+              })),
+            };
+          });
+
           return {
             discipline,
             currentBelt: null,
             nextUnlocked: false,
             unlockedAt: null,
-            applied: false,
+            applied: firstApplied,
             ladder,
-            nextBelt: null,
-            nextRequirements: [],
+            nextBelt: firstBelt
+              ? {
+                  id: firstBelt.id,
+                  name: firstBelt.name,
+                  color: firstBelt.color,
+                  orderIndex: firstBelt.orderIndex,
+                  description: firstBelt.description,
+                }
+              : null,
+            nextRequirements: firstBelt
+              ? (reqsByBeltId.get(firstBelt.id) ?? []).map((r) => ({
+                  id: r.id,
+                  title: r.title,
+                  description: r.description,
+                  orderIndex: r.orderIndex,
+                }))
+              : [],
             nextExam: null,
           };
         }
@@ -160,10 +188,8 @@ beltsRouter.get("/belts/me", requireAuth, async (req, res) => {
           } else if (def.orderIndex === belt.beltOrder + 1) {
             if (applied) {
               status = "applied";
-            } else if (belt.nextUnlocked) {
-              status = "available";
             } else {
-              status = "locked";
+              status = "available";
             }
           } else {
             status = "locked";
@@ -248,24 +274,70 @@ beltsRouter.post("/belts/apply", requireAuth, async (req, res) => {
       return;
     }
 
+    const disc = discipline as "ninjutsu" | "jiujitsu";
+
     const [studentBelt] = await db
       .select()
       .from(studentBeltsTable)
-      .where(
-        and(
-          eq(studentBeltsTable.userId, userId),
-          eq(studentBeltsTable.discipline, discipline as "ninjutsu" | "jiujitsu")
-        )
-      )
+      .where(and(eq(studentBeltsTable.userId, userId), eq(studentBeltsTable.discipline, disc)))
       .limit(1);
 
     if (!studentBelt) {
-      res.status(404).json({ error: "No tienes cinturones en esta disciplina" });
-      return;
-    }
+      const [firstBelt] = await db
+        .select()
+        .from(beltDefinitionsTable)
+        .where(and(eq(beltDefinitionsTable.discipline, disc), eq(beltDefinitionsTable.orderIndex, 0)))
+        .limit(1);
 
-    if (!studentBelt.nextUnlocked) {
-      res.status(400).json({ error: "El siguiente nivel no ha sido desbloqueado por tu sensei" });
+      if (!firstBelt) {
+        res.status(404).json({ error: "No hay cinturones definidos para esta disciplina" });
+        return;
+      }
+
+      const existingApp = await db
+        .select()
+        .from(beltApplicationsTable)
+        .where(
+          and(
+            eq(beltApplicationsTable.userId, userId),
+            eq(beltApplicationsTable.discipline, disc),
+            eq(beltApplicationsTable.targetBeltId, firstBelt.id)
+          )
+        )
+        .limit(1);
+
+      if (existingApp.length > 0) {
+        res.json({ success: true, alreadyApplied: true });
+        return;
+      }
+
+      if (disc === "jiujitsu") {
+        await db.transaction(async (tx) => {
+          await tx.insert(studentBeltsTable).values({
+            userId,
+            discipline: disc,
+            currentBeltId: firstBelt.id,
+            nextUnlocked: false,
+          });
+          await tx.insert(beltHistoryTable).values({
+            userId,
+            discipline: disc,
+            beltId: firstBelt.id,
+            promotedBy: userId,
+            notes: "Cinturón blanco: inscripción automática",
+          });
+        });
+        res.json({ success: true, alreadyApplied: false, autoPromoted: true, targetBelt: firstBelt });
+        return;
+      }
+
+      await db.insert(beltApplicationsTable).values({
+        userId,
+        discipline: disc,
+        targetBeltId: firstBelt.id,
+        status: "pending",
+      });
+      res.json({ success: true, alreadyApplied: false, targetBelt: firstBelt });
       return;
     }
 
@@ -280,14 +352,14 @@ beltsRouter.post("/belts/apply", requireAuth, async (req, res) => {
       .from(beltDefinitionsTable)
       .where(
         and(
-          eq(beltDefinitionsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          eq(beltDefinitionsTable.discipline, disc),
           eq(beltDefinitionsTable.orderIndex, currentDef.orderIndex + 1)
         )
       )
       .limit(1);
 
     if (!nextBelt) {
-      res.status(400).json({ error: "Ya tienes el grado máximo" });
+      res.status(400).json({ error: "Ya tienes el grado máximo en esta disciplina" });
       return;
     }
 
@@ -297,7 +369,7 @@ beltsRouter.post("/belts/apply", requireAuth, async (req, res) => {
       .where(
         and(
           eq(beltApplicationsTable.userId, userId),
-          eq(beltApplicationsTable.discipline, discipline as "ninjutsu" | "jiujitsu"),
+          eq(beltApplicationsTable.discipline, disc),
           eq(beltApplicationsTable.targetBeltId, nextBelt.id)
         )
       )
@@ -310,7 +382,7 @@ beltsRouter.post("/belts/apply", requireAuth, async (req, res) => {
 
     await db.insert(beltApplicationsTable).values({
       userId,
-      discipline: discipline as "ninjutsu" | "jiujitsu",
+      discipline: disc,
       targetBeltId: nextBelt.id,
       status: "pending",
     });
