@@ -19,7 +19,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi, beltsApi, fightsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -56,7 +56,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones";
 
 const FIGHT_RESULT_LABELS: Record<string, string> = {
   victoria: "Victoria",
@@ -1712,6 +1712,101 @@ function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUs
   );
 }
 
+function NotificationsPanel() {
+  const [notifs, setNotifs] = useState<NotificationData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const data = await notificationsApi.getAll();
+      setNotifs(data.notifications);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSend = async () => {
+    if (!title.trim() || !body.trim()) {
+      Alert.alert("Error", "Completa título y mensaje");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await notificationsApi.send(title.trim(), body.trim());
+      setNotifs((prev) => [{ ...res.notification, readAt: null, createdByName: null }, ...prev]);
+      setTitle("");
+      setBody("");
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo enviar");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <View>
+      <View style={styles.notifComposeCard}>
+        <Text style={styles.notifComposeTitle}>
+          <Ionicons name="megaphone-outline" size={14} color="#D4AF37" /> Nueva notificación
+        </Text>
+        <TextInput
+          style={styles.notifInput}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Título"
+          placeholderTextColor="#333"
+          maxLength={120}
+        />
+        <TextInput
+          style={[styles.notifInput, styles.notifBodyInput]}
+          value={body}
+          onChangeText={setBody}
+          placeholder="Mensaje para todos los usuarios..."
+          placeholderTextColor="#333"
+          multiline
+          numberOfLines={3}
+          maxLength={500}
+        />
+        <Pressable style={styles.notifSendBtn} onPress={handleSend} disabled={sending}>
+          {sending ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <Ionicons name="send" size={14} color="#000" />
+              <Text style={styles.notifSendBtnText}>Enviar a todos</Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+
+      <Text style={styles.notifHistoryTitle}>Historial</Text>
+
+      {loading ? (
+        <ActivityIndicator color="#D4AF37" style={{ marginTop: 20 }} />
+      ) : notifs.length === 0 ? (
+        <Text style={styles.notifEmpty}>Sin notificaciones enviadas</Text>
+      ) : (
+        notifs.map((n) => (
+          <View key={n.id} style={styles.notifHistoryItem}>
+            <Text style={styles.notifHistoryItemTitle}>{n.title}</Text>
+            <Text style={styles.notifHistoryItemBody}>{n.body}</Text>
+            <Text style={styles.notifHistoryItemDate}>
+              {new Date(n.createdAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
+            </Text>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -1820,6 +1915,24 @@ export default function AdminScreen() {
               Peleas
             </Text>
           </Pressable>
+          <Pressable
+            style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
+            onPress={() => setActiveTab("notificaciones")}
+          >
+            <Ionicons
+              name="notifications"
+              size={16}
+              color={activeTab === "notificaciones" ? "#000" : "#666"}
+            />
+            <Text
+              style={[
+                styles.tabButtonText,
+                activeTab === "notificaciones" && styles.tabButtonTextActive,
+              ]}
+            >
+              Notificaciones
+            </Text>
+          </Pressable>
         </View>
 
         <View style={styles.divider} />
@@ -1834,11 +1947,13 @@ export default function AdminScreen() {
           />
         ) : activeTab === "cinturones" ? (
           <BeltCatalogPanel />
-        ) : (
+        ) : activeTab === "peleas" ? (
           <FightsPanel users={users} onRefreshUsers={async () => {
             const res = await adminApi.getUsers();
             setUsers(res.users);
           }} />
+        ) : (
+          <NotificationsPanel />
         )}
       </ScrollView>
     </View>
@@ -2886,5 +3001,95 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 11,
     letterSpacing: 0.5,
+  },
+  notifComposeCard: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+    borderRadius: 2,
+    padding: 14,
+    marginBottom: 20,
+    gap: 10,
+  },
+  notifComposeTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#D4AF37",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  notifInput: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+  },
+  notifBodyInput: {
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  notifSendBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingVertical: 11,
+  },
+  notifSendBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#000",
+    letterSpacing: 0.5,
+  },
+  notifHistoryTitle: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 11,
+    color: "#555",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  notifEmpty: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#444",
+    textAlign: "center",
+    marginTop: 24,
+  },
+  notifHistoryItem: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    padding: 12,
+    marginBottom: 8,
+    gap: 4,
+  },
+  notifHistoryItemTitle: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13,
+    color: "#DDD",
+    letterSpacing: 0.3,
+  },
+  notifHistoryItemBody: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#666",
+    lineHeight: 18,
+  },
+  notifHistoryItemDate: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    color: "#444",
+    marginTop: 2,
   },
 });

@@ -431,6 +431,32 @@ export const avatarApi = {
     }),
 };
 
+export interface NotificationData {
+  id: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  createdByName: string | null;
+  readAt: string | null;
+}
+
+export const notificationsApi = {
+  getAll: () =>
+    apiFetch<{ notifications: NotificationData[]; unreadCount: number }>("/notifications"),
+
+  send: (title: string, body: string) =>
+    apiFetch<{ notification: NotificationData }>("/notifications", {
+      method: "POST",
+      body: { title, body },
+    }),
+
+  markAllRead: () =>
+    apiFetch<{ ok: boolean }>("/notifications/read-all", { method: "POST" }),
+
+  markRead: (id: number) =>
+    apiFetch<{ ok: boolean }>(`/notifications/${id}/read`, { method: "POST" }),
+};
+
 export const fightsApi = {
   getMyFights: () =>
     apiFetch<{ isFighter: boolean; fights: FightData[]; stats: FightStats | null }>("/fights/me"),
