@@ -1597,15 +1597,26 @@ function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUs
         const stats = entry?.stats;
         const fights = entry?.fights ?? [];
         const isLoading = entry?.loading ?? false;
-        const vde = stats ? `V${stats.victorias}-D${stats.derrotas}-E${stats.empates}` : isLoading ? "…" : "—";
-
         return (
           <View key={f.id} style={styles.fighterRow}>
             <Pressable style={styles.fighterRowHeader} onPress={() => toggleExpand(f.id)}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fighterRowName}>{f.displayName}</Text>
               </View>
-              <Text style={styles.fighterRowRecord}>{vde}</Text>
+              <Text style={styles.fighterRowRecord}>
+                {stats ? (
+                  <>
+                    <Text style={{ color: "#FFF" }}>V</Text>
+                    <Text style={{ color: "#22C55E" }}>{stats.victorias}</Text>
+                    <Text style={{ color: "#FFF" }}>-D</Text>
+                    <Text style={{ color: "#EF4444" }}>{stats.derrotas}</Text>
+                    <Text style={{ color: "#FFF" }}>-E</Text>
+                    <Text style={{ color: "#888" }}>{stats.empates}</Text>
+                  </>
+                ) : (
+                  isLoading ? "…" : "—"
+                )}
+              </Text>
               <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color="#555" style={{ marginLeft: 8 }} />
             </Pressable>
 
