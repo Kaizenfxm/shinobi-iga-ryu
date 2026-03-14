@@ -4,6 +4,7 @@ import {
   usersTable,
   fightsTable,
   userRolesTable,
+  profesorStudentsTable,
 } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
@@ -23,12 +24,28 @@ const requireAdminOrProfesor = (
       .where(eq(userRolesTable.userId, userId));
     const roleList = roles.map((r) => r.role);
     if (roleList.includes("admin") || roleList.includes("profesor")) {
+      (req as Record<string, unknown>).userRoles = roleList;
       next();
     } else {
       res.status(403).json({ error: "Se requiere rol de admin o profesor" });
     }
   });
 };
+
+async function verifyProfesorOwnership(profesorId: number, alumnoId: number, roles: string[]): Promise<boolean> {
+  if (roles.includes("admin")) return true;
+  const [assignment] = await db
+    .select({ id: profesorStudentsTable.id })
+    .from(profesorStudentsTable)
+    .where(
+      and(
+        eq(profesorStudentsTable.profesorId, profesorId),
+        eq(profesorStudentsTable.alumnoId, alumnoId)
+      )
+    )
+    .limit(1);
+  return !!assignment;
+}
 
 fightsRouter.put("/admin/users/:userId/fighter", requireAdmin, async (req, res) => {
   try {
@@ -116,6 +133,13 @@ fightsRouter.post("/fights", requireAdminOrProfesor, async (req, res) => {
       return;
     }
 
+    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const hasAccess = await verifyProfesorOwnership(req.session.userId!, parsedUserId, roles);
+    if (!hasAccess) {
+      res.status(403).json({ error: "No tienes acceso a este alumno" });
+      return;
+    }
+
     const validResults = ["victoria", "derrota", "empate"] as const;
     if (!validResults.includes(result)) {
       res.status(400).json({ error: "Resultado inválido" });
@@ -159,6 +183,13 @@ fightsRouter.get("/fights/user/:userId", requireAdminOrProfesor, async (req, res
     const userId = parseInt(req.params.userId as string, 10);
     if (isNaN(userId)) {
       res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const hasAccess = await verifyProfesorOwnership(req.session.userId!, userId, roles);
+    if (!hasAccess) {
+      res.status(403).json({ error: "No tienes acceso a este alumno" });
       return;
     }
 
@@ -250,6 +281,13 @@ fightsRouter.delete("/fights/:fightId", requireAdminOrProfesor, async (req, res)
 
     if (!fight) {
       res.status(404).json({ error: "Pelea no encontrada" });
+      return;
+    }
+
+    const roles = (req as Record<string, unknown>).userRoles as string[];
+    const hasAccess = await verifyProfesorOwnership(req.session.userId!, fight.userId, roles);
+    if (!hasAccess) {
+      res.status(403).json({ error: "No tienes acceso a este alumno" });
       return;
     }
 
