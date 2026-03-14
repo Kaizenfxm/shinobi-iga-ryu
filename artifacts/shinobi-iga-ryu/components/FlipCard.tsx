@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   ImageSourcePropType,
+  GestureResponderEvent,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -26,6 +27,8 @@ interface FlipCardProps {
   onExercisesPress: () => void;
   index: number;
   size?: number;
+  isFlipped: boolean;
+  onFlip: (flipped: boolean) => void;
 }
 
 export default function FlipCard({
@@ -34,20 +37,25 @@ export default function FlipCard({
   backgroundImage,
   onKnowledgePress,
   onExercisesPress,
+  isFlipped,
+  onFlip,
 }: FlipCardProps) {
   const rotation = useSharedValue(0);
-  const [isFlipped, setIsFlipped] = useState(false);
 
-  const handleFlip = () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    const toValue = isFlipped ? 0 : 180;
+  useEffect(() => {
+    const toValue = isFlipped ? 180 : 0;
     rotation.value = withTiming(toValue, {
       duration: 500,
       easing: Easing.inOut(Easing.cubic),
     });
-    setIsFlipped(!isFlipped);
+  }, [isFlipped]);
+
+  const handleFlip = (e?: GestureResponderEvent) => {
+    e?.stopPropagation?.();
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onFlip(!isFlipped);
   };
 
   const frontAnimatedStyle = useAnimatedStyle(() => {
@@ -165,13 +173,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "100%",
     height: "100%",
-    opacity: 0.15,
+    opacity: 0.45,
   },
   bgImageOverlay: {
     position: "absolute",
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   frontOverlay: {
     flex: 1,

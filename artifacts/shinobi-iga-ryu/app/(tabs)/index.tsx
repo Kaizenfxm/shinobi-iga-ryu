@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   ImageSourcePropType,
   Image,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -66,6 +67,11 @@ export default function MartialArtsScreen() {
   const isWeb = Platform.OS === "web";
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
+
+  const handleDismissFlip = useCallback(() => {
+    setActiveCardIndex(null);
+  }, []);
 
   const withAuth = (action: () => void) => {
     if (!isAuthenticated) {
@@ -96,7 +102,7 @@ export default function MartialArtsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <Pressable style={styles.container} onPress={handleDismissFlip}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -131,6 +137,8 @@ export default function MartialArtsScreen() {
                 subtitle={art.subtitle}
                 backgroundImage={art.image}
                 index={index}
+                isFlipped={activeCardIndex === index}
+                onFlip={(flipped) => setActiveCardIndex(flipped ? index : null)}
                 onKnowledgePress={() => handleKnowledge(art.id)}
                 onExercisesPress={() => handleExercises(art.id)}
               />
@@ -138,7 +146,7 @@ export default function MartialArtsScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </Pressable>
   );
 }
 
