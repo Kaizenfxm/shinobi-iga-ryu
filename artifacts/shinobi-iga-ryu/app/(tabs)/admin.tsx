@@ -901,7 +901,8 @@ function UsersPanel({
       : u.trialEndsAt
       ? new Date(u.trialEndsAt).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
       : "reciente";
-    const message = `Hola ${u.displayName} te escribimos porque el ${expiryDate} se venció tu suscripción y queremos que puedas continuar con tu membresía, estás listo para renovar o hubo alguna situación?`;
+    const firstName = u.displayName.split(" ")[0];
+    const message = `Hola ${firstName} te escribimos porque el ${expiryDate} se venció tu suscripción y queremos que puedas continuar con tu membresía, estás listo para renovar o hubo alguna situación?`;
     Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
   };
 
