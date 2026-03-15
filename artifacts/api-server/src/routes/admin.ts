@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable } from "@workspace/db";
-import { eq, and, or, desc, isNotNull, isNull, lte, notInArray } from "drizzle-orm";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable } from "@workspace/db";
+import { eq, and, or, desc, isNotNull, isNull, lte, notInArray, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
 const adminRouter = Router();
@@ -250,6 +250,15 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
     }
 
     await db.transaction(async (tx) => {
+      await tx.update(exercisesTable).set({ createdByUserId: null }).where(eq(exercisesTable.createdByUserId, userId));
+      await tx.update(knowledgeItemsTable).set({ createdByUserId: null }).where(eq(knowledgeItemsTable.createdByUserId, userId));
+      await tx.update(beltHistoryTable).set({ promotedBy: null }).where(eq(beltHistoryTable.promotedBy, userId));
+      const userNotifs = await tx.select({ id: notificationsTable.id }).from(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
+      if (userNotifs.length > 0) {
+        await tx.delete(notificationReadsTable).where(inArray(notificationReadsTable.notificationId, userNotifs.map((n) => n.id)));
+      }
+      await tx.delete(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
+      await tx.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, userId));
       await tx.delete(studentRequirementChecksTable).where(eq(studentRequirementChecksTable.userId, userId));
       await tx.delete(beltApplicationsTable).where(eq(beltApplicationsTable.userId, userId));
       await tx.delete(studentBeltUnlocksTable).where(
@@ -266,6 +275,7 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       await tx.delete(profesorStudentsTable).where(
         or(eq(profesorStudentsTable.profesorId, userId), eq(profesorStudentsTable.alumnoId, userId))
       );
+      await tx.delete(anthropometricEvaluationsTable).where(eq(anthropometricEvaluationsTable.userId, userId));
       await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
       await tx.delete(usersTable).where(eq(usersTable.id, userId));
     });
@@ -816,7 +826,7 @@ adminRouter.put("/admin/users/:id/anthropometry", requireAdmin, async (req, res)
       return;
     }
 
-    const { initialWeight, currentWeight, targetWeight } = req.body;
+    const { initialWeight, targetWeight } = req.body;
 
     const parseWeight = (v: unknown): number | null | "invalid" => {
       if (v === undefined || v === null || v === "") return null;
@@ -826,10 +836,9 @@ adminRouter.put("/admin/users/:id/anthropometry", requireAdmin, async (req, res)
     };
 
     const iw = parseWeight(initialWeight);
-    const cw = parseWeight(currentWeight);
     const tw = parseWeight(targetWeight);
 
-    if (iw === "invalid" || cw === "invalid" || tw === "invalid") {
+    if (iw === "invalid" || tw === "invalid") {
       res.status(400).json({ error: "Peso inválido. Debe ser un número entre 0 y 500 kg." });
       return;
     }
@@ -846,7 +855,6 @@ adminRouter.put("/admin/users/:id/anthropometry", requireAdmin, async (req, res)
         .update(anthropometricEvaluationsTable)
         .set({
           initialWeight: iw,
-          currentWeight: cw,
           targetWeight: tw,
           updatedAt: new Date(),
         })
@@ -862,7 +870,7 @@ adminRouter.put("/admin/users/:id/anthropometry", requireAdmin, async (req, res)
         .values({
           userId,
           initialWeight: iw,
-          currentWeight: cw,
+          currentWeight: iw,
           targetWeight: tw,
         })
         .returning({

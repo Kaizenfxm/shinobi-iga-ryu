@@ -758,7 +758,7 @@ function UsersPanel({
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState<Record<number, boolean>>({});
 
   const [anthropometryOpen, setAnthropometryOpen] = useState<Record<number, boolean>>({});
-  const [anthropometryData, setAnthropometryData] = useState<Record<number, { initialWeight: string; currentWeight: string; targetWeight: string }>>({});
+  const [anthropometryData, setAnthropometryData] = useState<Record<number, { initialWeight: string; targetWeight: string }>>({});
   const [anthropometryLoading, setAnthropometryLoading] = useState<Record<number, boolean>>({});
   const [anthropometrySaving, setAnthropometrySaving] = useState<Record<number, boolean>>({});
 
@@ -801,14 +801,13 @@ function UsersPanel({
           ...prev,
           [userId]: {
             initialWeight: anthropometry?.initialWeight?.toString() ?? "",
-            currentWeight: anthropometry?.currentWeight?.toString() ?? "",
             targetWeight: anthropometry?.targetWeight?.toString() ?? "",
           },
         }));
       } catch {
         setAnthropometryData((prev) => ({
           ...prev,
-          [userId]: { initialWeight: "", currentWeight: "", targetWeight: "" },
+          [userId]: { initialWeight: "", targetWeight: "" },
         }));
       } finally {
         setAnthropometryLoading((prev) => ({ ...prev, [userId]: false }));
@@ -819,7 +818,7 @@ function UsersPanel({
   const setAnthropometryField = (userId: number, field: string, value: string) => {
     setAnthropometryData((prev) => ({
       ...prev,
-      [userId]: { ...(prev[userId] || { initialWeight: "", currentWeight: "", targetWeight: "" }), [field]: value },
+      [userId]: { ...(prev[userId] || { initialWeight: "", targetWeight: "" }), [field]: value },
     }));
   };
 
@@ -828,9 +827,8 @@ function UsersPanel({
     if (!d) return;
     setAnthropometrySaving((prev) => ({ ...prev, [userId]: true }));
     try {
-      const payload: { initialWeight?: number | null; currentWeight?: number | null; targetWeight?: number | null } = {
+      const payload: { initialWeight?: number | null; targetWeight?: number | null } = {
         initialWeight: d.initialWeight ? parseFloat(d.initialWeight) : null,
-        currentWeight: d.currentWeight ? parseFloat(d.currentWeight) : null,
         targetWeight: d.targetWeight ? parseFloat(d.targetWeight) : null,
       };
       await adminApi.updateAnthropometry(userId, payload);
@@ -1419,27 +1417,16 @@ function UsersPanel({
                             />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.paymentFormLabel}>Peso actual (kg)</Text>
+                            <Text style={styles.paymentFormLabel}>Peso meta (kg)</Text>
                             <TextInput
                               style={styles.paymentFormInput}
-                              value={anthropometryData[u.id]?.currentWeight ?? ""}
-                              onChangeText={(v) => setAnthropometryField(u.id, "currentWeight", v)}
-                              placeholder="Ej: 75"
+                              value={anthropometryData[u.id]?.targetWeight ?? ""}
+                              onChangeText={(v) => setAnthropometryField(u.id, "targetWeight", v)}
+                              placeholder="Ej: 70"
                               placeholderTextColor="#444"
                               keyboardType="decimal-pad"
                             />
                           </View>
-                        </View>
-                        <View>
-                          <Text style={styles.paymentFormLabel}>Peso meta (kg)</Text>
-                          <TextInput
-                            style={styles.paymentFormInput}
-                            value={anthropometryData[u.id]?.targetWeight ?? ""}
-                            onChangeText={(v) => setAnthropometryField(u.id, "targetWeight", v)}
-                            placeholder="Ej: 70"
-                            placeholderTextColor="#444"
-                            keyboardType="decimal-pad"
-                          />
                         </View>
                         <Pressable
                           style={[styles.paymentAddBtn, anthropometrySaving[u.id] && { opacity: 0.6 }]}

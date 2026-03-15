@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
-import { type UserData } from "./api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { type UserData, type WeightData } from "./api";
 
 export async function schedulePaymentNotifications(user: UserData): Promise<void> {
   if (!user.roles.includes("alumno")) return;
@@ -57,6 +58,49 @@ export async function schedulePaymentNotifications(user: UserData): Promise<void
 export async function cancelPaymentNotifications(): Promise<void> {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+  }
+}
+
+const WEIGHT_REMINDER_KEY = "weight_reminder_scheduled_at";
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+export async function scheduleWeightReminder(userId: number, weightData: WeightData): Promise<void> {
+  if (weightData.initialWeight == null) return;
+
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    let finalStatus = status;
+    if (status !== "granted") {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync();
+      finalStatus = newStatus;
+    }
+    if (finalStatus !== "granted") return;
+
+    const storageKey = `${WEIGHT_REMINDER_KEY}_${userId}`;
+    const lastScheduled = await AsyncStorage.getItem(storageKey);
+    const now = Date.now();
+
+    if (lastScheduled) {
+      const lastMs = parseInt(lastScheduled, 10);
+      if (now - lastMs < THIRTY_DAYS_MS) return;
+    }
+
+    const triggerDate = new Date(now + THIRTY_DAYS_MS);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "忍 Shinobi Iga Ryu",
+        body: "Es momento de registrar tu peso actual. Mantén tu seguimiento al día.",
+        data: { type: "weight_reminder", userId },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+
+    await AsyncStorage.setItem(storageKey, String(now));
   } catch {
   }
 }

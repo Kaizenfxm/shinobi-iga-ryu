@@ -17,6 +17,7 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
+import { scheduleWeightReminder } from "@/lib/notifications";
 import FightRecord from "@/components/FightRecord";
 import { useMembership } from "@/hooks/useMembership";
 import * as ImagePicker from "expo-image-picker";
@@ -206,6 +207,9 @@ export default function ProfileScreen() {
     try {
       const res = await profileApi.getMyProfile();
       setProfile(res.profile);
+      if (res.profile.weightData && res.profile.id) {
+        scheduleWeightReminder(res.profile.id, res.profile.weightData).catch(() => {});
+      }
     } catch {
       setProfile(null);
     } finally {
