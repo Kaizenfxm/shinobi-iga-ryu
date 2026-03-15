@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex, boolean, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex, boolean, date, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -100,3 +100,15 @@ export type UserRole = typeof userRolesTable.$inferSelect;
 export const insertProfesorStudentSchema = createInsertSchema(profesorStudentsTable).omit({ id: true, assignedAt: true });
 export type InsertProfesorStudent = z.infer<typeof insertProfesorStudentSchema>;
 export type ProfesorStudent = typeof profesorStudentsTable.$inferSelect;
+
+export const anthropometricEvaluationsTable = pgTable("anthropometric_evaluations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id, { onDelete: "cascade" }).notNull().unique(),
+  initialWeight: real("initial_weight"),
+  currentWeight: real("current_weight"),
+  targetWeight: real("target_weight"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type AnthropometricEvaluation = typeof anthropometricEvaluationsTable.$inferSelect;

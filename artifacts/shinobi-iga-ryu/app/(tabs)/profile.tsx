@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData } from "@/lib/api";
+import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
 import FightRecord from "@/components/FightRecord";
 import { useMembership } from "@/hooks/useMembership";
 import * as ImagePicker from "expo-image-picker";
@@ -179,6 +179,9 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [togglingFighter, setTogglingFighter] = useState(false);
+  const [editingWeight, setEditingWeight] = useState(false);
+  const [weightInput, setWeightInput] = useState("");
+  const [savingWeight, setSavingWeight] = useState(false);
   const viewShotRef = useRef<ViewShot>(null);
   const scrollRef = useRef<ScrollView>(null);
   const actionsSectionYRef = useRef(0);
@@ -371,6 +374,25 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleSaveWeight = async () => {
+    const w = parseFloat(weightInput);
+    if (isNaN(w) || w <= 0 || w > 500) {
+      Alert.alert("Error", "Ingresa un peso válido en kg");
+      return;
+    }
+    setSavingWeight(true);
+    try {
+      const res = await profileApi.updateWeight(w);
+      setProfile((prev) => prev ? { ...prev, weightData: res.weightData } : prev);
+      setEditingWeight(false);
+      setWeightInput("");
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el peso");
+    } finally {
+      setSavingWeight(false);
+    }
+  };
+
   if (!isAuthenticated || !user) {
     return (
       <View style={styles.container}>
@@ -538,6 +560,63 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {data.weightData && (data.weightData.currentWeight || data.weightData.initialWeight || data.weightData.targetWeight) && (
+            <View style={weightStyles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionLine} />
+                <Text style={styles.sectionTitle}>体重 PESO</Text>
+                <View style={styles.sectionLine} />
+              </View>
+              <View style={weightStyles.card}>
+                <View style={weightStyles.row}>
+                  {data.weightData.initialWeight != null && (
+                    <View style={weightStyles.item}>
+                      <Text style={weightStyles.label}>INICIAL</Text>
+                      <Text style={weightStyles.value}>{data.weightData.initialWeight}</Text>
+                      <Text style={weightStyles.unit}>kg</Text>
+                    </View>
+                  )}
+                  {data.weightData.currentWeight != null && (
+                    <View style={weightStyles.item}>
+                      <Text style={weightStyles.label}>ACTUAL</Text>
+                      <Text style={[weightStyles.value, { color: "#D4AF37" }]}>{data.weightData.currentWeight}</Text>
+                      <Text style={weightStyles.unit}>kg</Text>
+                    </View>
+                  )}
+                  {data.weightData.targetWeight != null && (
+                    <View style={weightStyles.item}>
+                      <Text style={weightStyles.label}>META</Text>
+                      <Text style={weightStyles.value}>{data.weightData.targetWeight}</Text>
+                      <Text style={weightStyles.unit}>kg</Text>
+                    </View>
+                  )}
+                </View>
+                {data.weightData.initialWeight != null && data.weightData.currentWeight != null && data.weightData.targetWeight != null && data.weightData.initialWeight !== data.weightData.targetWeight && (
+                  <View style={weightStyles.progressContainer}>
+                    <View style={weightStyles.progressTrack}>
+                      <View
+                        style={[
+                          weightStyles.progressFill,
+                          {
+                            width: `${Math.min(100, Math.max(0,
+                              ((data.weightData.initialWeight - data.weightData.currentWeight) /
+                              (data.weightData.initialWeight - data.weightData.targetWeight)) * 100
+                            ))}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={weightStyles.progressText}>
+                      {data.weightData.currentWeight > data.weightData.initialWeight
+                        ? `+${(data.weightData.currentWeight - data.weightData.initialWeight).toFixed(1)} kg`
+                        : `${(data.weightData.currentWeight - data.weightData.initialWeight).toFixed(1)} kg`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
           <View style={styles.footerBranding}>
             <View style={styles.footerLine} />
             <Text style={styles.footerText}>伊賀流</Text>
@@ -657,6 +736,52 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
+
+          <View style={weightStyles.editSection}>
+            <Pressable
+              style={weightStyles.editToggle}
+              onPress={() => {
+                if (editingWeight) {
+                  setEditingWeight(false);
+                  setWeightInput("");
+                } else {
+                  setWeightInput(data.weightData?.currentWeight?.toString() ?? "");
+                  setEditingWeight(true);
+                }
+              }}
+            >
+              <MaterialCommunityIcons name="scale-bathroom" size={16} color="#D4AF37" />
+              <Text style={weightStyles.editToggleText}>ACTUALIZAR PESO</Text>
+              <Ionicons name={editingWeight ? "chevron-up" : "chevron-down"} size={16} color="#666" />
+            </Pressable>
+            {editingWeight && (
+              <View style={weightStyles.editForm}>
+                <Text style={weightStyles.editLabel}>Peso actual (kg)</Text>
+                <View style={weightStyles.editRow}>
+                  <TextInput
+                    style={weightStyles.editInput}
+                    value={weightInput}
+                    onChangeText={setWeightInput}
+                    placeholder="Ej: 72.5"
+                    placeholderTextColor="#444"
+                    keyboardType="decimal-pad"
+                    editable={!savingWeight}
+                  />
+                  <Pressable
+                    style={[weightStyles.editSaveBtn, savingWeight && { opacity: 0.6 }]}
+                    onPress={handleSaveWeight}
+                    disabled={savingWeight}
+                  >
+                    {savingWeight ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <Text style={weightStyles.editSaveBtnText}>Guardar</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          </View>
 
           {isAlumno && (
             <View style={membershipStyles.section}>
@@ -1154,5 +1279,133 @@ const membershipStyles = StyleSheet.create({
     fontSize: 12,
     color: "#000",
     letterSpacing: 0.5,
+  },
+});
+
+const weightStyles = StyleSheet.create({
+  section: {
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    padding: 16,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 4,
+  },
+  item: {
+    alignItems: "center",
+  },
+  label: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#666",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  value: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 22,
+    color: "#FFF",
+  },
+  unit: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#555",
+    marginTop: 2,
+  },
+  progressContainer: {
+    marginTop: 12,
+    alignItems: "center",
+  },
+  progressTrack: {
+    width: "100%",
+    height: 4,
+    backgroundColor: "#1A1A1A",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+  },
+  progressText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#888",
+    marginTop: 6,
+  },
+  editSection: {
+    marginBottom: 12,
+  },
+  editToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  editToggleText: {
+    flex: 1,
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  editForm: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderTopWidth: 0,
+    borderRadius: 2,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    padding: 14,
+  },
+  editLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 10,
+    color: "#888",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  editRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  editInput: {
+    flex: 1,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#fff",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+  },
+  editSaveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editSaveBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#000",
+    letterSpacing: 1,
   },
 });

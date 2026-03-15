@@ -195,6 +195,15 @@ export const adminApi = {
 
   updateSettings: (settings: Record<string, string>) =>
     apiFetch<{ settings: Record<string, string> }>("/admin/settings", { method: "PUT", body: { settings } }),
+
+  getAnthropometry: (userId: number) =>
+    apiFetch<{ anthropometry: WeightData | null }>(`/admin/users/${userId}/anthropometry`),
+
+  updateAnthropometry: (userId: number, data: { initialWeight?: number | null; currentWeight?: number | null; targetWeight?: number | null }) =>
+    apiFetch<{ success: boolean; anthropometry: WeightData }>(`/admin/users/${userId}/anthropometry`, {
+      method: "PUT",
+      body: data,
+    }),
 };
 
 export const profesorApi = {
@@ -464,6 +473,12 @@ export interface ProfileBelt {
   beltOrder: number;
 }
 
+export interface WeightData {
+  initialWeight: number | null;
+  currentWeight: number | null;
+  targetWeight: number | null;
+}
+
 export interface ProfileData {
   id: number;
   email: string;
@@ -476,6 +491,7 @@ export interface ProfileData {
   roles: string[];
   belts: ProfileBelt[];
   fightStats: FightStats | null;
+  weightData: WeightData | null;
 }
 
 export const profileApi = {
@@ -486,6 +502,11 @@ export const profileApi = {
     apiFetch<{ success: boolean; isFighter: boolean }>("/profile/me/fighter", {
       method: "PUT",
       body: { isFighter },
+    }),
+  updateWeight: (currentWeight: number) =>
+    apiFetch<{ weightData: WeightData }>("/profile/me/weight", {
+      method: "PATCH",
+      body: { currentWeight },
     }),
 };
 
