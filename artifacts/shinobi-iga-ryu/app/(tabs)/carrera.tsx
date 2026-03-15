@@ -5,7 +5,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BeltsScreen from "./belts";
 import FightsScreen from "./fights";
 import { classesApi, type MyAttendanceItem, type MyAttendanceStats } from "@/lib/api";
-import QrScannerButton from "@/components/QrScanner";
 
 type SubTab = "cinturones" | "peleas" | "clases";
 
@@ -84,7 +83,6 @@ function ClasesTab() {
         )}
       </ScrollView>
 
-      <QrScannerButton onAttendanceRecorded={fetchData} />
     </View>
   );
 }

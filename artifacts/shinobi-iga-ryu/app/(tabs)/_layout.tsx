@@ -6,6 +6,7 @@ import { Platform, StyleSheet, View, Text, Pressable } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { MembershipGate } from "@/components/MembershipGate";
 import { useMembership } from "@/hooks/useMembership";
+import QrScannerButton from "@/components/QrScanner";
 
 function CountdownBadge() {
   const { showCountdown, daysRemaining } = useMembership();
@@ -66,6 +67,7 @@ export default function TabLayout() {
     <MembershipGate>
       <View style={{ flex: 1 }}>
         <CountdownBadge />
+        <QrScannerButton />
         <Tabs
           screenOptions={{
             headerShown: false,
