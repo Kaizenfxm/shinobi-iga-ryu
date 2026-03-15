@@ -31,6 +31,14 @@ async function isAdmin(userId: number): Promise<boolean> {
   return roles.length > 0;
 }
 
+async function isAlumno(userId: number): Promise<boolean> {
+  const roles = await db
+    .select({ role: userRolesTable.role })
+    .from(userRolesTable)
+    .where(and(eq(userRolesTable.userId, userId), eq(userRolesTable.role, "alumno")));
+  return roles.length > 0;
+}
+
 classesRouter.post("/classes", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
@@ -221,6 +229,12 @@ classesRouter.delete("/classes/:id", requireAuth, async (req, res) => {
 classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const alumno = await isAlumno(userId);
+    if (!alumno) {
+      res.status(403).json({ error: "Solo alumnos pueden registrar asistencia" });
+      return;
+    }
+
     const { qrToken } = req.body;
 
     if (!qrToken || typeof qrToken !== "string") {
@@ -285,7 +299,7 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
       success: true,
       classId: classRow.id,
       className: systemNames || "Clase",
-      checkedInAt: attendance.checkedInAt.toISOString(),
+      attendedAt: attendance.attendedAt.toISOString(),
       createdByName: classRow.createdByName || null,
     });
   } catch (error) {
@@ -297,6 +311,12 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
 classesRouter.patch("/classes/:id/rating", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const alumno = await isAlumno(userId);
+    if (!alumno) {
+      res.status(403).json({ error: "Solo alumnos pueden calificar clases" });
+      return;
+    }
+
     const classId = parseInt(String(req.params.id), 10);
     if (isNaN(classId)) {
       res.status(400).json({ error: "ID de clase inválido" });
@@ -348,7 +368,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
       .from(classAttendancesTable)
       .where(and(
         eq(classAttendancesTable.userId, userId),
-        gte(classAttendancesTable.checkedInAt, monthStart)
+        gte(classAttendancesTable.attendedAt, monthStart)
       ));
 
     const [yearResult] = await db
@@ -356,14 +376,14 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
       .from(classAttendancesTable)
       .where(and(
         eq(classAttendancesTable.userId, userId),
-        gte(classAttendancesTable.checkedInAt, yearStart)
+        gte(classAttendancesTable.attendedAt, yearStart)
       ));
 
     const attendances = await db
       .select({
         id: classAttendancesTable.id,
         classId: classAttendancesTable.classId,
-        checkedInAt: classAttendancesTable.checkedInAt,
+        attendedAt: classAttendancesTable.attendedAt,
         rating: classAttendancesTable.rating,
         createdByName: usersTable.displayName,
       })
@@ -371,7 +391,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
       .innerJoin(classesTable, eq(classAttendancesTable.classId, classesTable.id))
       .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
       .where(eq(classAttendancesTable.userId, userId))
-      .orderBy(desc(classAttendancesTable.checkedInAt));
+      .orderBy(desc(classAttendancesTable.attendedAt));
 
     const classIds = attendances.map((a) => a.classId);
     let systemsByClass = new Map<number, string[]>();
@@ -400,7 +420,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
       attendances: attendances.map((a) => ({
         id: a.id,
         classId: a.classId,
-        checkedInAt: a.checkedInAt.toISOString(),
+        attendedAt: a.attendedAt.toISOString(),
         rating: a.rating,
         systemNames: systemsByClass.get(a.classId) || [],
         createdByName: a.createdByName || null,
@@ -433,18 +453,18 @@ classesRouter.get("/classes/:id/attendees", requireAuth, async (req, res) => {
         userId: classAttendancesTable.userId,
         displayName: usersTable.displayName,
         avatarUrl: usersTable.avatarUrl,
-        checkedInAt: classAttendancesTable.checkedInAt,
+        attendedAt: classAttendancesTable.attendedAt,
         rating: classAttendancesTable.rating,
       })
       .from(classAttendancesTable)
       .innerJoin(usersTable, eq(classAttendancesTable.userId, usersTable.id))
       .where(eq(classAttendancesTable.classId, classId))
-      .orderBy(classAttendancesTable.checkedInAt);
+      .orderBy(classAttendancesTable.attendedAt);
 
     res.json({
       attendees: attendees.map((a) => ({
         ...a,
-        checkedInAt: a.checkedInAt.toISOString(),
+        attendedAt: a.attendedAt.toISOString(),
       })),
     });
   } catch (error) {

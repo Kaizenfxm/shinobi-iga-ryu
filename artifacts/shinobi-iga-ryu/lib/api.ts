@@ -726,14 +726,14 @@ export interface ClassAttendee {
   userId: number;
   displayName: string;
   avatarUrl: string | null;
-  checkedInAt: string;
+  attendedAt: string;
   rating: number | null;
 }
 
 export interface MyAttendanceItem {
   id: number;
   classId: number;
-  checkedInAt: string;
+  attendedAt: string;
   rating: number | null;
   systemNames: string[];
   createdByName: string | null;
@@ -759,7 +759,7 @@ export const classesApi = {
     apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "DELETE" }),
 
   scan: (qrToken: string) =>
-    apiFetch<{ success: boolean; classId: number; className: string; checkedInAt: string; createdByName: string | null }>("/classes/scan", {
+    apiFetch<{ success: boolean; classId: number; className: string; attendedAt: string; createdByName: string | null }>("/classes/scan", {
       method: "POST",
       body: { qrToken },
     }),

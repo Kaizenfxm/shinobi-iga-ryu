@@ -95,9 +95,9 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 }}>
         <Text style={clStyles.classDate}>
-          {new Date(att.checkedInAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+          {new Date(att.attendedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
           {" · "}
-          {new Date(att.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+          {new Date(att.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
         </Text>
       </View>
       {att.createdByName && (
