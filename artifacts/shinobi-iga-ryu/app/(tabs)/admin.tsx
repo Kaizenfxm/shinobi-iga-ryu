@@ -886,6 +886,7 @@ function UsersPanel({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showInactiveFilter, setShowInactiveFilter] = useState(false);
+  const [passwordResetStatus, setPasswordResetStatus] = useState<Record<number, "confirming" | "loading" | "done" | "error">>({});
 
   const openWhatsApp = (u: UserData) => {
     let phone = (u.phone || "").replace(/\D/g, "");
@@ -1417,29 +1418,54 @@ function UsersPanel({
                     <Ionicons name="pencil" size={10} color="#D4AF37" />
                     <Text style={styles.editUserBtnText}>Editar</Text>
                   </Pressable>
-                  <Pressable
-                    style={styles.editUserBtn}
-                    onPress={() => {
-                      Alert.alert(
-                        "Restablecer contraseña",
-                        `¿Restablecer la contraseña de ${u.displayName.split(" ")[0]} a Ninja123?`,
-                        [
-                          { text: "Cancelar", style: "cancel" },
-                          {
-                            text: "Restablecer",
-                            onPress: () => {
-                              adminApi.updateUser(u.id, { password: "Ninja123" })
-                                .then(() => Alert.alert("Listo", "Contraseña restablecida a Ninja123"))
-                                .catch(() => Alert.alert("Error", "No se pudo restablecer la contraseña"));
-                            },
-                          },
-                        ]
-                      );
-                    }}
-                  >
-                    <Ionicons name="key-outline" size={10} color="#666" />
-                    <Text style={[styles.editUserBtnText, { color: "#666" }]}>Clave</Text>
-                  </Pressable>
+                  {passwordResetStatus[u.id] === "confirming" ? (
+                    <View style={{ flexDirection: "row", gap: 4 }}>
+                      <Pressable
+                        style={[styles.editUserBtn, { borderColor: "#D4AF37" }]}
+                        onPress={async () => {
+                          setPasswordResetStatus((prev) => ({ ...prev, [u.id]: "loading" }));
+                          try {
+                            await adminApi.updateUser(u.id, { password: "Ninja123" });
+                            setPasswordResetStatus((prev) => ({ ...prev, [u.id]: "done" }));
+                          } catch {
+                            setPasswordResetStatus((prev) => ({ ...prev, [u.id]: "error" }));
+                          }
+                          setTimeout(() => setPasswordResetStatus((prev) => { const n = { ...prev }; delete n[u.id]; return n; }), 2200);
+                        }}
+                      >
+                        <Ionicons name="checkmark" size={10} color="#D4AF37" />
+                        <Text style={[styles.editUserBtnText, { color: "#D4AF37" }]}>Sí</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.editUserBtn}
+                        onPress={() => setPasswordResetStatus((prev) => { const n = { ...prev }; delete n[u.id]; return n; })}
+                      >
+                        <Ionicons name="close" size={10} color="#666" />
+                        <Text style={[styles.editUserBtnText, { color: "#666" }]}>No</Text>
+                      </Pressable>
+                    </View>
+                  ) : passwordResetStatus[u.id] === "loading" ? (
+                    <View style={[styles.editUserBtn, { borderColor: "#333" }]}>
+                      <Text style={[styles.editUserBtnText, { color: "#555" }]}>...</Text>
+                    </View>
+                  ) : passwordResetStatus[u.id] === "done" ? (
+                    <View style={[styles.editUserBtn, { borderColor: "#2a8c4a" }]}>
+                      <Ionicons name="checkmark-circle" size={10} color="#2a8c4a" />
+                      <Text style={[styles.editUserBtnText, { color: "#2a8c4a" }]}>Restaurada</Text>
+                    </View>
+                  ) : passwordResetStatus[u.id] === "error" ? (
+                    <View style={[styles.editUserBtn, { borderColor: "#FF4444" }]}>
+                      <Text style={[styles.editUserBtnText, { color: "#FF4444" }]}>Error</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.editUserBtn}
+                      onPress={() => setPasswordResetStatus((prev) => ({ ...prev, [u.id]: "confirming" }))}
+                    >
+                      <Ionicons name="key-outline" size={10} color="#666" />
+                      <Text style={[styles.editUserBtnText, { color: "#666" }]}>Clave</Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     style={[styles.editUserBtn, u.isFighter && { borderColor: "#D4AF37", backgroundColor: "#1a1400" }]}
                     onPress={async () => {
