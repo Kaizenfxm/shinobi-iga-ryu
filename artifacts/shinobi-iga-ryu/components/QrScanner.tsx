@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  TextInput,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { classesApi } from "@/lib/api";
@@ -71,8 +72,9 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
   const [result, setResult] = useState<ScanResult>(null);
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [webToken, setWebToken] = useState("");
 
-  if (!isAuthenticated || Platform.OS === "web" || !hasRole("alumno")) return null;
+  if (!isAuthenticated || !hasRole("alumno")) return null;
 
   const handleBarCodeScanned = async (data: string) => {
     if (scanned || checking) return;
@@ -114,6 +116,13 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
     setResult(null);
     setRating(0);
     setRatingSubmitted(false);
+    setWebToken("");
+  };
+
+  const handleWebSubmit = () => {
+    const token = webToken.trim();
+    if (!token) return;
+    handleBarCodeScanned(token);
   };
 
   return (
@@ -174,6 +183,49 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
                   <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
                 </Pressable>
               </View>
+            </View>
+          ) : Platform.OS === "web" ? (
+            <View style={scannerStyles.noCameraContainer}>
+              <MaterialCommunityIcons name="qrcode-scan" size={48} color="#D4AF37" />
+              <Text style={[scannerStyles.noCameraText, { marginBottom: 4 }]}>Registrar Asistencia</Text>
+              <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 10, textAlign: "center", marginBottom: 20 }}>
+                Ingresa el token del código QR que te muestra el profesor
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: "#111",
+                  borderWidth: 1,
+                  borderColor: "#D4AF37",
+                  borderRadius: 4,
+                  color: "#FFF",
+                  fontFamily: "NotoSansJP_400Regular",
+                  fontSize: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  width: "100%",
+                  marginBottom: 12,
+                }}
+                placeholder="Pega aquí el token QR..."
+                placeholderTextColor="#444"
+                value={webToken}
+                onChangeText={setWebToken}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Pressable
+                style={[scannerStyles.closeBtn, { backgroundColor: "#D4AF37", opacity: checking || !webToken.trim() ? 0.5 : 1 }]}
+                onPress={handleWebSubmit}
+                disabled={checking || !webToken.trim()}
+              >
+                {checking ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : (
+                  <Text style={[scannerStyles.closeBtnText, { color: "#000" }]}>REGISTRAR</Text>
+                )}
+              </Pressable>
+              <Pressable style={scannerStyles.closeBtn} onPress={closeAll}>
+                <Text style={scannerStyles.closeBtnText}>CANCELAR</Text>
+              </Pressable>
             </View>
           ) : (
             <ScannerCamera
