@@ -113,6 +113,23 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Share profile button: captures the profile as an image (react-native-view-shot) and shares via expo-sharing
 - API endpoint: `GET /api/profile/me` returns combined user info, belt data, and fight stats
 
+### Features - Membership System (Task #14 + #15)
+- `membership_status` enum: `activo`, `inactivo`, `pausado` (default: `activo`)
+- New columns on `users`: `membershipStatus`, `membershipExpiresAt`, `trialEndsAt`, `lastPaymentAt`, `membershipNotes`
+- New table `app_settings`: key-value store for `whatsapp_admin_number` and `payment_link_url`
+- 3-day free trial on register: `trialEndsAt = createdAt + 3 days`
+- Auto-expire on login: if trial/expiry has passed, status is auto-set to `inactivo`
+- Middleware blocks `inactivo`/`pausado` users with 403 `{ error: "membership_inactive" }` (admin/profesor bypass)
+- Admin endpoints: `PUT /admin/users/:id/membership`, `PUT /admin/users/:id/payment`, `GET/PUT /admin/settings`
+- Public endpoint: `GET /settings/public` (no auth) returns WhatsApp number and payment link
+- `MembershipGate` component wraps tabs layout; blocks navigation for inactive/paused alumnos
+- Countdown badge: appears in tab bar showing days remaining when ≤7 days left
+- Profile "Mi Membresía" section: status badge, expiry date, WhatsApp and payment link buttons (alumno only)
+- Local notifications (native only): scheduled at login for 7, 3, 1 days before expiry
+- Platform-specific files: `lib/notifications.ts` (web stub) / `lib/notifications.native.ts` (expo-notifications)
+- Admin panel: membership status controls, "Registrar Pago (30 días)" button, Settings tab (WhatsApp + payment link)
+- `useMembership()` hook: calculates `daysRemaining`, `expiresAt`, `isBlocked`, `showCountdown`
+
 ### Features (Fase 7) - Training Categories
 - Exercise and knowledge categories per training system (e.g. Ninjutsu → "Trabajo de pie", "Trabajo en suelo")
 - DB tables: `exercise_categories`, `knowledge_categories` with name, description, orderIndex, isActive, FK to training_systems

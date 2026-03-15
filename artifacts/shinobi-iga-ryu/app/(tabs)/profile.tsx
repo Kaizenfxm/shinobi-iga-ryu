@@ -10,13 +10,15 @@ import {
   Image,
   ActivityIndicator,
   TextInput,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData } from "@/lib/api";
+import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData } from "@/lib/api";
 import FightRecord from "@/components/FightRecord";
+import { useMembership } from "@/hooks/useMembership";
 import * as ImagePicker from "expo-image-picker";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
@@ -177,6 +179,15 @@ export default function ProfileScreen() {
   const viewShotRef = useRef<ViewShot>(null);
   const scrollRef = useRef<ScrollView>(null);
   const actionsSectionYRef = useRef(0);
+
+  const { isAlumno, status: membershipStatus, expiresAt: membershipExpiresAt, daysRemaining } = useMembership();
+  const [pubSettings, setPubSettings] = useState<{ whatsappAdminNumber: string; paymentLinkUrl: string } | null>(null);
+
+  useEffect(() => {
+    if (isAlumno && isAuthenticated) {
+      settingsApi.getPublic().then(setPubSettings).catch(() => {});
+    }
+  }, [isAlumno, isAuthenticated]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -586,6 +597,64 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {isAlumno && (
+            <View style={membershipStyles.section}>
+              <View style={membershipStyles.header}>
+                <MaterialCommunityIcons name="shield-account-outline" size={16} color="#D4AF37" />
+                <Text style={membershipStyles.title}>MI MEMBRESÍA</Text>
+              </View>
+
+              <View style={membershipStyles.row}>
+                <View style={[
+                  membershipStyles.statusBadge,
+                  membershipStatus === "activo" ? membershipStyles.statusActivo
+                  : membershipStatus === "pausado" ? membershipStyles.statusPausado
+                  : membershipStyles.statusInactivo
+                ]}>
+                  <Text style={membershipStyles.statusText}>
+                    {membershipStatus === "activo" ? "Activo"
+                    : membershipStatus === "pausado" ? "Pausado"
+                    : "Inactivo"}
+                  </Text>
+                </View>
+
+                {membershipExpiresAt && (
+                  <Text style={membershipStyles.expiryText}>
+                    Vence {membershipExpiresAt.toLocaleDateString("es-CO")}
+                    {daysRemaining !== null && daysRemaining <= 7 && (
+                      <Text style={membershipStyles.urgentText}> · {daysRemaining}d restantes</Text>
+                    )}
+                  </Text>
+                )}
+              </View>
+
+              <View style={membershipStyles.actions}>
+                {pubSettings?.whatsappAdminNumber ? (
+                  <Pressable
+                    style={membershipStyles.whatsappBtn}
+                    onPress={() => {
+                      const msg = encodeURIComponent("Hola! Quiero renovar mi membresía en Shinobi Iga Ryu.");
+                      Linking.openURL(`https://wa.me/${pubSettings.whatsappAdminNumber}?text=${msg}`);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="whatsapp" size={16} color="#25D366" />
+                    <Text style={membershipStyles.whatsappBtnText}>Enviar comprobante</Text>
+                  </Pressable>
+                ) : null}
+
+                {pubSettings?.paymentLinkUrl ? (
+                  <Pressable
+                    style={membershipStyles.payBtn}
+                    onPress={() => Linking.openURL(pubSettings.paymentLinkUrl)}
+                  >
+                    <MaterialCommunityIcons name="credit-card-outline" size={16} color="#000" />
+                    <Text style={membershipStyles.payBtnText}>Pagar en línea</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          )}
+
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#FF4444" />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -933,5 +1002,96 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#000",
     letterSpacing: 1,
+  },
+});
+
+const membershipStyles = StyleSheet.create({
+  section: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderTopColor: "#D4AF3740",
+    borderTopWidth: 2,
+    borderRadius: 2,
+    padding: 16,
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  title: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+    flexWrap: "wrap",
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  statusActivo: { backgroundColor: "#1a5c1a" },
+  statusInactivo: { backgroundColor: "#5c1a1a" },
+  statusPausado: { backgroundColor: "#5c4a1a" },
+  statusText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#FFF",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  expiryText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#888",
+  },
+  urgentText: {
+    fontFamily: "NotoSansJP_700Bold",
+    color: "#D4AF37",
+  },
+  actions: {
+    gap: 8,
+  },
+  whatsappBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#0D1F0D",
+    borderWidth: 1,
+    borderColor: "#25D36640",
+    borderRadius: 2,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  whatsappBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#25D366",
+    letterSpacing: 0.5,
+  },
+  payBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  payBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#000",
+    letterSpacing: 0.5,
   },
 });

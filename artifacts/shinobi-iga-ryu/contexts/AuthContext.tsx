@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { authApi, type UserData } from "@/lib/api";
+import { schedulePaymentNotifications, cancelPaymentNotifications } from "@/lib/notifications";
 
 interface AuthState {
   user: UserData | null;
@@ -34,15 +35,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const { user: userData } = await authApi.login({ email, password });
     setUser(userData);
+    schedulePaymentNotifications(userData).catch(() => {});
   }, []);
 
   const register = useCallback(async (email: string, password: string, displayName: string, phone?: string, sedes?: string[]) => {
     const { user: userData } = await authApi.register({ email, password, displayName, phone, sedes });
     setUser(userData);
+    schedulePaymentNotifications(userData).catch(() => {});
   }, []);
 
   const logout = useCallback(async () => {
     await authApi.logout();
+    cancelPaymentNotifications().catch(() => {});
     setUser(null);
   }, []);
 

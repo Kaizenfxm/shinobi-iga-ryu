@@ -58,6 +58,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "expo-notifications": "^0.32.16",
     "expo-sharing": "^55.0.11",
     "react-native-view-shot": "^4.0.3",
     "react-native-webview": "^13.16.1",
