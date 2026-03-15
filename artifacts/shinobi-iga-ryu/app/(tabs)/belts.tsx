@@ -828,22 +828,6 @@ export default function BeltsScreen({ skipSafeArea = false }: { skipSafeArea?: b
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={styles.headerLogoRow}>
-            <Pressable onPress={() => router.push("/conocenos" as never)}>
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-            </Pressable>
-            <View>
-              <Text style={styles.headerTitle}>CINTURONES</Text>
-              <Text style={styles.headerKanji}>帯 · Progresión de grado</Text>
-            </View>
-          </View>
-        </View>
-
         <View style={styles.divider} />
 
         {belts.length === 0 ? (
