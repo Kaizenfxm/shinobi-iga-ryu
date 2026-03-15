@@ -61,7 +61,6 @@ export default function TabLayout() {
 
   const showAdmin = isAuthenticated && hasRole("admin");
   const showAlumnos = isAuthenticated && hasRole("profesor");
-  const _ = user;
 
   return (
     <MembershipGate>
