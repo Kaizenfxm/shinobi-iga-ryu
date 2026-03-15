@@ -1,22 +1,15 @@
-DO $$ BEGIN
-  CREATE TYPE class_status AS ENUM ('programada', 'en_curso', 'finalizada', 'cancelada');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+DROP TABLE IF EXISTS class_attendances CASCADE;
+DROP TABLE IF EXISTS class_training_systems CASCADE;
+DROP TABLE IF EXISTS classes CASCADE;
+DROP TYPE IF EXISTS class_status CASCADE;
 
 CREATE TABLE IF NOT EXISTS classes (
   id SERIAL PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  sede VARCHAR(50) NOT NULL,
-  class_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME,
-  profesor_id INTEGER REFERENCES users(id),
-  max_capacity INTEGER,
-  status class_status NOT NULL DEFAULT 'programada',
+  created_by_user_id INTEGER NOT NULL REFERENCES users(id),
+  notes TEXT,
   qr_token VARCHAR(100) NOT NULL UNIQUE,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS class_training_systems (

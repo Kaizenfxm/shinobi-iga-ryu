@@ -1,23 +1,14 @@
-import { pgTable, serial, integer, text, varchar, timestamp, date, time, uniqueIndex, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, varchar, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { trainingSystemsTable } from "./training";
 
-export const classStatusEnum = pgEnum("class_status", ["programada", "en_curso", "finalizada", "cancelada"]);
-
 export const classesTable = pgTable("classes", {
   id: serial("id").primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  sede: varchar("sede", { length: 50 }).notNull(),
-  classDate: date("class_date").notNull(),
-  startTime: time("start_time").notNull(),
-  endTime: time("end_time"),
-  profesorId: integer("profesor_id").references(() => usersTable.id),
-  maxCapacity: integer("max_capacity"),
-  status: classStatusEnum("status").default("programada").notNull(),
+  createdByUserId: integer("created_by_user_id").references(() => usersTable.id).notNull(),
+  notes: text("notes"),
   qrToken: varchar("qr_token", { length: 100 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const classTrainingSystemsTable = pgTable("class_training_systems", {

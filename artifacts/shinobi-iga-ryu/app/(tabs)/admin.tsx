@@ -3426,20 +3426,6 @@ const settingsPanelStyles = StyleSheet.create({
   },
 });
 
-const CLASS_STATUS_LABELS: Record<string, string> = {
-  programada: "Programada",
-  en_curso: "En Curso",
-  finalizada: "Finalizada",
-  cancelada: "Cancelada",
-};
-
-const CLASS_STATUS_COLORS: Record<string, string> = {
-  programada: "#D4AF37",
-  en_curso: "#1a8f1a",
-  finalizada: "#666",
-  cancelada: "#8f1a1a",
-};
-
 function ClassesPanel({ users }: { users: UserData[] }) {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3448,57 +3434,60 @@ function ClassesPanel({ users }: { users: UserData[] }) {
   const [attendees, setAttendees] = useState<ClassAttendee[]>([]);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
   const [qrModalClass, setQrModalClass] = useState<ClassData | null>(null);
-  const [sedeFilter, setSedeFilter] = useState<string>("");
-
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    sede: "bogota",
-    classDate: "",
-    startTime: "",
-    endTime: "",
-    profesorId: "" as string,
-    maxCapacity: "",
-  });
-
-  const profesores = users.filter((u) => u.roles?.includes("profesor") || u.roles?.includes("admin"));
+  const [trainingSystems, setTrainingSystems] = useState<{ id: number; key: string; name: string }[]>([]);
+  const [selectedSystems, setSelectedSystems] = useState<number[]>([]);
+  const [notes, setNotes] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const fetchClasses = useCallback(async () => {
     try {
-      const res = await classesApi.getAll(sedeFilter || undefined);
+      const res = await classesApi.getAll();
       setClasses(res.classes);
     } catch {
       Alert.alert("Error", "No se pudieron cargar las clases");
     } finally {
       setLoading(false);
     }
-  }, [sedeFilter]);
+  }, []);
+
+  const fetchSystems = useCallback(async () => {
+    try {
+      const res = await trainingApi.getSystems();
+      setTrainingSystems(res.systems.map((s: { id: number; key: string; name: string }) => ({ id: s.id, key: s.key, name: s.name })));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     fetchClasses();
-  }, [fetchClasses]);
+    fetchSystems();
+  }, [fetchClasses, fetchSystems]);
+
+  const toggleSystem = (id: number) => {
+    setSelectedSystems((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
 
   const handleCreate = async () => {
-    if (!form.title.trim() || !form.classDate || !form.startTime) {
-      Alert.alert("Error", "Título, fecha y hora de inicio son obligatorios");
+    if (selectedSystems.length === 0) {
+      Alert.alert("Error", "Selecciona al menos un sistema de entrenamiento");
       return;
     }
+    setCreating(true);
     try {
-      await classesApi.adminCreate({
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        sede: form.sede,
-        classDate: form.classDate,
-        startTime: form.startTime,
-        endTime: form.endTime || undefined,
-        profesorId: form.profesorId ? parseInt(form.profesorId, 10) : undefined,
-        maxCapacity: form.maxCapacity ? parseInt(form.maxCapacity, 10) : undefined,
+      const res = await classesApi.create({
+        trainingSystemIds: selectedSystems,
+        notes: notes.trim() || undefined,
       });
       setShowCreate(false);
-      setForm({ title: "", description: "", sede: "bogota", classDate: "", startTime: "", endTime: "", profesorId: "", maxCapacity: "" });
+      setSelectedSystems([]);
+      setNotes("");
+      setQrModalClass(res.class);
       fetchClasses();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo crear la clase");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -3510,7 +3499,7 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         style: "destructive",
         onPress: async () => {
           try {
-            await classesApi.adminDelete(classId);
+            await classesApi.delete(classId);
             fetchClasses();
           } catch {
             Alert.alert("Error", "No se pudo eliminar");
@@ -3518,15 +3507,6 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         },
       },
     ]);
-  };
-
-  const handleStatusChange = async (classId: number, status: string) => {
-    try {
-      await classesApi.adminUpdate(classId, { status });
-      fetchClasses();
-    } catch {
-      Alert.alert("Error", "No se pudo actualizar el estado");
-    }
   };
 
   const loadAttendees = async (classId: number) => {
@@ -3551,7 +3531,15 @@ function ClassesPanel({ users }: { users: UserData[] }) {
     }
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const getTimeRemaining = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    if (diff <= 0) return "Expirado";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m restantes`;
+  };
+
+  const isExpired = (expiresAt: string) => new Date(expiresAt).getTime() <= Date.now();
 
   if (loading) {
     return (
@@ -3572,153 +3560,64 @@ function ClassesPanel({ users }: { users: UserData[] }) {
           onPress={() => setShowCreate(!showCreate)}
         >
           <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10 }}>
-            {showCreate ? "CANCELAR" : "+ NUEVA"}
+            {showCreate ? "CANCELAR" : "+ GENERAR"}
           </Text>
         </Pressable>
-      </View>
-
-      <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
-        {[{ value: "", label: "Todas" }, { value: "bogota", label: "Bogotá" }, { value: "chia", label: "Chía" }].map((s) => (
-          <Pressable
-            key={s.value}
-            style={{
-              paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
-              backgroundColor: sedeFilter === s.value ? "#D4AF37" : "#111",
-              borderWidth: 1, borderColor: sedeFilter === s.value ? "#D4AF37" : "#222",
-            }}
-            onPress={() => setSedeFilter(s.value)}
-          >
-            <Text style={{
-              color: sedeFilter === s.value ? "#000" : "#666",
-              fontFamily: "NotoSansJP_500Medium", fontSize: 10,
-            }}>
-              {s.label}
-            </Text>
-          </Pressable>
-        ))}
       </View>
 
       {showCreate && (
         <View style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 2, padding: 12, marginBottom: 12, borderTopWidth: 1, borderTopColor: "#D4AF3722" }}>
           <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
-            NUEVA CLASE
+            GENERAR CLASE CON QR
           </Text>
 
-          <TextInput
-            style={cpStyles.input}
-            placeholder="Título de la clase *"
-            placeholderTextColor="#444"
-            value={form.title}
-            onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
-          />
+          <Text style={cpStyles.label}>SISTEMAS DE ENTRENAMIENTO *</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+            {trainingSystems.map((sys) => {
+              const selected = selectedSystems.includes(sys.id);
+              return (
+                <Pressable
+                  key={sys.id}
+                  style={{
+                    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+                    backgroundColor: selected ? "#D4AF37" : "#111",
+                    borderWidth: 1, borderColor: selected ? "#D4AF37" : "#222",
+                  }}
+                  onPress={() => toggleSystem(sys.id)}
+                >
+                  <Text style={{
+                    color: selected ? "#000" : "#888",
+                    fontFamily: "NotoSansJP_500Medium", fontSize: 11,
+                  }}>
+                    {sys.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
+          <Text style={cpStyles.label}>NOTA (OPCIONAL)</Text>
           <TextInput
             style={cpStyles.input}
-            placeholder="Descripción (opcional)"
+            placeholder="Nota sobre la clase..."
             placeholderTextColor="#444"
-            value={form.description}
-            onChangeText={(v) => setForm((p) => ({ ...p, description: v }))}
+            value={notes}
+            onChangeText={setNotes}
             multiline
           />
 
-          <Text style={cpStyles.label}>SEDE</Text>
-          <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
-            {SEDES_OPTIONS.map((s) => (
-              <Pressable
-                key={s.value}
-                style={{
-                  flex: 1, paddingVertical: 6, borderRadius: 4, alignItems: "center",
-                  backgroundColor: form.sede === s.value ? "#D4AF37" : "#111",
-                  borderWidth: 1, borderColor: form.sede === s.value ? "#D4AF37" : "#222",
-                }}
-                onPress={() => setForm((p) => ({ ...p, sede: s.value }))}
-              >
-                <Text style={{ color: form.sede === s.value ? "#000" : "#666", fontFamily: "NotoSansJP_500Medium", fontSize: 11 }}>
-                  {s.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={cpStyles.label}>FECHA *</Text>
-          <TextInput
-            style={cpStyles.input}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor="#444"
-            value={form.classDate}
-            onChangeText={(v) => setForm((p) => ({ ...p, classDate: v }))}
-          />
-
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={cpStyles.label}>HORA INICIO *</Text>
-              <TextInput
-                style={cpStyles.input}
-                placeholder="HH:MM"
-                placeholderTextColor="#444"
-                value={form.startTime}
-                onChangeText={(v) => setForm((p) => ({ ...p, startTime: v }))}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={cpStyles.label}>HORA FIN</Text>
-              <TextInput
-                style={cpStyles.input}
-                placeholder="HH:MM"
-                placeholderTextColor="#444"
-                value={form.endTime}
-                onChangeText={(v) => setForm((p) => ({ ...p, endTime: v }))}
-              />
-            </View>
-          </View>
-
-          <Text style={cpStyles.label}>PROFESOR</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-            <Pressable
-              style={{
-                paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
-                backgroundColor: !form.profesorId ? "#D4AF37" : "#111",
-                borderWidth: 1, borderColor: !form.profesorId ? "#D4AF37" : "#222",
-              }}
-              onPress={() => setForm((p) => ({ ...p, profesorId: "" }))}
-            >
-              <Text style={{ color: !form.profesorId ? "#000" : "#666", fontFamily: "NotoSansJP_500Medium", fontSize: 10 }}>Sin asignar</Text>
-            </Pressable>
-            {profesores.map((p) => (
-              <Pressable
-                key={p.id}
-                style={{
-                  paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
-                  backgroundColor: form.profesorId === String(p.id) ? "#D4AF37" : "#111",
-                  borderWidth: 1, borderColor: form.profesorId === String(p.id) ? "#D4AF37" : "#222",
-                }}
-                onPress={() => setForm((prev) => ({ ...prev, profesorId: String(p.id) }))}
-              >
-                <Text style={{
-                  color: form.profesorId === String(p.id) ? "#000" : "#666",
-                  fontFamily: "NotoSansJP_500Medium", fontSize: 10,
-                }}>
-                  {p.displayName}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={cpStyles.label}>CAPACIDAD MÁXIMA</Text>
-          <TextInput
-            style={cpStyles.input}
-            placeholder="Sin límite"
-            placeholderTextColor="#444"
-            value={form.maxCapacity}
-            onChangeText={(v) => setForm((p) => ({ ...p, maxCapacity: v }))}
-            keyboardType="number-pad"
-          />
+          <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginBottom: 8 }}>
+            El código QR será válido por 3 horas
+          </Text>
 
           <Pressable
-            style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingVertical: 10, alignItems: "center", marginTop: 4 }}
+            style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingVertical: 10, alignItems: "center", marginTop: 4, opacity: creating ? 0.5 : 1 }}
             onPress={handleCreate}
+            disabled={creating}
           >
-            <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 12 }}>CREAR CLASE</Text>
+            <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 12 }}>
+              {creating ? "GENERANDO..." : "GENERAR"}
+            </Text>
           </Pressable>
         </View>
       )}
@@ -3726,81 +3625,57 @@ function ClassesPanel({ users }: { users: UserData[] }) {
       {classes.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialCommunityIcons name="calendar-blank" size={40} color="#333" />
-          <Text style={styles.emptyText}>No hay clases programadas</Text>
+          <Text style={styles.emptyText}>No hay clases creadas</Text>
         </View>
       ) : (
         classes.map((cls) => {
-          const isExpanded = expandedClass === cls.id;
-          const isPast = cls.classDate < todayStr;
+          const isExpand = expandedClass === cls.id;
+          const expired = isExpired(cls.expiresAt);
           return (
-            <View key={cls.id} style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#111", borderRadius: 2, borderTopWidth: 1, borderTopColor: "#D4AF3722", padding: 10, marginBottom: 6 }}>
+            <View key={cls.id} style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#111", borderRadius: 2, borderTopWidth: 1, borderTopColor: expired ? "#333" : "#D4AF3722", padding: 10, marginBottom: 6 }}>
               <Pressable onPress={() => toggleExpand(cls.id)} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 13 }}>{cls.title}</Text>
-                    <View style={{ backgroundColor: CLASS_STATUS_COLORS[cls.status] + "30", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
-                      <Text style={{ color: CLASS_STATUS_COLORS[cls.status], fontFamily: "NotoSansJP_500Medium", fontSize: 8, letterSpacing: 0.5 }}>
-                        {CLASS_STATUS_LABELS[cls.status]}
+                    <Text style={{ color: expired ? "#666" : "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 13 }}>
+                      {cls.trainingSystems.map((ts) => ts.name).join(", ") || "Clase"}
+                    </Text>
+                    <View style={{ backgroundColor: expired ? "#33333330" : "#D4AF3730", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
+                      <Text style={{ color: expired ? "#666" : "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 8, letterSpacing: 0.5 }}>
+                        {expired ? "EXPIRADO" : "ACTIVO"}
                       </Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
                     <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10 }}>
-                      {cls.classDate} · {cls.startTime?.slice(0, 5)}{cls.endTime ? `-${cls.endTime.slice(0, 5)}` : ""}
-                    </Text>
-                    <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9, textTransform: "uppercase" }}>
-                      {cls.sede === "bogota" ? "Bogotá" : "Chía"}
+                      {new Date(cls.createdAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
+                      {" · "}
+                      {getTimeRemaining(cls.expiresAt)}
                     </Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-                    {cls.profesorName && (
+                    {cls.createdByName && (
                       <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
-                        Prof: {cls.profesorName}
+                        Por: {cls.createdByName}
                       </Text>
                     )}
                     <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
-                      {cls.attendanceCount}{cls.maxCapacity ? `/${cls.maxCapacity}` : ""} asistentes
+                      {cls.attendanceCount} asistentes
                     </Text>
                   </View>
                 </View>
-                <MaterialCommunityIcons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#555" />
+                <MaterialCommunityIcons name={isExpand ? "chevron-up" : "chevron-down"} size={20} color="#555" />
               </Pressable>
 
-              {isExpanded && (
+              {isExpand && (
                 <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: "#1a1a1a", paddingTop: 8 }}>
                   <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
-                    <Pressable
-                      style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 }}
-                      onPress={() => setQrModalClass(cls)}
-                    >
-                      <MaterialCommunityIcons name="qrcode" size={14} color="#D4AF37" />
-                      <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>QR</Text>
-                    </Pressable>
-
-                    {cls.status === "programada" && (
+                    {!expired && cls.qrToken && (
                       <Pressable
-                        style={{ backgroundColor: "#0a1a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
-                        onPress={() => handleStatusChange(cls.id, "en_curso")}
+                        style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 }}
+                        onPress={() => setQrModalClass(cls)}
                       >
-                        <Text style={{ color: "#1a8f1a", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>INICIAR</Text>
-                      </Pressable>
-                    )}
-
-                    {cls.status === "en_curso" && (
-                      <Pressable
-                        style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
-                        onPress={() => handleStatusChange(cls.id, "finalizada")}
-                      >
-                        <Text style={{ color: "#888", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>FINALIZAR</Text>
-                      </Pressable>
-                    )}
-
-                    {(cls.status === "programada" || cls.status === "en_curso") && (
-                      <Pressable
-                        style={{ backgroundColor: "#1a0a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
-                        onPress={() => handleStatusChange(cls.id, "cancelada")}
-                      >
-                        <Text style={{ color: "#8f1a1a", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>CANCELAR</Text>
+                        <MaterialCommunityIcons name="qrcode" size={14} color="#D4AF37" />
+                        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>VER QR</Text>
                       </Pressable>
                     )}
 
@@ -3812,9 +3687,9 @@ function ClassesPanel({ users }: { users: UserData[] }) {
                     </Pressable>
                   </View>
 
-                  {cls.description ? (
+                  {cls.notes ? (
                     <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginBottom: 6 }}>
-                      {cls.description}
+                      {cls.notes}
                     </Text>
                   ) : null}
 
@@ -3864,13 +3739,15 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center" }}>
           <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 24, alignItems: "center", width: 300 }}>
             <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 14, marginBottom: 4 }}>
-              {qrModalClass?.title}
+              {qrModalClass?.trainingSystems.map((ts) => ts.name).join(", ") || "Clase"}
             </Text>
-            <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginBottom: 16 }}>
-              {qrModalClass?.classDate} · {qrModalClass?.startTime?.slice(0, 5)}
-            </Text>
+            {qrModalClass && (
+              <Text style={{ color: isExpired(qrModalClass.expiresAt) ? "#8f1a1a" : "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 10, marginBottom: 16 }}>
+                {getTimeRemaining(qrModalClass.expiresAt)}
+              </Text>
+            )}
 
-            {qrModalClass && Platform.OS !== "web" ? (
+            {qrModalClass?.qrToken && Platform.OS !== "web" ? (
               <QrCodeDisplay value={qrModalClass.qrToken} size={200} />
             ) : (
               <View style={{ width: 200, height: 200, backgroundColor: "#FFF", justifyContent: "center", alignItems: "center", borderRadius: 4 }}>
