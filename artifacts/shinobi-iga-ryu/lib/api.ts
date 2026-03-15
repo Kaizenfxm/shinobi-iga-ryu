@@ -473,7 +473,7 @@ export interface ProfileData {
 
 export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
-  updateProfile: (data: { displayName?: string; phone?: string | null; sedes?: string[] }) =>
+  updateProfile: (data: { displayName?: string; phone?: string | null; sedes?: string[]; currentPassword?: string; newPassword?: string }) =>
     apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
   toggleFighterMode: (isFighter: boolean) =>
     apiFetch<{ success: boolean; isFighter: boolean }>("/profile/me/fighter", {
