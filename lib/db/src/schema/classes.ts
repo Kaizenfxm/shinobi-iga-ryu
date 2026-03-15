@@ -23,7 +23,7 @@ export const classAttendancesTable = pgTable("class_attendances", {
   id: serial("id").primaryKey(),
   classId: integer("class_id").references(() => classesTable.id, { onDelete: "cascade" }).notNull(),
   userId: integer("user_id").references(() => usersTable.id, { onDelete: "cascade" }).notNull(),
-  checkedInAt: timestamp("checked_in_at").defaultNow().notNull(),
+  attendedAt: timestamp("attended_at").defaultNow().notNull(),
   rating: integer("rating"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [

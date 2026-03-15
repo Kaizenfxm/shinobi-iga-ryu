@@ -3557,70 +3557,80 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         </Text>
         <Pressable
           style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingHorizontal: 10, paddingVertical: 6 }}
-          onPress={() => setShowCreate(!showCreate)}
+          onPress={() => setShowCreate(true)}
         >
           <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10 }}>
-            {showCreate ? "CANCELAR" : "+ GENERAR"}
+            + GENERAR
           </Text>
         </Pressable>
       </View>
 
-      {showCreate && (
-        <View style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 2, padding: 12, marginBottom: 12, borderTopWidth: 1, borderTopColor: "#D4AF3722" }}>
-          <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
-            GENERAR CLASE CON QR
-          </Text>
-
-          <Text style={cpStyles.label}>SISTEMAS DE ENTRENAMIENTO *</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-            {trainingSystems.map((sys) => {
-              const selected = selectedSystems.includes(sys.id);
-              return (
-                <Pressable
-                  key={sys.id}
-                  style={{
-                    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
-                    backgroundColor: selected ? "#D4AF37" : "#111",
-                    borderWidth: 1, borderColor: selected ? "#D4AF37" : "#222",
-                  }}
-                  onPress={() => toggleSystem(sys.id)}
-                >
-                  <Text style={{
-                    color: selected ? "#000" : "#888",
-                    fontFamily: "NotoSansJP_500Medium", fontSize: 11,
-                  }}>
-                    {sys.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text style={cpStyles.label}>NOTA (OPCIONAL)</Text>
-          <TextInput
-            style={cpStyles.input}
-            placeholder="Nota sobre la clase..."
-            placeholderTextColor="#444"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-          />
-
-          <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginBottom: 8 }}>
-            El código QR será válido por 3 horas
-          </Text>
-
-          <Pressable
-            style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingVertical: 10, alignItems: "center", marginTop: 4, opacity: creating ? 0.5 : 1 }}
-            onPress={handleCreate}
-            disabled={creating}
-          >
-            <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 12 }}>
-              {creating ? "GENERANDO..." : "GENERAR"}
+      <Modal visible={showCreate} animationType="fade" transparent onRequestClose={() => setShowCreate(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 20, width: "100%", maxWidth: 340, borderTopWidth: 2, borderTopColor: "#D4AF37" }}>
+            <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1.5, marginBottom: 12 }}>
+              GENERAR CLASE CON QR
             </Text>
-          </Pressable>
+
+            <Text style={cpStyles.label}>SISTEMAS DE ENTRENAMIENTO *</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+              {trainingSystems.map((sys) => {
+                const selected = selectedSystems.includes(sys.id);
+                return (
+                  <Pressable
+                    key={sys.id}
+                    style={{
+                      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+                      backgroundColor: selected ? "#D4AF37" : "#1a1a1a",
+                      borderWidth: 1, borderColor: selected ? "#D4AF37" : "#333",
+                    }}
+                    onPress={() => toggleSystem(sys.id)}
+                  >
+                    <Text style={{
+                      color: selected ? "#000" : "#888",
+                      fontFamily: "NotoSansJP_500Medium", fontSize: 11,
+                    }}>
+                      {sys.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={cpStyles.label}>NOTA (OPCIONAL)</Text>
+            <TextInput
+              style={cpStyles.input}
+              placeholder="Nota sobre la clase..."
+              placeholderTextColor="#444"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginBottom: 12 }}>
+              El código QR será válido por 3 horas
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#1a1a1a", borderRadius: 4, paddingVertical: 10, alignItems: "center", borderWidth: 1, borderColor: "#333" }}
+                onPress={() => setShowCreate(false)}
+              >
+                <Text style={{ color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>CANCELAR</Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#D4AF37", borderRadius: 4, paddingVertical: 10, alignItems: "center", opacity: creating ? 0.5 : 1 }}
+                onPress={handleCreate}
+                disabled={creating}
+              >
+                <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>
+                  {creating ? "GENERANDO..." : "GENERAR"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
-      )}
+      </Modal>
 
       {classes.length === 0 ? (
         <View style={styles.emptyState}>
@@ -3723,7 +3733,7 @@ function ClassesPanel({ users }: { users: UserData[] }) {
                           </View>
                         )}
                         <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>
-                          {new Date(att.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(att.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                         </Text>
                       </View>
                     ))
@@ -3999,19 +4009,20 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: "row",
-    gap: 8,
+    gap: 4,
     marginTop: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
+    flexWrap: "wrap",
   },
   tabButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     backgroundColor: "#111",
     borderWidth: 1,
     borderColor: "#222",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 8,
   },
   tabButtonActive: {

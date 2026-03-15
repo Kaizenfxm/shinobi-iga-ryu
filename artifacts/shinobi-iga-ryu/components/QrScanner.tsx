@@ -67,7 +67,7 @@ export default function QrScannerButton() {
     success: boolean;
     className: string;
     classId: number;
-    checkedInAt: string;
+    attendedAt: string;
     createdByName: string | null;
   } | null>(null);
   const [rating, setRating] = useState(0);
@@ -132,7 +132,7 @@ export default function QrScannerButton() {
                   </Text>
                 )}
                 <Text style={scannerStyles.resultTime}>
-                  {new Date(result.checkedInAt).toLocaleTimeString("es-CO", {
+                  {new Date(result.attendedAt).toLocaleTimeString("es-CO", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
