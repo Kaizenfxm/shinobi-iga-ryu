@@ -736,6 +736,7 @@ export interface MyAttendanceItem {
   checkedInAt: string;
   rating: number | null;
   systemNames: string[];
+  createdByName: string | null;
 }
 
 export interface MyAttendanceStats {
@@ -758,7 +759,7 @@ export const classesApi = {
     apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "DELETE" }),
 
   scan: (qrToken: string) =>
-    apiFetch<{ success: boolean; classId: number; className: string; checkedInAt: string }>("/classes/scan", {
+    apiFetch<{ success: boolean; classId: number; className: string; checkedInAt: string; createdByName: string | null }>("/classes/scan", {
       method: "POST",
       body: { qrToken },
     }),

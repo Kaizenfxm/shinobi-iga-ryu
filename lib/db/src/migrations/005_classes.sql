@@ -1,8 +1,3 @@
-DROP TABLE IF EXISTS class_attendances CASCADE;
-DROP TABLE IF EXISTS class_training_systems CASCADE;
-DROP TABLE IF EXISTS classes CASCADE;
-DROP TYPE IF EXISTS class_status CASCADE;
-
 CREATE TABLE IF NOT EXISTS classes (
   id SERIAL PRIMARY KEY,
   created_by_user_id INTEGER NOT NULL REFERENCES users(id),

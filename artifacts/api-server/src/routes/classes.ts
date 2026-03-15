@@ -103,9 +103,15 @@ classesRouter.post("/classes", requireAuth, async (req, res) => {
 classesRouter.get("/classes", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const isPrivileged = await isAdminOrProfesor(userId);
+    const userIsAdmin = await isAdmin(userId);
+    const isPrivileged = userIsAdmin || await isAdminOrProfesor(userId);
 
-    const rows = await db
+    if (!isPrivileged) {
+      res.status(403).json({ error: "Acceso no autorizado" });
+      return;
+    }
+
+    let query = db
       .select({
         id: classesTable.id,
         createdByUserId: classesTable.createdByUserId,
@@ -118,6 +124,10 @@ classesRouter.get("/classes", requireAuth, async (req, res) => {
       .from(classesTable)
       .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
       .orderBy(desc(classesTable.createdAt));
+
+    const rows = userIsAdmin
+      ? await query
+      : await query.where(eq(classesTable.createdByUserId, userId));
 
     const classIds = rows.map((r) => r.id);
     let systemsByClass = new Map<number, { id: number; key: string; name: string }[]>();
@@ -223,8 +233,11 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
         id: classesTable.id,
         notes: classesTable.notes,
         expiresAt: classesTable.expiresAt,
+        createdByUserId: classesTable.createdByUserId,
+        createdByName: usersTable.displayName,
       })
       .from(classesTable)
+      .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
       .where(eq(classesTable.qrToken, qrToken))
       .limit(1);
 
@@ -273,6 +286,7 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
       classId: classRow.id,
       className: systemNames || "Clase",
       checkedInAt: attendance.checkedInAt.toISOString(),
+      createdByName: classRow.createdByName || null,
     });
   } catch (error) {
     console.error("Scan/checkin error:", error);
@@ -351,8 +365,11 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         classId: classAttendancesTable.classId,
         checkedInAt: classAttendancesTable.checkedInAt,
         rating: classAttendancesTable.rating,
+        createdByName: usersTable.displayName,
       })
       .from(classAttendancesTable)
+      .innerJoin(classesTable, eq(classAttendancesTable.classId, classesTable.id))
+      .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
       .where(eq(classAttendancesTable.userId, userId))
       .orderBy(desc(classAttendancesTable.checkedInAt));
 
@@ -386,6 +403,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         checkedInAt: a.checkedInAt.toISOString(),
         rating: a.rating,
         systemNames: systemsByClass.get(a.classId) || [],
+        createdByName: a.createdByName || null,
       })),
     });
   } catch (error) {
