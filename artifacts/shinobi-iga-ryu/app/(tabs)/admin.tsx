@@ -757,6 +757,11 @@ function UsersPanel({
   const [paymentForms, setPaymentForms] = useState<Record<number, PaymentFormState | null>>({});
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState<Record<number, boolean>>({});
 
+  const [anthropometryOpen, setAnthropometryOpen] = useState<Record<number, boolean>>({});
+  const [anthropometryData, setAnthropometryData] = useState<Record<number, { initialWeight: string; currentWeight: string; targetWeight: string }>>({});
+  const [anthropometryLoading, setAnthropometryLoading] = useState<Record<number, boolean>>({});
+  const [anthropometrySaving, setAnthropometrySaving] = useState<Record<number, boolean>>({});
+
   const makeBlankPaymentForm = (): PaymentFormState => ({
     paymentDate: todayStr(),
     expiresDate: addDaysStr(todayStr(), 30),
@@ -782,6 +787,58 @@ function UsersPanel({
     setPaymentHistoryOpen((prev) => ({ ...prev, [userId]: opening }));
     if (opening && !paymentHistory[userId]) {
       loadPaymentHistory(userId);
+    }
+  };
+
+  const toggleAnthropometry = async (userId: number) => {
+    const opening = !anthropometryOpen[userId];
+    setAnthropometryOpen((prev) => ({ ...prev, [userId]: opening }));
+    if (opening && !anthropometryData[userId]) {
+      setAnthropometryLoading((prev) => ({ ...prev, [userId]: true }));
+      try {
+        const { anthropometry } = await adminApi.getAnthropometry(userId);
+        setAnthropometryData((prev) => ({
+          ...prev,
+          [userId]: {
+            initialWeight: anthropometry?.initialWeight?.toString() ?? "",
+            currentWeight: anthropometry?.currentWeight?.toString() ?? "",
+            targetWeight: anthropometry?.targetWeight?.toString() ?? "",
+          },
+        }));
+      } catch {
+        setAnthropometryData((prev) => ({
+          ...prev,
+          [userId]: { initialWeight: "", currentWeight: "", targetWeight: "" },
+        }));
+      } finally {
+        setAnthropometryLoading((prev) => ({ ...prev, [userId]: false }));
+      }
+    }
+  };
+
+  const setAnthropometryField = (userId: number, field: string, value: string) => {
+    setAnthropometryData((prev) => ({
+      ...prev,
+      [userId]: { ...(prev[userId] || { initialWeight: "", currentWeight: "", targetWeight: "" }), [field]: value },
+    }));
+  };
+
+  const saveAnthropometry = async (userId: number) => {
+    const d = anthropometryData[userId];
+    if (!d) return;
+    setAnthropometrySaving((prev) => ({ ...prev, [userId]: true }));
+    try {
+      const payload: { initialWeight?: number | null; currentWeight?: number | null; targetWeight?: number | null } = {
+        initialWeight: d.initialWeight ? parseFloat(d.initialWeight) : null,
+        currentWeight: d.currentWeight ? parseFloat(d.currentWeight) : null,
+        targetWeight: d.targetWeight ? parseFloat(d.targetWeight) : null,
+      };
+      await adminApi.updateAnthropometry(userId, payload);
+      Alert.alert("Guardado", "Datos antropométricos actualizados");
+    } catch {
+      Alert.alert("Error", "No se pudieron guardar los datos");
+    } finally {
+      setAnthropometrySaving((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -1324,6 +1381,78 @@ function UsersPanel({
                           </Pressable>
                         )}
                       </>
+                    )}
+                  </View>
+                )}
+
+                <Pressable
+                  style={styles.paymentHistoryToggle}
+                  onPress={() => toggleAnthropometry(u.id)}
+                >
+                  <View style={styles.paymentHistoryToggleLeft}>
+                    <MaterialCommunityIcons name="scale-bathroom" size={14} color="#D4AF37" />
+                    <Text style={styles.paymentHistoryToggleText}>ANTROPOMETRÍA</Text>
+                  </View>
+                  <Ionicons
+                    name={anthropometryOpen[u.id] ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#555"
+                  />
+                </Pressable>
+
+                {anthropometryOpen[u.id] && (
+                  <View style={styles.paymentHistoryBox}>
+                    {anthropometryLoading[u.id] ? (
+                      <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 8 }} />
+                    ) : (
+                      <View style={{ gap: 10 }}>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.paymentFormLabel}>Peso inicial (kg)</Text>
+                            <TextInput
+                              style={styles.paymentFormInput}
+                              value={anthropometryData[u.id]?.initialWeight ?? ""}
+                              onChangeText={(v) => setAnthropometryField(u.id, "initialWeight", v)}
+                              placeholder="Ej: 80"
+                              placeholderTextColor="#444"
+                              keyboardType="decimal-pad"
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.paymentFormLabel}>Peso actual (kg)</Text>
+                            <TextInput
+                              style={styles.paymentFormInput}
+                              value={anthropometryData[u.id]?.currentWeight ?? ""}
+                              onChangeText={(v) => setAnthropometryField(u.id, "currentWeight", v)}
+                              placeholder="Ej: 75"
+                              placeholderTextColor="#444"
+                              keyboardType="decimal-pad"
+                            />
+                          </View>
+                        </View>
+                        <View>
+                          <Text style={styles.paymentFormLabel}>Peso meta (kg)</Text>
+                          <TextInput
+                            style={styles.paymentFormInput}
+                            value={anthropometryData[u.id]?.targetWeight ?? ""}
+                            onChangeText={(v) => setAnthropometryField(u.id, "targetWeight", v)}
+                            placeholder="Ej: 70"
+                            placeholderTextColor="#444"
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                        <Pressable
+                          style={[styles.paymentAddBtn, anthropometrySaving[u.id] && { opacity: 0.6 }]}
+                          onPress={() => saveAnthropometry(u.id)}
+                          disabled={anthropometrySaving[u.id]}
+                        >
+                          {anthropometrySaving[u.id] ? (
+                            <ActivityIndicator size="small" color="#000" />
+                          ) : (
+                            <Text style={styles.paymentAddBtnText}>Guardar</Text>
+                          )}
+                        </Pressable>
+                      </View>
                     )}
                   </View>
                 )}

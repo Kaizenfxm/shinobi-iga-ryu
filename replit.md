@@ -141,6 +141,14 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Web: plain iframe with embed URL + modestbranding; Native: react-native-youtube-iframe with WebView
 - Platform-specific files: YouTubePlayer.web.tsx (web iframe) and YouTubePlayer.tsx (native react-native-youtube-iframe)
 
+### Features - Anthropometric Evaluation (Task #16)
+- `anthropometric_evaluations` table: `userId` (unique FK cascade), `initialWeight`, `currentWeight`, `targetWeight` (all `real`, nullable), `createdAt`, `updatedAt`
+- Profile endpoint `GET /api/profile/me` includes `weightData` (initial/current/target weights)
+- Student self-update: `PATCH /api/profile/me/weight` sets currentWeight (auto-creates row with initialWeight=currentWeight if first entry)
+- Admin endpoints: `GET /api/admin/users/:id/anthropometry`, `PUT /api/admin/users/:id/anthropometry` (set all 3 weights)
+- Profile screen: weight progress display (initial/current/target with progress bar) + "Actualizar Peso" collapsible edit
+- Admin panel: "Antropometría" collapsible section per user card with 3 weight fields + save button
+
 ## Structure
 
 ```text
@@ -199,7 +207,7 @@ Express 5 API server with session-based auth.
 
 Database layer using Drizzle ORM with PostgreSQL.
 
-- `src/schema/users.ts` — users (with isFighter), user_roles, profesor_students, fights tables with enums
+- `src/schema/users.ts` — users (with isFighter), user_roles, profesor_students, fights, anthropometric_evaluations tables with enums
 - `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements, belt_exams, student_belt_unlocks tables
 - `src/schema/training.ts` — training_systems, exercise_categories, knowledge_categories, exercises, knowledge_items tables
 - `src/seed-belts.ts` — Deterministic seed for belt catalog, requirements, and exams

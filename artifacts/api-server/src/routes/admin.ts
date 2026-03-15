@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable } from "@workspace/db";
 import { eq, and, or, desc, isNotNull, isNull, lte, notInArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -763,6 +763,113 @@ adminRouter.delete("/admin/payments/:id", requireAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("Admin delete payment error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.get("/admin/users/:id/anthropometry", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const [row] = await db
+      .select({
+        initialWeight: anthropometricEvaluationsTable.initialWeight,
+        currentWeight: anthropometricEvaluationsTable.currentWeight,
+        targetWeight: anthropometricEvaluationsTable.targetWeight,
+      })
+      .from(anthropometricEvaluationsTable)
+      .where(eq(anthropometricEvaluationsTable.userId, userId))
+      .limit(1);
+
+    res.json({ anthropometry: row || null });
+  } catch (error) {
+    console.error("Admin get anthropometry error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/users/:id/anthropometry", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const [userExists] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+
+    if (!userExists) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    const { initialWeight, currentWeight, targetWeight } = req.body;
+
+    const parseWeight = (v: unknown): number | null | "invalid" => {
+      if (v === undefined || v === null || v === "") return null;
+      const n = parseFloat(String(v));
+      if (isNaN(n) || n <= 0 || n > 500) return "invalid";
+      return n;
+    };
+
+    const iw = parseWeight(initialWeight);
+    const cw = parseWeight(currentWeight);
+    const tw = parseWeight(targetWeight);
+
+    if (iw === "invalid" || cw === "invalid" || tw === "invalid") {
+      res.status(400).json({ error: "Peso inválido. Debe ser un número entre 0 y 500 kg." });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: anthropometricEvaluationsTable.id })
+      .from(anthropometricEvaluationsTable)
+      .where(eq(anthropometricEvaluationsTable.userId, userId))
+      .limit(1);
+
+    let result;
+    if (existing) {
+      [result] = await db
+        .update(anthropometricEvaluationsTable)
+        .set({
+          initialWeight: iw,
+          currentWeight: cw,
+          targetWeight: tw,
+          updatedAt: new Date(),
+        })
+        .where(eq(anthropometricEvaluationsTable.userId, userId))
+        .returning({
+          initialWeight: anthropometricEvaluationsTable.initialWeight,
+          currentWeight: anthropometricEvaluationsTable.currentWeight,
+          targetWeight: anthropometricEvaluationsTable.targetWeight,
+        });
+    } else {
+      [result] = await db
+        .insert(anthropometricEvaluationsTable)
+        .values({
+          userId,
+          initialWeight: iw,
+          currentWeight: cw,
+          targetWeight: tw,
+        })
+        .returning({
+          initialWeight: anthropometricEvaluationsTable.initialWeight,
+          currentWeight: anthropometricEvaluationsTable.currentWeight,
+          targetWeight: anthropometricEvaluationsTable.targetWeight,
+        });
+    }
+
+    res.json({ success: true, anthropometry: result });
+  } catch (error) {
+    console.error("Admin update anthropometry error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
