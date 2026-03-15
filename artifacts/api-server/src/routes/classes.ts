@@ -235,7 +235,11 @@ classesRouter.delete("/classes/:id", requireAuth, async (req, res) => {
       return;
     }
 
-    await db.delete(classesTable).where(eq(classesTable.id, classId));
+    await db.transaction(async (tx) => {
+      await tx.delete(classAttendancesTable).where(eq(classAttendancesTable.classId, classId));
+      await tx.delete(classTrainingSystemsTable).where(eq(classTrainingSystemsTable.classId, classId));
+      await tx.delete(classesTable).where(eq(classesTable.id, classId));
+    });
     res.json({ success: true });
   } catch (error) {
     console.error("Delete class error:", error);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Pressable, StyleSheet, Platform, ScrollView, RefreshControl, ActivityIndicator, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform, ScrollView, RefreshControl, ActivityIndicator, Image, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BeltsScreen from "./belts";
@@ -88,6 +88,22 @@ function ClasesTab() {
 }
 
 function AttendanceCard({ att }: { att: MyAttendanceItem }) {
+  const [localRating, setLocalRating] = useState<number | null>(att.rating);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleRate = async (r: number) => {
+    if (submitting || localRating) return;
+    setSubmitting(true);
+    try {
+      await classesApi.rate(att.classId, r);
+      setLocalRating(r);
+    } catch {
+      Alert.alert("Error", "No se pudo enviar la calificación");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={clStyles.classCard}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -108,27 +124,22 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
           Prof: {att.createdByName}
         </Text>
       )}
-      {att.rating && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
-          {[1, 2, 3, 4, 5].map((s) => (
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
+        {[1, 2, 3, 4, 5].map((s) => (
+          <Pressable key={s} onPress={() => handleRate(s)} disabled={!!localRating || submitting}>
             <MaterialCommunityIcons
-              key={s}
-              name={s <= (att.rating ?? 0) ? "star" : "star-outline"}
-              size={10}
-              color={s <= (att.rating ?? 0) ? "#D4AF37" : "#333"}
+              name={s <= (localRating ?? 0) ? "star" : "star-outline"}
+              size={localRating ? 10 : 14}
+              color={s <= (localRating ?? 0) ? "#D4AF37" : localRating ? "#333" : "#555"}
             />
-          ))}
-        </View>
-      )}
-      {att.systemNames.length > 0 && (
-        <View style={{ flexDirection: "row", gap: 4, marginTop: 3 }}>
-          {att.systemNames.map((name, idx) => (
-            <View key={idx} style={{ backgroundColor: "#1a1a1a", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
-              <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>{name}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+          </Pressable>
+        ))}
+        {!localRating && (
+          <Text style={{ color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 8, marginLeft: 4 }}>
+            {submitting ? "..." : "calificar"}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
