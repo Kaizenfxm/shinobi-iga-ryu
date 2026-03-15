@@ -2037,12 +2037,12 @@ function EntrenamientoPanel() {
         const ex = item as ExerciseData;
         setItemLevel(ex.level || "");
         setItemDuration(ex.durationMinutes ? String(ex.durationMinutes) : "");
-        setItemCategoryId(ex.exerciseCategoryId);
+        setItemCategoryId(ex.categoryId);
       } else {
         const ki = item as KnowledgeItemData;
         setItemLevel("");
         setItemDuration("");
-        setItemCategoryId(ki.knowledgeCategoryId);
+        setItemCategoryId(ki.categoryId);
       }
     } else {
       setEditingItem(null);
@@ -2070,7 +2070,7 @@ function EntrenamientoPanel() {
             orderIndex: parseInt(itemOrder) || 0,
             level: itemLevel || null,
             durationMinutes: itemDuration ? parseInt(itemDuration) : null,
-            exerciseCategoryId: itemCategoryId,
+            categoryId: itemCategoryId,
           });
         } else {
           await trainingApi.createExercise({
@@ -2081,7 +2081,7 @@ function EntrenamientoPanel() {
             orderIndex: parseInt(itemOrder) || 0,
             level: itemLevel || undefined,
             durationMinutes: itemDuration ? parseInt(itemDuration) : undefined,
-            exerciseCategoryId: itemCategoryId || undefined,
+            categoryId: itemCategoryId || undefined,
           });
         }
       } else {
@@ -2091,7 +2091,7 @@ function EntrenamientoPanel() {
             content: itemDesc.trim() || null,
             videoUrl: itemVideoUrl.trim() || null,
             orderIndex: parseInt(itemOrder) || 0,
-            knowledgeCategoryId: itemCategoryId,
+            categoryId: itemCategoryId,
           });
         } else {
           await trainingApi.createKnowledge({
@@ -2100,7 +2100,7 @@ function EntrenamientoPanel() {
             content: itemDesc.trim() || undefined,
             videoUrl: itemVideoUrl.trim() || undefined,
             orderIndex: parseInt(itemOrder) || 0,
-            knowledgeCategoryId: itemCategoryId || undefined,
+            categoryId: itemCategoryId || undefined,
           });
         }
       }
@@ -2232,8 +2232,8 @@ function EntrenamientoPanel() {
             ) : (
               currentItems.map((item) => {
                 const catId = contentType === "exercises"
-                  ? (item as ExerciseData).exerciseCategoryId
-                  : (item as KnowledgeItemData).knowledgeCategoryId;
+                  ? (item as ExerciseData).categoryId
+                  : (item as KnowledgeItemData).categoryId;
                 const catLabel = currentCategories.find((c) => c.id === catId)?.name;
                 return (
                   <View key={item.id} style={trnStyles.itemRow}>

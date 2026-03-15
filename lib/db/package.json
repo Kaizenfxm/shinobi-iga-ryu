@@ -11,7 +11,8 @@
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "seed-belts": "tsx src/run-seed-belts.ts",
-    "reset-belts": "tsx src/reset-belt-catalog.ts"
+    "reset-belts": "tsx src/reset-belt-catalog.ts",
+    "migrate-training-categories": "tsx src/migrations/run-training-categories.ts"
   },
   "dependencies": {
     "drizzle-orm": "catalog:",

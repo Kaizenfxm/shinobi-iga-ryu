@@ -68,7 +68,10 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       .where(and(eq(knowledgeCategoriesTable.trainingSystemId, system.id), eq(knowledgeCategoriesTable.isActive, true)))
       .orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id));
 
-    res.json({ system, exercises, knowledge, exerciseCategories, knowledgeCategories });
+    const exercisesWithCategoryId = exercises.map((e) => ({ ...e, categoryId: e.exerciseCategoryId }));
+    const knowledgeWithCategoryId = knowledge.map((k) => ({ ...k, categoryId: k.knowledgeCategoryId }));
+
+    res.json({ system, exercises: exercisesWithCategoryId, knowledge: knowledgeWithCategoryId, exerciseCategories, knowledgeCategories });
   } catch (error) {
     console.error("Get training system detail error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -252,7 +255,8 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
       durationMinutes,
       level,
       orderIndex,
-      exerciseCategoryId,
+      categoryId: rawCategoryId,
+      exerciseCategoryId: rawExCategoryId,
     } = req.body as {
       trainingSystemId?: number;
       title?: string;
@@ -262,16 +266,18 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
       durationMinutes?: number;
       level?: string;
       orderIndex?: number;
+      categoryId?: number;
       exerciseCategoryId?: number;
     };
+    const categoryId = rawCategoryId ?? rawExCategoryId;
 
     if (!trainingSystemId || !title?.trim()) {
       res.status(400).json({ error: "Sistema y título son requeridos" });
       return;
     }
 
-    if (exerciseCategoryId) {
-      const valid = await validateExerciseCategoryBelongsToSystem(exerciseCategoryId, trainingSystemId);
+    if (categoryId) {
+      const valid = await validateExerciseCategoryBelongsToSystem(categoryId, trainingSystemId);
       if (!valid) {
         res.status(400).json({ error: "La categoría no pertenece a este sistema" });
         return;
@@ -290,11 +296,11 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
         level: level?.trim() || null,
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
-        exerciseCategoryId: exerciseCategoryId ?? null,
+        exerciseCategoryId: categoryId ?? null,
       })
       .returning();
 
-    res.json({ exercise });
+    res.json({ exercise: { ...exercise, categoryId: exercise.exerciseCategoryId } });
   } catch (error) {
     console.error("Create exercise error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -309,12 +315,13 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
       return;
     }
 
-    const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive, exerciseCategoryId } = req.body;
+    const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive, categoryId: rawCatId, exerciseCategoryId: rawExCatId } = req.body;
+    const resolvedCategoryId = rawCatId !== undefined ? rawCatId : rawExCatId;
 
-    if (exerciseCategoryId) {
+    if (resolvedCategoryId) {
       const [existing] = await db.select({ trainingSystemId: exercisesTable.trainingSystemId }).from(exercisesTable).where(eq(exercisesTable.id, id)).limit(1);
       if (existing) {
-        const valid = await validateExerciseCategoryBelongsToSystem(exerciseCategoryId, existing.trainingSystemId);
+        const valid = await validateExerciseCategoryBelongsToSystem(resolvedCategoryId, existing.trainingSystemId);
         if (!valid) {
           res.status(400).json({ error: "La categoría no pertenece a este sistema" });
           return;
@@ -334,7 +341,7 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
     if (level !== undefined) updates.level = level?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
-    if (exerciseCategoryId !== undefined) updates.exerciseCategoryId = exerciseCategoryId ?? null;
+    if (resolvedCategoryId !== undefined) updates.exerciseCategoryId = resolvedCategoryId ?? null;
 
     const [updated] = await db
       .update(exercisesTable)
@@ -347,7 +354,7 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
       return;
     }
 
-    res.json({ exercise: updated });
+    res.json({ exercise: { ...updated, categoryId: updated.exerciseCategoryId } });
   } catch (error) {
     console.error("Update exercise error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -379,7 +386,8 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
       videoUrl,
       imageUrl,
       orderIndex,
-      knowledgeCategoryId,
+      categoryId: rawCategoryId,
+      knowledgeCategoryId: rawKnCategoryId,
     } = req.body as {
       trainingSystemId?: number;
       title?: string;
@@ -387,16 +395,18 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
       videoUrl?: string;
       imageUrl?: string;
       orderIndex?: number;
+      categoryId?: number;
       knowledgeCategoryId?: number;
     };
+    const categoryId = rawCategoryId ?? rawKnCategoryId;
 
     if (!trainingSystemId || !title?.trim()) {
       res.status(400).json({ error: "Sistema y título son requeridos" });
       return;
     }
 
-    if (knowledgeCategoryId) {
-      const valid = await validateKnowledgeCategoryBelongsToSystem(knowledgeCategoryId, trainingSystemId);
+    if (categoryId) {
+      const valid = await validateKnowledgeCategoryBelongsToSystem(categoryId, trainingSystemId);
       if (!valid) {
         res.status(400).json({ error: "La categoría no pertenece a este sistema" });
         return;
@@ -413,11 +423,11 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
         imageUrl: imageUrl?.trim() || null,
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
-        knowledgeCategoryId: knowledgeCategoryId ?? null,
+        knowledgeCategoryId: categoryId ?? null,
       })
       .returning();
 
-    res.json({ item });
+    res.json({ item: { ...item, categoryId: item.knowledgeCategoryId } });
   } catch (error) {
     console.error("Create knowledge item error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -432,12 +442,13 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
       return;
     }
 
-    const { title, content, videoUrl, imageUrl, orderIndex, isActive, knowledgeCategoryId } = req.body;
+    const { title, content, videoUrl, imageUrl, orderIndex, isActive, categoryId: rawCatId, knowledgeCategoryId: rawKnCatId } = req.body;
+    const resolvedCategoryId = rawCatId !== undefined ? rawCatId : rawKnCatId;
 
-    if (knowledgeCategoryId) {
+    if (resolvedCategoryId) {
       const [existing] = await db.select({ trainingSystemId: knowledgeItemsTable.trainingSystemId }).from(knowledgeItemsTable).where(eq(knowledgeItemsTable.id, id)).limit(1);
       if (existing) {
-        const valid = await validateKnowledgeCategoryBelongsToSystem(knowledgeCategoryId, existing.trainingSystemId);
+        const valid = await validateKnowledgeCategoryBelongsToSystem(resolvedCategoryId, existing.trainingSystemId);
         if (!valid) {
           res.status(400).json({ error: "La categoría no pertenece a este sistema" });
           return;
@@ -455,7 +466,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
     if (imageUrl !== undefined) updates.imageUrl = imageUrl?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
-    if (knowledgeCategoryId !== undefined) updates.knowledgeCategoryId = knowledgeCategoryId ?? null;
+    if (resolvedCategoryId !== undefined) updates.knowledgeCategoryId = resolvedCategoryId ?? null;
 
     const [updated] = await db
       .update(knowledgeItemsTable)
@@ -468,7 +479,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
       return;
     }
 
-    res.json({ item: updated });
+    res.json({ item: { ...updated, categoryId: updated.knowledgeCategoryId } });
   } catch (error) {
     console.error("Update knowledge item error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
