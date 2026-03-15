@@ -33,8 +33,10 @@ import SplashAnimation from "@/components/SplashAnimation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationBell from "@/components/NotificationBell";
+import { setupNotificationHandler } from "@/lib/notifications-setup";
 
 SplashScreen.preventAutoHideAsync();
+setupNotificationHandler();
 
 const queryClient = new QueryClient();
 
