@@ -1,8 +1,10 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { db, classesTable, classTrainingSystemsTable, classAttendancesTable, trainingSystemsTable, usersTable, userRolesTable } from "@workspace/db";
-import { eq, and, or, desc, sql, inArray, gte } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, gte, aliasedTable } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+
+const professorUsers = aliasedTable(usersTable, "professor_users");
 
 const classesRouter = Router();
 
@@ -48,7 +50,7 @@ classesRouter.post("/classes", requireAuth, async (req, res) => {
       return;
     }
 
-    const { trainingSystemIds, notes } = req.body;
+    const { trainingSystemIds, notes, professorId } = req.body;
 
     if (!Array.isArray(trainingSystemIds) || trainingSystemIds.length === 0) {
       res.status(400).json({ error: "Se requiere al menos un sistema de entrenamiento" });
@@ -65,6 +67,8 @@ classesRouter.post("/classes", requireAuth, async (req, res) => {
       return;
     }
 
+    const resolvedProfessorId = typeof professorId === "number" ? professorId : userId;
+
     const qrToken = generateQrToken();
     const expiresAt = new Date(Date.now() + QR_VALIDITY_HOURS * 60 * 60 * 1000);
 
@@ -73,6 +77,7 @@ classesRouter.post("/classes", requireAuth, async (req, res) => {
         .insert(classesTable)
         .values({
           createdByUserId: userId,
+          professorUserId: resolvedProfessorId,
           notes: notes?.trim() || null,
           qrToken,
           expiresAt,
@@ -133,14 +138,15 @@ classesRouter.get("/classes", requireAuth, async (req, res) => {
       .select({
         id: classesTable.id,
         createdByUserId: classesTable.createdByUserId,
+        professorUserId: classesTable.professorUserId,
         notes: classesTable.notes,
         qrToken: classesTable.qrToken,
         expiresAt: classesTable.expiresAt,
         createdAt: classesTable.createdAt,
-        createdByName: usersTable.displayName,
+        professorName: professorUsers.displayName,
       })
       .from(classesTable)
-      .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
+      .leftJoin(professorUsers, eq(classesTable.professorUserId, professorUsers.id))
       .orderBy(desc(classesTable.createdAt));
 
     const rows = userIsAdmin
@@ -186,7 +192,8 @@ classesRouter.get("/classes", requireAuth, async (req, res) => {
     const classes = rows.map((r) => ({
       id: r.id,
       createdByUserId: r.createdByUserId,
-      createdByName: r.createdByName || null,
+      professorUserId: r.professorUserId,
+      professorName: r.professorName || null,
       notes: r.notes,
       qrToken: isPrivileged ? r.qrToken : null,
       expiresAt: r.expiresAt.toISOString(),
@@ -258,10 +265,10 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
         notes: classesTable.notes,
         expiresAt: classesTable.expiresAt,
         createdByUserId: classesTable.createdByUserId,
-        createdByName: usersTable.displayName,
+        professorName: professorUsers.displayName,
       })
       .from(classesTable)
-      .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
+      .leftJoin(professorUsers, eq(classesTable.professorUserId, professorUsers.id))
       .where(eq(classesTable.qrToken, qrToken))
       .limit(1);
 
@@ -310,7 +317,7 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
       classId: classRow.id,
       className: systemNames || "Clase",
       attendedAt: attendance.attendedAt.toISOString(),
-      createdByName: classRow.createdByName || null,
+      createdByName: classRow.professorName || null,
     });
   } catch (error) {
     console.error("Scan/checkin error:", error);
@@ -395,11 +402,11 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         classId: classAttendancesTable.classId,
         attendedAt: classAttendancesTable.attendedAt,
         rating: classAttendancesTable.rating,
-        createdByName: usersTable.displayName,
+        professorName: professorUsers.displayName,
       })
       .from(classAttendancesTable)
       .innerJoin(classesTable, eq(classAttendancesTable.classId, classesTable.id))
-      .leftJoin(usersTable, eq(classesTable.createdByUserId, usersTable.id))
+      .leftJoin(professorUsers, eq(classesTable.professorUserId, professorUsers.id))
       .where(eq(classAttendancesTable.userId, userId))
       .orderBy(desc(classAttendancesTable.attendedAt));
 
@@ -433,7 +440,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         attendedAt: a.attendedAt.toISOString(),
         rating: a.rating,
         systemNames: systemsByClass.get(a.classId) || [],
-        createdByName: a.createdByName || null,
+        createdByName: a.professorName || null,
       })),
     });
   } catch (error) {
@@ -479,6 +486,39 @@ classesRouter.get("/classes/:id/attendees", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Get attendees error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+classesRouter.get("/classes/professors", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const privileged = await isAdminOrProfesor(userId);
+    if (!privileged) {
+      res.status(403).json({ error: "Acceso no autorizado" });
+      return;
+    }
+
+    const professors = await db
+      .select({
+        id: usersTable.id,
+        displayName: usersTable.displayName,
+        email: usersTable.email,
+      })
+      .from(usersTable)
+      .innerJoin(userRolesTable, and(
+        eq(userRolesTable.userId, usersTable.id),
+        or(eq(userRolesTable.role, "profesor"), eq(userRolesTable.role, "admin"))
+      ))
+      .orderBy(usersTable.displayName);
+
+    const uniqueProfessors = Array.from(
+      new Map(professors.map((p) => [p.id, p])).values()
+    );
+
+    res.json({ professors: uniqueProfessors });
+  } catch (error) {
+    console.error("Get professors error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

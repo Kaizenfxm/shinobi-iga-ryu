@@ -5,6 +5,7 @@ import { trainingSystemsTable } from "./training";
 export const classesTable = pgTable("classes", {
   id: serial("id").primaryKey(),
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id).notNull(),
+  professorUserId: integer("professor_user_id").references(() => usersTable.id),
   notes: text("notes"),
   qrToken: varchar("qr_token", { length: 100 }).notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),

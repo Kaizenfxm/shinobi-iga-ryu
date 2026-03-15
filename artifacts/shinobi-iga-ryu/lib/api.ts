@@ -712,7 +712,8 @@ export interface ClassTrainingSystem {
 export interface ClassData {
   id: number;
   createdByUserId: number;
-  createdByName: string | null;
+  professorUserId: number | null;
+  professorName: string | null;
   notes: string | null;
   qrToken: string | null;
   expiresAt: string;
@@ -750,6 +751,7 @@ export const classesApi = {
   create: (data: {
     trainingSystemIds: number[];
     notes?: string;
+    professorId?: number;
   }) => apiFetch<{ class: ClassData }>("/classes", { method: "POST", body: data }),
 
   getAll: () =>
@@ -757,6 +759,9 @@ export const classesApi = {
 
   delete: (id: number) =>
     apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "DELETE" }),
+
+  getProfessors: () =>
+    apiFetch<{ professors: { id: number; displayName: string; email: string }[] }>("/classes/professors"),
 
   scan: (qrToken: string) =>
     apiFetch<{ success: boolean; classId: number; className: string; attendedAt: string; createdByName: string | null }>("/classes/scan", {
