@@ -3096,6 +3096,10 @@ const trnStyles = StyleSheet.create({
 function SettingsPanel() {
   const [whatsapp, setWhatsapp] = useState("");
   const [paymentLink, setPaymentLink] = useState("");
+  const [bogotaVideo, setBogotaVideo] = useState("");
+  const [chiaVideo, setChiaVideo] = useState("");
+  const [bogotaAddress, setBogotaAddress] = useState("");
+  const [chiaAddress, setChiaAddress] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -3103,6 +3107,10 @@ function SettingsPanel() {
     adminApi.getSettings().then(({ settings }) => {
       setWhatsapp(settings["whatsapp_admin_number"] || "");
       setPaymentLink(settings["payment_link_url"] || "");
+      setBogotaVideo(settings["bogota_video_url"] || "");
+      setChiaVideo(settings["chia_video_url"] || "");
+      setBogotaAddress(settings["bogota_address"] || "");
+      setChiaAddress(settings["chia_address"] || "");
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -3112,6 +3120,10 @@ function SettingsPanel() {
       await adminApi.updateSettings({
         whatsapp_admin_number: whatsapp.trim(),
         payment_link_url: paymentLink.trim(),
+        bogota_video_url: bogotaVideo.trim(),
+        chia_video_url: chiaVideo.trim(),
+        bogota_address: bogotaAddress.trim(),
+        chia_address: chiaAddress.trim(),
       });
       Alert.alert("Guardado", "Configuración actualizada");
     } catch {
@@ -3150,6 +3162,52 @@ function SettingsPanel() {
         placeholderTextColor="#444"
         keyboardType="url"
         autoCapitalize="none"
+      />
+
+      <Text style={settingsPanelStyles.sectionDivider}>SEDES — CONÓCENOS</Text>
+
+      <Text style={settingsPanelStyles.label}>VIDEO SEDE BOGOTÁ</Text>
+      <Text style={settingsPanelStyles.hint}>URL de YouTube (ej: https://youtu.be/...)</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={bogotaVideo}
+        onChangeText={setBogotaVideo}
+        placeholder="https://youtu.be/..."
+        placeholderTextColor="#444"
+        keyboardType="url"
+        autoCapitalize="none"
+      />
+
+      <Text style={settingsPanelStyles.label}>DIRECCIÓN SEDE BOGOTÁ</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={bogotaAddress}
+        onChangeText={setBogotaAddress}
+        placeholder="Calle 123 # 45-67, Bogotá"
+        placeholderTextColor="#444"
+        autoCapitalize="words"
+      />
+
+      <Text style={settingsPanelStyles.label}>VIDEO SEDE CHÍA</Text>
+      <Text style={settingsPanelStyles.hint}>URL de YouTube (ej: https://youtu.be/...)</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={chiaVideo}
+        onChangeText={setChiaVideo}
+        placeholder="https://youtu.be/..."
+        placeholderTextColor="#444"
+        keyboardType="url"
+        autoCapitalize="none"
+      />
+
+      <Text style={settingsPanelStyles.label}>DIRECCIÓN SEDE CHÍA</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={chiaAddress}
+        onChangeText={setChiaAddress}
+        placeholder="Calle 123 # 45-67, Chía"
+        placeholderTextColor="#444"
+        autoCapitalize="words"
       />
 
       <Pressable
@@ -3199,6 +3257,17 @@ const settingsPanelStyles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  sectionDivider: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    letterSpacing: 2,
+    marginTop: 28,
+    marginBottom: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#1a1a1a",
+    paddingTop: 20,
   },
   saveBtn: {
     backgroundColor: "#D4AF37",

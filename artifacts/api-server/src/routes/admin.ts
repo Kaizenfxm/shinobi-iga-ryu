@@ -499,7 +499,7 @@ adminRouter.put("/admin/settings", requireAdmin, async (req, res) => {
       return;
     }
 
-    const allowedKeys = ["whatsapp_admin_number", "payment_link_url"];
+    const allowedKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address"];
     await db.transaction(async (tx) => {
       for (const [key, value] of Object.entries(settings)) {
         if (!allowedKeys.includes(key)) continue;
