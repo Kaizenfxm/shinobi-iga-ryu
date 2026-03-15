@@ -273,7 +273,7 @@ const fabStyles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#D4AF37",
+    backgroundColor: "rgba(212, 175, 55, 0.7)",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
