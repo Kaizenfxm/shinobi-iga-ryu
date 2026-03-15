@@ -3991,10 +3991,7 @@ export default function AdminScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
         <Image source={require("@/assets/images/logo.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
-        <View>
-          <Text style={styles.headerTitle}>PANEL DE ADMIN</Text>
-          <Text style={{ color: "#D4AF37", fontSize: 10, fontFamily: "NotoSansJP_400Regular", letterSpacing: 1 }}>Shinobi Iga Ryu</Text>
-        </View>
+        <Text style={styles.headerTitle}>PANEL DE ADMIN</Text>
       </View>
 
       <View style={styles.tabBar}>

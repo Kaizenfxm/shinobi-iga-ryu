@@ -70,7 +70,7 @@ const MARTIAL_ARTS: MartialArt[] = [
 export default function MartialArtsScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
 
@@ -116,9 +116,26 @@ export default function MartialArtsScreen() {
                 resizeMode="contain"
               />
             </Pressable>
-            <View>
-              <Text style={styles.headerSubtitle}>武道 · Artes Marciales</Text>
-            </View>
+            {user && (() => {
+              if (!user.membershipExpiresAt || user.membershipStatus === "inactivo") {
+                return (
+                  <Text style={[styles.headerSubtitle, { color: "#555" }]}>Sin membresía activa</Text>
+                );
+              }
+              const daysLeft = Math.ceil(
+                (new Date(user.membershipExpiresAt).getTime() - Date.now()) / 86400000
+              );
+              if (daysLeft <= 0) {
+                return (
+                  <Text style={[styles.headerSubtitle, { color: "#c0392b" }]}>Membresía expirada</Text>
+                );
+              }
+              return (
+                <Text style={[styles.headerSubtitle, { color: daysLeft <= 7 ? "#e67e22" : "#D4AF37" }]}>
+                  {daysLeft} {daysLeft === 1 ? "día" : "días"} de suscripción
+                </Text>
+              );
+            })()}
           </View>
         </View>
 
