@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -58,7 +58,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "configuracion";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "clases" | "configuracion";
 
 const TRAINING_SYSTEM_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
@@ -3426,6 +3426,518 @@ const settingsPanelStyles = StyleSheet.create({
   },
 });
 
+const CLASS_STATUS_LABELS: Record<string, string> = {
+  programada: "Programada",
+  en_curso: "En Curso",
+  finalizada: "Finalizada",
+  cancelada: "Cancelada",
+};
+
+const CLASS_STATUS_COLORS: Record<string, string> = {
+  programada: "#D4AF37",
+  en_curso: "#1a8f1a",
+  finalizada: "#666",
+  cancelada: "#8f1a1a",
+};
+
+function ClassesPanel({ users }: { users: UserData[] }) {
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [expandedClass, setExpandedClass] = useState<number | null>(null);
+  const [attendees, setAttendees] = useState<ClassAttendee[]>([]);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
+  const [qrModalClass, setQrModalClass] = useState<ClassData | null>(null);
+  const [sedeFilter, setSedeFilter] = useState<string>("");
+
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    sede: "bogota",
+    classDate: "",
+    startTime: "",
+    endTime: "",
+    profesorId: "" as string,
+    maxCapacity: "",
+  });
+
+  const profesores = users.filter((u) => u.roles?.includes("profesor") || u.roles?.includes("admin"));
+
+  const fetchClasses = useCallback(async () => {
+    try {
+      const res = await classesApi.getAll(sedeFilter || undefined);
+      setClasses(res.classes);
+    } catch {
+      Alert.alert("Error", "No se pudieron cargar las clases");
+    } finally {
+      setLoading(false);
+    }
+  }, [sedeFilter]);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  const handleCreate = async () => {
+    if (!form.title.trim() || !form.classDate || !form.startTime) {
+      Alert.alert("Error", "Título, fecha y hora de inicio son obligatorios");
+      return;
+    }
+    try {
+      await classesApi.adminCreate({
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        sede: form.sede,
+        classDate: form.classDate,
+        startTime: form.startTime,
+        endTime: form.endTime || undefined,
+        profesorId: form.profesorId ? parseInt(form.profesorId, 10) : undefined,
+        maxCapacity: form.maxCapacity ? parseInt(form.maxCapacity, 10) : undefined,
+      });
+      setShowCreate(false);
+      setForm({ title: "", description: "", sede: "bogota", classDate: "", startTime: "", endTime: "", profesorId: "", maxCapacity: "" });
+      fetchClasses();
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo crear la clase");
+    }
+  };
+
+  const handleDelete = (classId: number) => {
+    Alert.alert("Eliminar clase", "¿Estás seguro?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await classesApi.adminDelete(classId);
+            fetchClasses();
+          } catch {
+            Alert.alert("Error", "No se pudo eliminar");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleStatusChange = async (classId: number, status: string) => {
+    try {
+      await classesApi.adminUpdate(classId, { status });
+      fetchClasses();
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar el estado");
+    }
+  };
+
+  const loadAttendees = async (classId: number) => {
+    setLoadingAttendees(true);
+    try {
+      const res = await classesApi.getAttendees(classId);
+      setAttendees(res.attendees);
+    } catch {
+      setAttendees([]);
+    } finally {
+      setLoadingAttendees(false);
+    }
+  };
+
+  const toggleExpand = (classId: number) => {
+    if (expandedClass === classId) {
+      setExpandedClass(null);
+      setAttendees([]);
+    } else {
+      setExpandedClass(classId);
+      loadAttendees(classId);
+    }
+  };
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  if (loading) {
+    return (
+      <View style={{ alignItems: "center", paddingVertical: 40 }}>
+        <ActivityIndicator color="#D4AF37" />
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1.5 }}>
+          CLASES ({classes.length})
+        </Text>
+        <Pressable
+          style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingHorizontal: 10, paddingVertical: 6 }}
+          onPress={() => setShowCreate(!showCreate)}
+        >
+          <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10 }}>
+            {showCreate ? "CANCELAR" : "+ NUEVA"}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+        {[{ value: "", label: "Todas" }, { value: "bogota", label: "Bogotá" }, { value: "chia", label: "Chía" }].map((s) => (
+          <Pressable
+            key={s.value}
+            style={{
+              paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
+              backgroundColor: sedeFilter === s.value ? "#D4AF37" : "#111",
+              borderWidth: 1, borderColor: sedeFilter === s.value ? "#D4AF37" : "#222",
+            }}
+            onPress={() => setSedeFilter(s.value)}
+          >
+            <Text style={{
+              color: sedeFilter === s.value ? "#000" : "#666",
+              fontFamily: "NotoSansJP_500Medium", fontSize: 10,
+            }}>
+              {s.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {showCreate && (
+        <View style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 2, padding: 12, marginBottom: 12, borderTopWidth: 1, borderTopColor: "#D4AF3722" }}>
+          <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
+            NUEVA CLASE
+          </Text>
+
+          <TextInput
+            style={cpStyles.input}
+            placeholder="Título de la clase *"
+            placeholderTextColor="#444"
+            value={form.title}
+            onChangeText={(v) => setForm((p) => ({ ...p, title: v }))}
+          />
+
+          <TextInput
+            style={cpStyles.input}
+            placeholder="Descripción (opcional)"
+            placeholderTextColor="#444"
+            value={form.description}
+            onChangeText={(v) => setForm((p) => ({ ...p, description: v }))}
+            multiline
+          />
+
+          <Text style={cpStyles.label}>SEDE</Text>
+          <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+            {SEDES_OPTIONS.map((s) => (
+              <Pressable
+                key={s.value}
+                style={{
+                  flex: 1, paddingVertical: 6, borderRadius: 4, alignItems: "center",
+                  backgroundColor: form.sede === s.value ? "#D4AF37" : "#111",
+                  borderWidth: 1, borderColor: form.sede === s.value ? "#D4AF37" : "#222",
+                }}
+                onPress={() => setForm((p) => ({ ...p, sede: s.value }))}
+              >
+                <Text style={{ color: form.sede === s.value ? "#000" : "#666", fontFamily: "NotoSansJP_500Medium", fontSize: 11 }}>
+                  {s.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={cpStyles.label}>FECHA *</Text>
+          <TextInput
+            style={cpStyles.input}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#444"
+            value={form.classDate}
+            onChangeText={(v) => setForm((p) => ({ ...p, classDate: v }))}
+          />
+
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={cpStyles.label}>HORA INICIO *</Text>
+              <TextInput
+                style={cpStyles.input}
+                placeholder="HH:MM"
+                placeholderTextColor="#444"
+                value={form.startTime}
+                onChangeText={(v) => setForm((p) => ({ ...p, startTime: v }))}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={cpStyles.label}>HORA FIN</Text>
+              <TextInput
+                style={cpStyles.input}
+                placeholder="HH:MM"
+                placeholderTextColor="#444"
+                value={form.endTime}
+                onChangeText={(v) => setForm((p) => ({ ...p, endTime: v }))}
+              />
+            </View>
+          </View>
+
+          <Text style={cpStyles.label}>PROFESOR</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+            <Pressable
+              style={{
+                paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
+                backgroundColor: !form.profesorId ? "#D4AF37" : "#111",
+                borderWidth: 1, borderColor: !form.profesorId ? "#D4AF37" : "#222",
+              }}
+              onPress={() => setForm((p) => ({ ...p, profesorId: "" }))}
+            >
+              <Text style={{ color: !form.profesorId ? "#000" : "#666", fontFamily: "NotoSansJP_500Medium", fontSize: 10 }}>Sin asignar</Text>
+            </Pressable>
+            {profesores.map((p) => (
+              <Pressable
+                key={p.id}
+                style={{
+                  paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
+                  backgroundColor: form.profesorId === String(p.id) ? "#D4AF37" : "#111",
+                  borderWidth: 1, borderColor: form.profesorId === String(p.id) ? "#D4AF37" : "#222",
+                }}
+                onPress={() => setForm((prev) => ({ ...prev, profesorId: String(p.id) }))}
+              >
+                <Text style={{
+                  color: form.profesorId === String(p.id) ? "#000" : "#666",
+                  fontFamily: "NotoSansJP_500Medium", fontSize: 10,
+                }}>
+                  {p.displayName}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={cpStyles.label}>CAPACIDAD MÁXIMA</Text>
+          <TextInput
+            style={cpStyles.input}
+            placeholder="Sin límite"
+            placeholderTextColor="#444"
+            value={form.maxCapacity}
+            onChangeText={(v) => setForm((p) => ({ ...p, maxCapacity: v }))}
+            keyboardType="number-pad"
+          />
+
+          <Pressable
+            style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingVertical: 10, alignItems: "center", marginTop: 4 }}
+            onPress={handleCreate}
+          >
+            <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 12 }}>CREAR CLASE</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {classes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <MaterialCommunityIcons name="calendar-blank" size={40} color="#333" />
+          <Text style={styles.emptyText}>No hay clases programadas</Text>
+        </View>
+      ) : (
+        classes.map((cls) => {
+          const isExpanded = expandedClass === cls.id;
+          const isPast = cls.classDate < todayStr;
+          return (
+            <View key={cls.id} style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#111", borderRadius: 2, borderTopWidth: 1, borderTopColor: "#D4AF3722", padding: 10, marginBottom: 6 }}>
+              <Pressable onPress={() => toggleExpand(cls.id)} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 13 }}>{cls.title}</Text>
+                    <View style={{ backgroundColor: CLASS_STATUS_COLORS[cls.status] + "30", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
+                      <Text style={{ color: CLASS_STATUS_COLORS[cls.status], fontFamily: "NotoSansJP_500Medium", fontSize: 8, letterSpacing: 0.5 }}>
+                        {CLASS_STATUS_LABELS[cls.status]}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
+                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10 }}>
+                      {cls.classDate} · {cls.startTime?.slice(0, 5)}{cls.endTime ? `-${cls.endTime.slice(0, 5)}` : ""}
+                    </Text>
+                    <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9, textTransform: "uppercase" }}>
+                      {cls.sede === "bogota" ? "Bogotá" : "Chía"}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    {cls.profesorName && (
+                      <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
+                        Prof: {cls.profesorName}
+                      </Text>
+                    )}
+                    <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
+                      {cls.attendanceCount}{cls.maxCapacity ? `/${cls.maxCapacity}` : ""} asistentes
+                    </Text>
+                  </View>
+                </View>
+                <MaterialCommunityIcons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#555" />
+              </Pressable>
+
+              {isExpanded && (
+                <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: "#1a1a1a", paddingTop: 8 }}>
+                  <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+                    <Pressable
+                      style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 }}
+                      onPress={() => setQrModalClass(cls)}
+                    >
+                      <MaterialCommunityIcons name="qrcode" size={14} color="#D4AF37" />
+                      <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>QR</Text>
+                    </Pressable>
+
+                    {cls.status === "programada" && (
+                      <Pressable
+                        style={{ backgroundColor: "#0a1a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
+                        onPress={() => handleStatusChange(cls.id, "en_curso")}
+                      >
+                        <Text style={{ color: "#1a8f1a", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>INICIAR</Text>
+                      </Pressable>
+                    )}
+
+                    {cls.status === "en_curso" && (
+                      <Pressable
+                        style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
+                        onPress={() => handleStatusChange(cls.id, "finalizada")}
+                      >
+                        <Text style={{ color: "#888", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>FINALIZAR</Text>
+                      </Pressable>
+                    )}
+
+                    {(cls.status === "programada" || cls.status === "en_curso") && (
+                      <Pressable
+                        style={{ backgroundColor: "#1a0a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}
+                        onPress={() => handleStatusChange(cls.id, "cancelada")}
+                      >
+                        <Text style={{ color: "#8f1a1a", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>CANCELAR</Text>
+                      </Pressable>
+                    )}
+
+                    <Pressable
+                      style={{ backgroundColor: "#1a0a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, marginLeft: "auto" }}
+                      onPress={() => handleDelete(cls.id)}
+                    >
+                      <Ionicons name="trash" size={12} color="#8f1a1a" />
+                    </Pressable>
+                  </View>
+
+                  {cls.description ? (
+                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginBottom: 6 }}>
+                      {cls.description}
+                    </Text>
+                  ) : null}
+
+                  <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1.5, marginBottom: 4 }}>
+                    ASISTENTES ({cls.attendanceCount})
+                  </Text>
+
+                  {loadingAttendees ? (
+                    <ActivityIndicator color="#D4AF37" size="small" />
+                  ) : attendees.length === 0 ? (
+                    <Text style={{ color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 10 }}>
+                      Sin asistentes aún
+                    </Text>
+                  ) : (
+                    attendees.map((att) => (
+                      <View key={att.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 3 }}>
+                        <View style={{ width: 20, height: 20, borderRadius: 2, backgroundColor: "#111", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                          {att.avatarUrl ? (
+                            <Image source={{ uri: getAvatarServingUrl(att.avatarUrl) || undefined }} style={{ width: 20, height: 20, borderRadius: 2 }} />
+                          ) : (
+                            <Ionicons name="person" size={10} color="#444" />
+                          )}
+                        </View>
+                        <Text style={{ color: "#CCC", fontFamily: "NotoSansJP_400Regular", fontSize: 10, flex: 1 }}>
+                          {att.displayName}
+                        </Text>
+                        {att.rating && (
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                            <MaterialCommunityIcons name="star" size={10} color="#D4AF37" />
+                            <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>{att.rating}</Text>
+                          </View>
+                        )}
+                        <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>
+                          {new Date(att.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              )}
+            </View>
+          );
+        })
+      )}
+
+      <Modal visible={qrModalClass !== null} animationType="fade" transparent onRequestClose={() => setQrModalClass(null)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center" }}>
+          <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 24, alignItems: "center", width: 300 }}>
+            <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 14, marginBottom: 4 }}>
+              {qrModalClass?.title}
+            </Text>
+            <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginBottom: 16 }}>
+              {qrModalClass?.classDate} · {qrModalClass?.startTime?.slice(0, 5)}
+            </Text>
+
+            {qrModalClass && Platform.OS !== "web" ? (
+              <QrCodeDisplay value={qrModalClass.qrToken} size={200} />
+            ) : (
+              <View style={{ width: 200, height: 200, backgroundColor: "#FFF", justifyContent: "center", alignItems: "center", borderRadius: 4 }}>
+                <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10, textAlign: "center", padding: 8 }}>
+                  QR: {qrModalClass?.qrToken?.slice(0, 12)}...
+                </Text>
+              </View>
+            )}
+
+            <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 8, textAlign: "center" }}>
+              Los alumnos escanean este código para registrar asistencia
+            </Text>
+
+            <Pressable
+              style={{ backgroundColor: "#D4AF37", borderRadius: 4, paddingHorizontal: 20, paddingVertical: 8, marginTop: 16 }}
+              onPress={() => setQrModalClass(null)}
+            >
+              <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>CERRAR</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const cpStyles = StyleSheet.create({
+  input: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 4,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  label: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+});
+
+function QrCodeDisplay({ value, size }: { value: string; size: number }) {
+  try {
+    const QRCode = require("react-native-qrcode-svg").default;
+    return (
+      <View style={{ backgroundColor: "#FFF", padding: 12, borderRadius: 4 }}>
+        <QRCode value={value} size={size} backgroundColor="#FFF" color="#000" />
+      </View>
+    );
+  } catch {
+    return (
+      <View style={{ width: size, height: size, backgroundColor: "#FFF", justifyContent: "center", alignItems: "center", borderRadius: 4 }}>
+        <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10, textAlign: "center", padding: 8 }}>
+          QR: {value.slice(0, 12)}...
+        </Text>
+      </View>
+    );
+  }
+}
+
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -3522,6 +4034,16 @@ export default function AdminScreen() {
           />
         </Pressable>
         <Pressable
+          style={[styles.tabButton, activeTab === "clases" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("clases")}
+        >
+          <MaterialCommunityIcons
+            name="calendar-clock"
+            size={20}
+            color={activeTab === "clases" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
           style={[styles.tabButton, activeTab === "configuracion" && styles.tabButtonActive]}
           onPress={() => setActiveTab("configuracion")}
         >
@@ -3561,6 +4083,8 @@ export default function AdminScreen() {
           }} />
         ) : activeTab === "entrenamiento" ? (
           <EntrenamientoPanel />
+        ) : activeTab === "clases" ? (
+          <ClassesPanel users={users} />
         ) : activeTab === "configuracion" ? (
           <SettingsPanel />
         ) : (

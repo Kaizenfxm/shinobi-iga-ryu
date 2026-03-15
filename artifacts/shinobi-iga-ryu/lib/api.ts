@@ -702,3 +702,101 @@ export const fightsApi = {
       body: { isFighter },
     }),
 };
+
+export interface ClassTrainingSystem {
+  id: number;
+  key: string;
+  name: string;
+}
+
+export interface ClassAttendanceInfo {
+  checkedInAt: string;
+  rating: number | null;
+}
+
+export interface ClassData {
+  id: number;
+  title: string;
+  description: string | null;
+  sede: string;
+  classDate: string;
+  startTime: string;
+  endTime: string | null;
+  profesorId: number | null;
+  profesorName: string | null;
+  maxCapacity: number | null;
+  status: "programada" | "en_curso" | "finalizada" | "cancelada";
+  qrToken: string | null;
+  createdAt: string;
+  trainingSystems: ClassTrainingSystem[];
+  attendanceCount: number;
+  myAttendance: ClassAttendanceInfo | null;
+}
+
+export interface ClassAttendee {
+  id: number;
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  checkedInAt: string;
+  rating: number | null;
+}
+
+export interface ClassStats {
+  totalClasses: number;
+  monthClasses: number;
+}
+
+export const classesApi = {
+  getAll: (sede?: string) =>
+    apiFetch<{ classes: ClassData[] }>(`/classes${sede ? `?sede=${sede}` : ""}`),
+
+  getAttendees: (classId: number) =>
+    apiFetch<{ attendees: ClassAttendee[] }>(`/classes/${classId}/attendees`),
+
+  checkin: (qrToken: string) =>
+    apiFetch<{ success: boolean; className: string; classId: number; checkedInAt: string }>("/classes/checkin", {
+      method: "POST",
+      body: { qrToken },
+    }),
+
+  rate: (classId: number, rating: number) =>
+    apiFetch<{ success: boolean; rating: number }>(`/classes/${classId}/rate`, {
+      method: "PUT",
+      body: { rating },
+    }),
+
+  getMyStats: () =>
+    apiFetch<ClassStats>("/classes/my-stats"),
+
+  adminCreate: (data: {
+    title: string;
+    description?: string;
+    sede: string;
+    classDate: string;
+    startTime: string;
+    endTime?: string;
+    profesorId?: number;
+    maxCapacity?: number;
+    trainingSystemIds?: number[];
+  }) => apiFetch<{ class: ClassData }>("/admin/classes", { method: "POST", body: data }),
+
+  adminUpdate: (id: number, data: {
+    title?: string;
+    description?: string;
+    sede?: string;
+    classDate?: string;
+    startTime?: string;
+    endTime?: string;
+    profesorId?: number | null;
+    maxCapacity?: number | null;
+    status?: string;
+    trainingSystemIds?: number[];
+  }) => apiFetch<{ class: ClassData }>(`/admin/classes/${id}`, { method: "PUT", body: data }),
+
+  adminDelete: (id: number) =>
+    apiFetch<{ success: boolean }>(`/admin/classes/${id}`, { method: "DELETE" }),
+
+  adminRegenerateQr: (id: number) =>
+    apiFetch<{ success: boolean; qrToken: string }>(`/admin/classes/${id}/regenerate-qr`, { method: "POST" }),
+};

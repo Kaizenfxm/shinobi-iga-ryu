@@ -33,6 +33,7 @@ import SplashAnimation from "@/components/SplashAnimation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationBell from "@/components/NotificationBell";
+import QrScannerButton from "@/components/QrScanner";
 import { setupNotificationHandler } from "@/lib/notifications-setup";
 
 SplashScreen.preventAutoHideAsync();
@@ -129,6 +130,7 @@ export default function RootLayout() {
                   <View style={{ flex: 1 }}>
                     <RootLayoutNav />
                     <NotificationBell />
+                    <QrScannerButton />
                   </View>
                 </NotificationProvider>
               </AuthProvider>
