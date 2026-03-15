@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable } from "@workspace/db";
 import { eq, and, or, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -564,6 +564,201 @@ adminRouter.put("/admin/profesor/:profesorId/alumnos", requireAdmin, async (req,
     res.json({ success: true, alumnoIds: alumnoIds.map((id: number) => parseInt(String(id), 10)) });
   } catch (error) {
     console.error("Admin update profesor alumnos error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+type DbOrTx = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
+
+async function recalculateUserMembership(userId: number, tx: DbOrTx = db) {
+  const payments = await tx
+    .select({
+      paymentDate: paymentHistoryTable.paymentDate,
+      expiresDate: paymentHistoryTable.expiresDate,
+    })
+    .from(paymentHistoryTable)
+    .where(eq(paymentHistoryTable.userId, userId))
+    .orderBy(desc(paymentHistoryTable.expiresDate));
+
+  if (payments.length === 0) {
+    await tx
+      .update(usersTable)
+      .set({ membershipExpiresAt: null, lastPaymentAt: null })
+      .where(eq(usersTable.id, userId));
+    return;
+  }
+
+  const latestExpiry = payments[0].expiresDate;
+  const latestPaymentDate = payments.reduce((best, p) =>
+    p.paymentDate > best ? p.paymentDate : best, payments[0].paymentDate
+  );
+
+  await tx
+    .update(usersTable)
+    .set({
+      membershipExpiresAt: new Date(latestExpiry + "T23:59:59Z"),
+      lastPaymentAt: new Date(latestPaymentDate + "T12:00:00Z"),
+      membershipStatus: "activo",
+    })
+    .where(eq(usersTable.id, userId));
+}
+
+adminRouter.get("/admin/users/:id/payments", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const payments = await db
+      .select({
+        id: paymentHistoryTable.id,
+        userId: paymentHistoryTable.userId,
+        paymentDate: paymentHistoryTable.paymentDate,
+        expiresDate: paymentHistoryTable.expiresDate,
+        amount: paymentHistoryTable.amount,
+        paymentMethod: paymentHistoryTable.paymentMethod,
+        notes: paymentHistoryTable.notes,
+        registeredBy: paymentHistoryTable.registeredBy,
+        createdAt: paymentHistoryTable.createdAt,
+      })
+      .from(paymentHistoryTable)
+      .where(eq(paymentHistoryTable.userId, userId))
+      .orderBy(desc(paymentHistoryTable.paymentDate));
+
+    res.json({ payments });
+  } catch (error) {
+    console.error("Admin get payments error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const { paymentDate, expiresDate, amount, paymentMethod, notes } = req.body;
+
+    if (!paymentDate || !expiresDate || !paymentMethod) {
+      res.status(400).json({ error: "Se requieren paymentDate, expiresDate y paymentMethod" });
+      return;
+    }
+
+    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta"];
+    if (!validMethods.includes(paymentMethod)) {
+      res.status(400).json({ error: "Método de pago inválido" });
+      return;
+    }
+
+    let newPayment: typeof paymentHistoryTable.$inferSelect | undefined;
+    await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(paymentHistoryTable)
+        .values({
+          userId,
+          paymentDate,
+          expiresDate,
+          amount: amount ? parseInt(String(amount), 10) : null,
+          paymentMethod,
+          notes: notes || null,
+          registeredBy: req.session.userId!,
+        })
+        .returning();
+      newPayment = inserted;
+      await recalculateUserMembership(userId, tx);
+    });
+
+    res.json({ payment: newPayment });
+  } catch (error) {
+    console.error("Admin create payment error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
+  try {
+    const paymentId = parseInt(String(req.params.id), 10);
+    if (isNaN(paymentId)) {
+      res.status(400).json({ error: "ID de pago inválido" });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: paymentHistoryTable.id, userId: paymentHistoryTable.userId })
+      .from(paymentHistoryTable)
+      .where(eq(paymentHistoryTable.id, paymentId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "Pago no encontrado" });
+      return;
+    }
+
+    const { paymentDate, expiresDate, amount, paymentMethod, notes } = req.body;
+
+    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta"];
+    if (paymentMethod && !validMethods.includes(paymentMethod)) {
+      res.status(400).json({ error: "Método de pago inválido" });
+      return;
+    }
+
+    let updated: typeof paymentHistoryTable.$inferSelect | undefined;
+    await db.transaction(async (tx) => {
+      const [result] = await tx
+        .update(paymentHistoryTable)
+        .set({
+          ...(paymentDate !== undefined && { paymentDate }),
+          ...(expiresDate !== undefined && { expiresDate }),
+          ...(amount !== undefined && { amount: amount ? parseInt(String(amount), 10) : null }),
+          ...(paymentMethod !== undefined && { paymentMethod }),
+          ...(notes !== undefined && { notes: notes || null }),
+          updatedAt: new Date(),
+        })
+        .where(eq(paymentHistoryTable.id, paymentId))
+        .returning();
+      updated = result;
+      await recalculateUserMembership(existing.userId, tx);
+    });
+
+    res.json({ payment: updated });
+  } catch (error) {
+    console.error("Admin update payment error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.delete("/admin/payments/:id", requireAdmin, async (req, res) => {
+  try {
+    const paymentId = parseInt(String(req.params.id), 10);
+    if (isNaN(paymentId)) {
+      res.status(400).json({ error: "ID de pago inválido" });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: paymentHistoryTable.id, userId: paymentHistoryTable.userId })
+      .from(paymentHistoryTable)
+      .where(eq(paymentHistoryTable.id, paymentId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "Pago no encontrado" });
+      return;
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(paymentHistoryTable).where(eq(paymentHistoryTable.id, paymentId));
+      await recalculateUserMembership(existing.userId, tx);
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin delete payment error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

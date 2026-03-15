@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -738,18 +738,83 @@ function UsersPanel({
     return d.toISOString().split("T")[0];
   };
 
-  const [paymentForms, setPaymentForms] = useState<Record<number, { paymentDate: string; expiresDate: string }>>({});
+  type PaymentFormState = {
+    editId?: number;
+    paymentDate: string;
+    expiresDate: string;
+    amount: string;
+    paymentMethod: PaymentMethod;
+    notes: string;
+  };
 
-  const getPaymentForm = (userId: number) =>
-    paymentForms[userId] ?? {
-      paymentDate: todayStr(),
-      expiresDate: addDaysStr(todayStr(), 30),
-    };
+  const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+    { value: "nequi", label: "Nequi" },
+    { value: "daviplata", label: "Daviplata" },
+    { value: "banco", label: "Banco" },
+    { value: "link", label: "Link de pago" },
+    { value: "tarjeta", label: "Tarjeta" },
+  ];
 
-  const setPaymentFormField = (userId: number, field: "paymentDate" | "expiresDate", value: string) => {
+  const [paymentHistory, setPaymentHistory] = useState<Record<number, PaymentRecord[]>>({});
+  const [paymentHistoryOpen, setPaymentHistoryOpen] = useState<Record<number, boolean>>({});
+  const [paymentForms, setPaymentForms] = useState<Record<number, PaymentFormState | null>>({});
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState<Record<number, boolean>>({});
+
+  const makeBlankPaymentForm = (): PaymentFormState => ({
+    paymentDate: todayStr(),
+    expiresDate: addDaysStr(todayStr(), 30),
+    amount: "",
+    paymentMethod: "nequi",
+    notes: "",
+  });
+
+  const loadPaymentHistory = async (userId: number) => {
+    setPaymentHistoryLoading((prev) => ({ ...prev, [userId]: true }));
+    try {
+      const { payments } = await adminApi.getPaymentHistory(userId);
+      setPaymentHistory((prev) => ({ ...prev, [userId]: payments }));
+    } catch {
+      Alert.alert("Error", "No se pudo cargar el historial de pagos");
+    } finally {
+      setPaymentHistoryLoading((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  const togglePaymentHistory = (userId: number) => {
+    const opening = !paymentHistoryOpen[userId];
+    setPaymentHistoryOpen((prev) => ({ ...prev, [userId]: opening }));
+    if (opening && !paymentHistory[userId]) {
+      loadPaymentHistory(userId);
+    }
+  };
+
+  const openAddPaymentForm = (userId: number) => {
+    setPaymentForms((prev) => ({ ...prev, [userId]: makeBlankPaymentForm() }));
+  };
+
+  const openEditPaymentForm = (userId: number, p: PaymentRecord) => {
+    setPaymentForms((prev) => ({
+      ...prev,
+      [userId]: {
+        editId: p.id,
+        paymentDate: p.paymentDate,
+        expiresDate: p.expiresDate,
+        amount: p.amount != null ? String(p.amount) : "",
+        paymentMethod: p.paymentMethod,
+        notes: p.notes || "",
+      },
+    }));
+  };
+
+  const closePaymentForm = (userId: number) => {
+    setPaymentForms((prev) => ({ ...prev, [userId]: null }));
+  };
+
+  const setPaymentFormField = (userId: number, field: keyof PaymentFormState, value: string) => {
     setPaymentForms((prev) => {
-      const current = getPaymentForm(userId);
-      const updated = { ...current, [field]: value };
+      const cur = prev[userId];
+      if (!cur) return prev;
+      const updated = { ...cur, [field]: value };
       if (field === "paymentDate" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
         updated.expiresDate = addDaysStr(value, 30);
       }
@@ -757,38 +822,67 @@ function UsersPanel({
     });
   };
 
-  const submitPayment = async (userId: number) => {
-    const form = getPaymentForm(userId);
-    if (!form.expiresDate) {
-      Alert.alert("Error", "Ingresa la fecha de vencimiento");
+  const submitPaymentForm = async (userId: number) => {
+    const form = paymentForms[userId];
+    if (!form) return;
+    if (!form.paymentDate || !form.expiresDate) {
+      Alert.alert("Error", "Fecha de pago y vencimiento son obligatorios");
       return;
     }
     try {
-      const expiresAt = new Date(form.expiresDate + "T23:59:59").toISOString();
-      const paymentAt = form.paymentDate ? new Date(form.paymentDate + "T12:00:00").toISOString() : undefined;
-      const res = await adminApi.registerPayment(userId, expiresAt, paymentAt);
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId
-            ? { ...u, membershipStatus: res.membershipStatus as UserData["membershipStatus"], membershipExpiresAt: res.membershipExpiresAt, lastPaymentAt: res.lastPaymentAt }
-            : u
-        )
-      );
-      Alert.alert("Pago registrado", `Membresía activa hasta ${form.expiresDate}`);
+      const payload = {
+        paymentDate: form.paymentDate,
+        expiresDate: form.expiresDate,
+        amount: form.amount ? parseInt(form.amount, 10) : null,
+        paymentMethod: form.paymentMethod,
+        notes: form.notes || null,
+      };
+      if (form.editId) {
+        await adminApi.updatePayment(form.editId, payload);
+      } else {
+        await adminApi.createPayment(userId, payload);
+      }
+      closePaymentForm(userId);
+      await loadPaymentHistory(userId);
+      const { users: fresh } = await adminApi.getUsers();
+      const updated = fresh.find((u) => u.id === userId);
+      if (updated) {
+        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt } : u)));
+      }
     } catch {
-      Alert.alert("Error", "No se pudo registrar el pago");
+      Alert.alert("Error", "No se pudo guardar el pago");
     }
   };
 
-  const [membershipEdits, setMembershipEdits] = useState<Record<number, { notes: string; expiry: string }>>({});
+  const deletePaymentRecord = async (userId: number, paymentId: number) => {
+    Alert.alert("Eliminar pago", "¿Confirmas que deseas eliminar este pago?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await adminApi.deletePayment(paymentId);
+            await loadPaymentHistory(userId);
+            const { users: fresh } = await adminApi.getUsers();
+            const updated = fresh.find((u) => u.id === userId);
+            if (updated) {
+              setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt } : u)));
+            }
+          } catch {
+            Alert.alert("Error", "No se pudo eliminar el pago");
+          }
+        },
+      },
+    ]);
+  };
+
+  const [membershipEdits, setMembershipEdits] = useState<Record<number, { notes: string }>>({});
 
   const getMembershipEdit = (u: UserData) =>
-    membershipEdits[u.id] ?? {
-      notes: u.membershipNotes || "",
-      expiry: u.membershipExpiresAt ? u.membershipExpiresAt.split("T")[0] : "",
-    };
+    membershipEdits[u.id] ?? { notes: u.membershipNotes || "" };
 
-  const setMembershipEdit = (userId: number, field: "notes" | "expiry", value: string) => {
+  const setMembershipEdit = (userId: number, field: "notes", value: string) => {
     setMembershipEdits((prev) => ({
       ...prev,
       [userId]: { ...getMembershipEdit(users.find((u) => u.id === userId)!), [field]: value },
@@ -800,18 +894,13 @@ function UsersPanel({
     if (!user) return;
     const edit = getMembershipEdit(user);
     try {
-      await adminApi.updateMembership(userId, {
-        membershipExpiresAt: edit.expiry ? new Date(edit.expiry).toISOString() : null,
-        notes: edit.notes || null,
-      });
+      await adminApi.updateMembership(userId, { notes: edit.notes || null });
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === userId
-            ? { ...u, membershipExpiresAt: edit.expiry ? new Date(edit.expiry).toISOString() : null, membershipNotes: edit.notes || null }
-            : u
+          u.id === userId ? { ...u, membershipNotes: edit.notes || null } : u
         )
       );
-      Alert.alert("Guardado", "Detalles de membresía actualizados");
+      Alert.alert("Guardado", "Notas de membresía actualizadas");
     } catch {
       Alert.alert("Error", "No se pudo guardar");
     }
@@ -1018,17 +1107,6 @@ function UsersPanel({
                   </Text>
                 )}
 
-                <Text style={styles.sectionLabel}>FECHA DE VENCIMIENTO</Text>
-                <TextInput
-                  style={styles.membershipInput}
-                  value={getMembershipEdit(u).expiry}
-                  onChangeText={(v) => setMembershipEdit(u.id, "expiry", v)}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#444"
-                  keyboardType="numbers-and-punctuation"
-                  autoCapitalize="none"
-                />
-
                 <Text style={styles.sectionLabel}>NOTAS</Text>
                 <TextInput
                   style={[styles.membershipInput, { height: 56, textAlignVertical: "top" }]}
@@ -1048,48 +1126,183 @@ function UsersPanel({
                   <Text style={styles.membershipSaveBtnText}>Guardar cambios</Text>
                 </Pressable>
 
-                <View style={styles.paymentFormBox}>
-                  <View style={styles.paymentFormHeader}>
-                    <MaterialCommunityIcons name="cash-check" size={14} color="#D4AF37" />
-                    <Text style={styles.paymentFormTitle}>REGISTRAR PAGO</Text>
+                {/* ── HISTORIAL DE PAGOS ── */}
+                <Pressable
+                  style={styles.paymentHistoryToggle}
+                  onPress={() => togglePaymentHistory(u.id)}
+                >
+                  <View style={styles.paymentHistoryToggleLeft}>
+                    <MaterialCommunityIcons name="cash-multiple" size={14} color="#D4AF37" />
+                    <Text style={styles.paymentHistoryToggleText}>HISTORIAL DE PAGOS</Text>
                   </View>
-                  <View style={styles.paymentFormRow}>
-                    <View style={styles.paymentFormField}>
-                      <Text style={styles.paymentFormLabel}>Fecha de pago</Text>
-                      <TextInput
-                        style={styles.paymentFormInput}
-                        value={getPaymentForm(u.id).paymentDate}
-                        onChangeText={(v) => setPaymentFormField(u.id, "paymentDate", v)}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#444"
-                        keyboardType="numbers-and-punctuation"
-                        autoCapitalize="none"
-                      />
-                    </View>
-                    <View style={styles.paymentFormArrow}>
-                      <Ionicons name="arrow-forward" size={14} color="#555" />
-                    </View>
-                    <View style={styles.paymentFormField}>
-                      <Text style={styles.paymentFormLabel}>Vence el</Text>
-                      <TextInput
-                        style={[styles.paymentFormInput, { borderColor: "#D4AF3760" }]}
-                        value={getPaymentForm(u.id).expiresDate}
-                        onChangeText={(v) => setPaymentFormField(u.id, "expiresDate", v)}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#444"
-                        keyboardType="numbers-and-punctuation"
-                        autoCapitalize="none"
-                      />
-                    </View>
+                  <Ionicons
+                    name={paymentHistoryOpen[u.id] ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#555"
+                  />
+                </Pressable>
+
+                {paymentHistoryOpen[u.id] && (
+                  <View style={styles.paymentHistoryBox}>
+                    {paymentHistoryLoading[u.id] ? (
+                      <ActivityIndicator color="#D4AF37" style={{ margin: 12 }} />
+                    ) : (
+                      <>
+                        {/* Existing payments list */}
+                        {(paymentHistory[u.id] ?? []).map((p) => (
+                          <View key={p.id} style={styles.paymentRecord}>
+                            <View style={styles.paymentRecordHeader}>
+                              <View style={styles.paymentMethodBadge}>
+                                <Text style={styles.paymentMethodBadgeText}>
+                                  {PAYMENT_METHODS.find((m) => m.value === p.paymentMethod)?.label ?? p.paymentMethod}
+                                </Text>
+                              </View>
+                              {p.amount != null && (
+                                <Text style={styles.paymentAmount}>
+                                  ${p.amount.toLocaleString("es-CO")}
+                                </Text>
+                              )}
+                              <View style={styles.paymentRecordActions}>
+                                <Pressable
+                                  style={styles.paymentIconBtn}
+                                  onPress={() => openEditPaymentForm(u.id, p)}
+                                >
+                                  <Ionicons name="pencil-outline" size={13} color="#888" />
+                                </Pressable>
+                                <Pressable
+                                  style={styles.paymentIconBtn}
+                                  onPress={() => deletePaymentRecord(u.id, p.id)}
+                                >
+                                  <Ionicons name="trash-outline" size={13} color="#c44" />
+                                </Pressable>
+                              </View>
+                            </View>
+                            <View style={styles.paymentRecordDates}>
+                              <Text style={styles.paymentRecordDate}>
+                                Pago: {p.paymentDate}
+                              </Text>
+                              <Ionicons name="arrow-forward" size={11} color="#555" style={{ marginHorizontal: 4 }} />
+                              <Text style={[styles.paymentRecordDate, { color: "#D4AF37" }]}>
+                                Vence: {p.expiresDate}
+                              </Text>
+                            </View>
+                            {p.notes ? (
+                              <Text style={styles.paymentRecordNotes}>{p.notes}</Text>
+                            ) : null}
+                          </View>
+                        ))}
+
+                        {(paymentHistory[u.id] ?? []).length === 0 && !paymentForms[u.id] && (
+                          <Text style={styles.paymentEmptyText}>Sin pagos registrados</Text>
+                        )}
+
+                        {/* Add/Edit form */}
+                        {paymentForms[u.id] ? (
+                          <View style={styles.paymentAddForm}>
+                            <Text style={styles.paymentAddFormTitle}>
+                              {paymentForms[u.id]!.editId ? "EDITAR PAGO" : "NUEVO PAGO"}
+                            </Text>
+
+                            <View style={styles.paymentFormRow}>
+                              <View style={styles.paymentFormField}>
+                                <Text style={styles.paymentFormLabel}>Fecha de pago</Text>
+                                <TextInput
+                                  style={styles.paymentFormInput}
+                                  value={paymentForms[u.id]!.paymentDate}
+                                  onChangeText={(v) => setPaymentFormField(u.id, "paymentDate", v)}
+                                  placeholder="YYYY-MM-DD"
+                                  placeholderTextColor="#444"
+                                  keyboardType="numbers-and-punctuation"
+                                  autoCapitalize="none"
+                                />
+                              </View>
+                              <View style={styles.paymentFormArrow}>
+                                <Ionicons name="arrow-forward" size={14} color="#555" />
+                              </View>
+                              <View style={styles.paymentFormField}>
+                                <Text style={styles.paymentFormLabel}>Vence el</Text>
+                                <TextInput
+                                  style={[styles.paymentFormInput, { borderColor: "#D4AF3760" }]}
+                                  value={paymentForms[u.id]!.expiresDate}
+                                  onChangeText={(v) => setPaymentFormField(u.id, "expiresDate", v)}
+                                  placeholder="YYYY-MM-DD"
+                                  placeholderTextColor="#444"
+                                  keyboardType="numbers-and-punctuation"
+                                  autoCapitalize="none"
+                                />
+                              </View>
+                            </View>
+
+                            <Text style={styles.paymentFormLabel}>Monto (COP)</Text>
+                            <TextInput
+                              style={[styles.paymentFormInput, { marginBottom: 8 }]}
+                              value={paymentForms[u.id]!.amount}
+                              onChangeText={(v) => setPaymentFormField(u.id, "amount", v)}
+                              placeholder="Ej: 120000"
+                              placeholderTextColor="#444"
+                              keyboardType="numeric"
+                            />
+
+                            <Text style={styles.paymentFormLabel}>Medio de pago</Text>
+                            <View style={styles.paymentMethodSelector}>
+                              {PAYMENT_METHODS.map((m) => {
+                                const active = paymentForms[u.id]!.paymentMethod === m.value;
+                                return (
+                                  <Pressable
+                                    key={m.value}
+                                    style={[styles.paymentMethodChip, active && styles.paymentMethodChipActive]}
+                                    onPress={() => setPaymentFormField(u.id, "paymentMethod", m.value)}
+                                  >
+                                    <Text style={[styles.paymentMethodChipText, active && { color: "#000" }]}>
+                                      {m.label}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+
+                            <Text style={styles.paymentFormLabel}>Notas</Text>
+                            <TextInput
+                              style={[styles.paymentFormInput, { height: 48, textAlignVertical: "top", marginBottom: 10 }]}
+                              value={paymentForms[u.id]!.notes}
+                              onChangeText={(v) => setPaymentFormField(u.id, "notes", v)}
+                              placeholder="Observaciones..."
+                              placeholderTextColor="#444"
+                              multiline
+                              numberOfLines={2}
+                            />
+
+                            <View style={styles.paymentFormActions}>
+                              <Pressable
+                                style={styles.paymentCancelBtn}
+                                onPress={() => closePaymentForm(u.id)}
+                              >
+                                <Text style={styles.paymentCancelBtnText}>Cancelar</Text>
+                              </Pressable>
+                              <Pressable
+                                style={styles.paymentSubmitBtn}
+                                onPress={() => submitPaymentForm(u.id)}
+                              >
+                                <MaterialCommunityIcons name="check-circle-outline" size={14} color="#000" />
+                                <Text style={styles.paymentSubmitBtnText}>
+                                  {paymentForms[u.id]!.editId ? "Actualizar" : "Guardar pago"}
+                                </Text>
+                              </Pressable>
+                            </View>
+                          </View>
+                        ) : (
+                          <Pressable
+                            style={styles.paymentAddBtn}
+                            onPress={() => openAddPaymentForm(u.id)}
+                          >
+                            <Ionicons name="add-circle-outline" size={14} color="#D4AF37" />
+                            <Text style={styles.paymentAddBtnText}>Agregar pago</Text>
+                          </Pressable>
+                        )}
+                      </>
+                    )}
                   </View>
-                  <Pressable
-                    style={styles.paymentSubmitBtn}
-                    onPress={() => submitPayment(u.id)}
-                  >
-                    <MaterialCommunityIcons name="check-circle-outline" size={14} color="#000" />
-                    <Text style={styles.paymentSubmitBtnText}>Confirmar pago</Text>
-                  </Pressable>
-                </View>
+                )}
 
                 <Pressable
                   style={styles.beltSectionToggle}
@@ -3480,26 +3693,161 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#D4AF37",
   },
-  paymentFormBox: {
+  paymentHistoryToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#1a1a1a",
+    marginTop: 8,
+  },
+  paymentHistoryToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  paymentHistoryToggleText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 1.5,
+  },
+  paymentHistoryBox: {
+    marginBottom: 8,
+  },
+  paymentRecord: {
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 2,
+    padding: 10,
+    marginBottom: 6,
+    backgroundColor: "#080808",
+  },
+  paymentRecordHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  paymentMethodBadge: {
+    backgroundColor: "#D4AF3720",
+    borderWidth: 1,
+    borderColor: "#D4AF3740",
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  paymentMethodBadgeText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#D4AF37",
+    letterSpacing: 0.8,
+  },
+  paymentAmount: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#fff",
+  },
+  paymentRecordActions: {
+    flexDirection: "row",
+    gap: 4,
+    marginLeft: "auto",
+  },
+  paymentIconBtn: {
+    padding: 4,
+  },
+  paymentRecordDates: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  paymentRecordDate: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#888",
+  },
+  paymentRecordNotes: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#555",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  paymentEmptyText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#444",
+    textAlign: "center",
+    paddingVertical: 8,
+  },
+  paymentAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    justifyContent: "center",
+  },
+  paymentAddBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 0.8,
+  },
+  paymentAddForm: {
     borderWidth: 1,
     borderColor: "#D4AF3740",
     borderRadius: 2,
     padding: 12,
     backgroundColor: "#0D0B00",
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: 6,
   },
-  paymentFormHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-  },
-  paymentFormTitle: {
+  paymentAddFormTitle: {
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 10,
     color: "#D4AF37",
     letterSpacing: 1.5,
+    marginBottom: 10,
+  },
+  paymentMethodSelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+  },
+  paymentMethodChip: {
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#111",
+  },
+  paymentMethodChipActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  paymentMethodChipText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#888",
+  },
+  paymentFormActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  paymentCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#333",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 9,
+    borderRadius: 2,
+  },
+  paymentCancelBtnText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#666",
   },
   paymentFormRow: {
     flexDirection: "row",
