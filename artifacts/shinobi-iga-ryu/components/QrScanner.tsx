@@ -128,7 +128,7 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
   return (
     <>
       <Pressable style={fabStyles.fab} onPress={() => setShowScanner(true)}>
-        <MaterialCommunityIcons name="qrcode-scan" size={24} color="#000" />
+        <MaterialCommunityIcons name="qrcode-scan" size={20} color="#000" />
       </Pressable>
 
       <Modal visible={showScanner} animationType="slide" onRequestClose={closeAll}>
@@ -340,19 +340,19 @@ function CameraScanner({
 const fabStyles = StyleSheet.create({
   fab: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: Platform.OS === "web" ? 104 : 96,
+    right: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: "rgba(212, 175, 55, 0.85)",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
     shadowColor: "#D4AF37",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: 6,
     zIndex: 999,
   },
 });
