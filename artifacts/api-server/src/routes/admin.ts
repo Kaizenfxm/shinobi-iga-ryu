@@ -257,7 +257,12 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       );
       await tx.delete(beltHistoryTable).where(eq(beltHistoryTable.userId, userId));
       await tx.delete(studentBeltsTable).where(eq(studentBeltsTable.userId, userId));
-      await tx.delete(fightsTable).where(eq(fightsTable.userId, userId));
+      await tx.delete(fightsTable).where(
+        or(eq(fightsTable.userId, userId), eq(fightsTable.registeredBy, userId))
+      );
+      await tx.delete(paymentHistoryTable).where(
+        or(eq(paymentHistoryTable.userId, userId), eq(paymentHistoryTable.registeredBy, userId))
+      );
       await tx.delete(profesorStudentsTable).where(
         or(eq(profesorStudentsTable.profesorId, userId), eq(profesorStudentsTable.alumnoId, userId))
       );
