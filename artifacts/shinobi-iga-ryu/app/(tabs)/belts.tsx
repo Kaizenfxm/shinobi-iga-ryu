@@ -830,11 +830,13 @@ export default function BeltsScreen({ skipSafeArea = false }: { skipSafeArea?: b
       >
         <View style={styles.header}>
           <View style={styles.headerLogoRow}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
+            <Pressable onPress={() => router.push("/conocenos" as never)}>
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </Pressable>
             <View>
               <Text style={styles.headerTitle}>CINTURONES</Text>
               <Text style={styles.headerKanji}>帯 · Progresión de grado</Text>

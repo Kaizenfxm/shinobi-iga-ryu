@@ -384,11 +384,13 @@ export default function ProfileScreen() {
             <View style={styles.avatarBorder} />
           </View>
           <Text style={styles.name}>Ninja</Text>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <Pressable onPress={() => router.push("/conocenos")}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          </Pressable>
           <View style={styles.divider} />
           <View style={styles.infoCard}>
             <Text style={styles.infoCardValue}>

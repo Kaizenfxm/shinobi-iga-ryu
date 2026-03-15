@@ -3,6 +3,7 @@ import {
   View,
   Text,
   Image,
+  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,30 +18,39 @@ import { settingsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_GAP = 12;
-const SIDE_PADDING = 16;
-const CARD_WIDTH = (SCREEN_WIDTH - SIDE_PADDING * 2 - CARD_GAP) / 2;
-const CARD_HEIGHT = CARD_WIDTH * 1.9;
+const H_PAD = 16;
+const GAP = 10;
+const CARD_W = (SCREEN_WIDTH - H_PAD * 2 - GAP) / 2;
+const CARD_H = CARD_W * 2.0;
+
+const SEDE_BG: Record<string, ReturnType<typeof require>> = {
+  bogota: require("@/assets/images/arts/ninjutsu.jpg"),
+  chia: require("@/assets/images/arts/jiujitsu.jpg"),
+};
+
+const SEDE_KANJI: Record<string, string> = {
+  bogota: "武",
+  chia: "忍",
+};
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
-  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-  if (shortMatch) return shortMatch[1];
-  const longMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-  if (longMatch) return longMatch[1];
+  const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (short) return short[1];
+  const long = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+  if (long) return long[1];
   return null;
 }
 
 function getThumbnail(url: string): string | null {
   const id = extractYouTubeId(url);
-  if (!id) return null;
-  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-function buildWhatsAppUrl(phone: string, sede: string, displayName: string | null | undefined): string {
+function openWhatsApp(phone: string, sede: string, displayName?: string | null) {
   const firstName = displayName ? displayName.split(" ")[0] : "[tu nombre]";
   const msg = `Hola! Mi nombre es ${firstName}, y quiero info de la academia, me interesa la sede de ${sede}`;
-  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
 }
 
 interface Settings {
@@ -51,7 +61,8 @@ interface Settings {
   chiaAddress: string;
 }
 
-interface SedeCardProps {
+interface SedeColumnProps {
+  sedeKey: "bogota" | "chia";
   sedeName: string;
   videoUrl: string;
   address: string;
@@ -59,74 +70,64 @@ interface SedeCardProps {
   displayName?: string | null;
 }
 
-function SedeCard({ sedeName, videoUrl, address, whatsappPhone, displayName }: SedeCardProps) {
+function SedeColumn({ sedeKey, sedeName, videoUrl, address, whatsappPhone, displayName }: SedeColumnProps) {
   const thumbnail = getThumbnail(videoUrl);
-  const hasVideo = !!videoUrl;
-  const hasWhatsApp = !!whatsappPhone;
-
-  const openVideo = () => {
-    if (videoUrl) Linking.openURL(videoUrl);
-  };
-
-  const openWhatsApp = () => {
-    if (!whatsappPhone) return;
-    const url = buildWhatsAppUrl(whatsappPhone, sedeName, displayName);
-    Linking.openURL(url);
-  };
 
   return (
-    <View style={[cardStyles.card, { width: CARD_WIDTH, minHeight: CARD_HEIGHT }]}>
-      <View style={cardStyles.goldTopBorder} />
+    <View style={{ width: CARD_W }}>
+      <View style={[card.root, { height: CARD_H }]}>
+        <ImageBackground
+          source={SEDE_BG[sedeKey]}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          imageStyle={{ opacity: 0.28 }}
+        />
+        <View style={card.overlay} />
 
-      <Text style={cardStyles.sedeName}>{sedeName.toUpperCase()}</Text>
+        <View style={card.goldTop} />
 
-      <Pressable
-        style={cardStyles.videoContainer}
-        onPress={hasVideo ? openVideo : undefined}
-        disabled={!hasVideo}
-      >
-        {thumbnail ? (
-          <>
-            <Image
-              source={{ uri: thumbnail }}
-              style={cardStyles.thumbnail}
-              resizeMode="cover"
-            />
-            <View style={cardStyles.playOverlay}>
-              <View style={cardStyles.playBtn}>
-                <Ionicons name="play" size={20} color="#000" />
+        <View style={card.topSection}>
+          <Text style={card.kanji}>{SEDE_KANJI[sedeKey]}</Text>
+          <Text style={card.sedeName}>{sedeName.toUpperCase()}</Text>
+          <View style={card.goldLine} />
+        </View>
+
+        <Pressable
+          style={card.videoArea}
+          onPress={() => videoUrl && Linking.openURL(videoUrl)}
+          disabled={!videoUrl}
+        >
+          {thumbnail ? (
+            <>
+              <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              <View style={card.playOverlay}>
+                <View style={card.playBtn}>
+                  <Ionicons name="play" size={16} color="#000" />
+                </View>
               </View>
+            </>
+          ) : (
+            <View style={card.noVideo}>
+              <Ionicons name="videocam-outline" size={22} color="#2a2a2a" />
             </View>
-          </>
-        ) : (
-          <View style={cardStyles.noVideoBox}>
-            <Ionicons name="videocam-outline" size={28} color="#333" />
-            <Text style={cardStyles.noVideoText}>Sin video</Text>
-          </View>
-        )}
-      </Pressable>
+          )}
+        </Pressable>
 
-      <View style={cardStyles.infoSection}>
         {address ? (
-          <View style={cardStyles.addressRow}>
-            <Ionicons name="location-outline" size={12} color="#D4AF37" />
-            <Text style={cardStyles.addressText}>{address}</Text>
+          <View style={card.addressRow}>
+            <Ionicons name="location-sharp" size={10} color="#D4AF37" style={{ marginTop: 1 }} />
+            <Text style={card.addressText} numberOfLines={3}>{address}</Text>
           </View>
-        ) : (
-          <View style={cardStyles.addressRow}>
-            <Ionicons name="location-outline" size={12} color="#333" />
-            <Text style={[cardStyles.addressText, { color: "#333" }]}>Sin dirección</Text>
-          </View>
-        )}
+        ) : null}
       </View>
 
       <Pressable
-        style={[cardStyles.waBtn, !hasWhatsApp && { opacity: 0.3 }]}
-        onPress={openWhatsApp}
-        disabled={!hasWhatsApp}
+        style={[card.waBtn, !whatsappPhone && { opacity: 0.3 }]}
+        onPress={() => whatsappPhone && openWhatsApp(whatsappPhone, sedeName, displayName)}
+        disabled={!whatsappPhone}
       >
-        <MaterialCommunityIcons name="whatsapp" size={14} color="#000" />
-        <Text style={cardStyles.waBtnText}>Escribir</Text>
+        <MaterialCommunityIcons name="whatsapp" size={13} color="#000" />
+        <Text style={card.waBtnText}>Escribir</Text>
       </Pressable>
     </View>
   );
@@ -142,50 +143,46 @@ export default function ConocenosScreen() {
   useEffect(() => {
     settingsApi
       .getPublic()
-      .then((s) =>
-        setSettings({
-          whatsappAdminNumber: s.whatsappAdminNumber,
-          bogotaVideoUrl: s.bogotaVideoUrl,
-          chiaVideoUrl: s.chiaVideoUrl,
-          bogotaAddress: s.bogotaAddress,
-          chiaAddress: s.chiaAddress,
-        })
-      )
+      .then((s) => setSettings({
+        whatsappAdminNumber: s.whatsappAdminNumber,
+        bogotaVideoUrl: s.bogotaVideoUrl,
+        chiaVideoUrl: s.chiaVideoUrl,
+        bogotaAddress: s.bogotaAddress,
+        chiaAddress: s.chiaAddress,
+      }))
       .catch(() => setSettings({ whatsappAdminNumber: "", bogotaVideoUrl: "", chiaVideoUrl: "", bogotaAddress: "", chiaAddress: "" }))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color="#D4AF37" />
         </Pressable>
-        <Image
-          source={require("@/assets/images/logo.png")}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
+        <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>CONÓCENOS</Text>
-        <Text style={styles.subtitle}>忍  Shinobi Iga Ryu  忍</Text>
-        <View style={styles.goldLine} />
+        <Text style={styles.kanji}>道場 · Nuestras Sedes</Text>
+        <View style={styles.divider} />
 
         {loading ? (
           <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />
         ) : (
-          <View style={styles.cardsRow}>
-            <SedeCard
+          <View style={styles.row}>
+            <SedeColumn
+              sedeKey="bogota"
               sedeName="Bogotá"
               videoUrl={settings?.bogotaVideoUrl || ""}
               address={settings?.bogotaAddress || ""}
               whatsappPhone={settings?.whatsappAdminNumber || ""}
               displayName={user?.displayName}
             />
-            <SedeCard
+            <SedeColumn
+              sedeKey="chia"
               sedeName="Chía"
               videoUrl={settings?.chiaVideoUrl || ""}
               address={settings?.chiaAddress || ""}
@@ -200,7 +197,7 @@ export default function ConocenosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: "#000",
   },
@@ -209,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#111",
   },
@@ -219,123 +216,135 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerLogo: {
-    width: 48,
-    height: 48,
+  logo: {
+    width: 42,
+    height: 42,
   },
   content: {
-    paddingHorizontal: SIDE_PADDING,
-    paddingBottom: 40,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 48,
     alignItems: "center",
   },
   title: {
     color: "#FFF",
     fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 22,
-    letterSpacing: 4,
+    fontSize: 20,
+    letterSpacing: 5,
     marginTop: 28,
     textAlign: "center",
   },
-  subtitle: {
+  kanji: {
     color: "#D4AF37",
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 13,
+    fontSize: 12,
     letterSpacing: 2,
     marginTop: 6,
     textAlign: "center",
   },
-  goldLine: {
-    width: 60,
+  divider: {
+    width: 48,
     height: 1,
     backgroundColor: "#D4AF37",
     marginTop: 16,
     marginBottom: 28,
   },
-  cardsRow: {
+  row: {
     flexDirection: "row",
-    gap: CARD_GAP,
+    gap: GAP,
     alignSelf: "stretch",
   },
 });
 
-const cardStyles = StyleSheet.create({
-  card: {
-    backgroundColor: "#0a0a0a",
+const card = StyleSheet.create({
+  root: {
+    backgroundColor: "#000",
     borderWidth: 1,
-    borderColor: "#1a1a1a",
-    borderRadius: 2,
+    borderColor: "#1e1e1e",
     overflow: "hidden",
-    flex: 1,
+    position: "relative",
   },
-  goldTopBorder: {
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
+  goldTop: {
     height: 2,
     backgroundColor: "#D4AF37",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  topSection: {
+    alignItems: "center",
+    paddingTop: 20,
+    paddingBottom: 10,
+    paddingHorizontal: 8,
+  },
+  kanji: {
+    color: "#D4AF37",
+    fontFamily: "NotoSerifJP_900Black",
+    fontSize: 28,
+    opacity: 0.9,
   },
   sedeName: {
     color: "#FFF",
-    fontFamily: "NotoSerifJP_700Bold",
-    fontSize: 13,
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
     letterSpacing: 3,
-    textAlign: "center",
-    paddingVertical: 12,
+    marginTop: 4,
   },
-  videoContainer: {
-    width: "100%",
+  goldLine: {
+    width: 24,
+    height: 1,
+    backgroundColor: "#D4AF37",
+    marginTop: 8,
+    opacity: 0.6,
+  },
+  videoArea: {
+    marginHorizontal: 10,
     aspectRatio: 16 / 9,
-    backgroundColor: "#111",
+    backgroundColor: "#0a0a0a",
+    overflow: "hidden",
     position: "relative",
-  },
-  thumbnail: {
-    width: "100%",
-    height: "100%",
   },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.35)",
   },
   playBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: "#D4AF37",
     alignItems: "center",
     justifyContent: "center",
   },
-  noVideoBox: {
+  noVideo: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-  },
-  noVideoText: {
-    color: "#333",
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
-  },
-  infoSection: {
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    flex: 1,
   },
   addressRow: {
     flexDirection: "row",
     gap: 5,
+    paddingHorizontal: 12,
+    paddingTop: 10,
     alignItems: "flex-start",
   },
   addressText: {
-    color: "#AAA",
+    color: "#888",
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 10,
+    fontSize: 9,
     flex: 1,
-    lineHeight: 15,
+    lineHeight: 14,
   },
   waBtn: {
-    margin: 10,
     backgroundColor: "#25D366",
-    borderRadius: 2,
-    paddingVertical: 8,
+    marginTop: 8,
+    paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
