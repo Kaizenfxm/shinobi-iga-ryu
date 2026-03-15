@@ -731,10 +731,42 @@ function UsersPanel({
     }
   };
 
-  const registerPayment = async (userId: number) => {
-    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const todayStr = () => new Date().toISOString().split("T")[0];
+  const addDaysStr = (dateStr: string, days: number): string => {
+    const d = new Date(dateStr + "T12:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split("T")[0];
+  };
+
+  const [paymentForms, setPaymentForms] = useState<Record<number, { paymentDate: string; expiresDate: string }>>({});
+
+  const getPaymentForm = (userId: number) =>
+    paymentForms[userId] ?? {
+      paymentDate: todayStr(),
+      expiresDate: addDaysStr(todayStr(), 30),
+    };
+
+  const setPaymentFormField = (userId: number, field: "paymentDate" | "expiresDate", value: string) => {
+    setPaymentForms((prev) => {
+      const current = getPaymentForm(userId);
+      const updated = { ...current, [field]: value };
+      if (field === "paymentDate" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        updated.expiresDate = addDaysStr(value, 30);
+      }
+      return { ...prev, [userId]: updated };
+    });
+  };
+
+  const submitPayment = async (userId: number) => {
+    const form = getPaymentForm(userId);
+    if (!form.expiresDate) {
+      Alert.alert("Error", "Ingresa la fecha de vencimiento");
+      return;
+    }
     try {
-      const res = await adminApi.registerPayment(userId, thirtyDaysFromNow);
+      const expiresAt = new Date(form.expiresDate + "T23:59:59").toISOString();
+      const paymentAt = form.paymentDate ? new Date(form.paymentDate + "T12:00:00").toISOString() : undefined;
+      const res = await adminApi.registerPayment(userId, expiresAt, paymentAt);
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
@@ -742,7 +774,7 @@ function UsersPanel({
             : u
         )
       );
-      Alert.alert("Pago registrado", "Membresía activada por 30 días");
+      Alert.alert("Pago registrado", `Membresía activa hasta ${form.expiresDate}`);
     } catch {
       Alert.alert("Error", "No se pudo registrar el pago");
     }
@@ -838,12 +870,14 @@ function UsersPanel({
         const isCurrentUser = u.id === currentUser?.id;
 
         return (
-          <Pressable
+          <View
             key={u.id}
             style={styles.userCard}
-            onPress={() => setExpandedUser(isExpanded ? null : u.id)}
           >
-            <View style={styles.userHeader}>
+            <Pressable
+              style={styles.userHeader}
+              onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+            >
               <View style={styles.userAvatar}>
                 {getAvatarServingUrl(u.avatarUrl ?? null) ? (
                   <Image
@@ -885,7 +919,7 @@ function UsersPanel({
                 size={13}
                 color="#444"
               />
-            </View>
+            </Pressable>
 
             {isExpanded && (
               <View style={styles.expandedContent}>
@@ -1006,20 +1040,54 @@ function UsersPanel({
                   numberOfLines={2}
                 />
 
-                <View style={styles.membershipActionRow}>
+                <Pressable
+                  style={styles.membershipSaveBtn}
+                  onPress={() => saveMembershipDetails(u.id)}
+                >
+                  <Ionicons name="save-outline" size={13} color="#000" />
+                  <Text style={styles.membershipSaveBtnText}>Guardar cambios</Text>
+                </Pressable>
+
+                <View style={styles.paymentFormBox}>
+                  <View style={styles.paymentFormHeader}>
+                    <MaterialCommunityIcons name="cash-check" size={14} color="#D4AF37" />
+                    <Text style={styles.paymentFormTitle}>REGISTRAR PAGO</Text>
+                  </View>
+                  <View style={styles.paymentFormRow}>
+                    <View style={styles.paymentFormField}>
+                      <Text style={styles.paymentFormLabel}>Fecha de pago</Text>
+                      <TextInput
+                        style={styles.paymentFormInput}
+                        value={getPaymentForm(u.id).paymentDate}
+                        onChangeText={(v) => setPaymentFormField(u.id, "paymentDate", v)}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#444"
+                        keyboardType="numbers-and-punctuation"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                    <View style={styles.paymentFormArrow}>
+                      <Ionicons name="arrow-forward" size={14} color="#555" />
+                    </View>
+                    <View style={styles.paymentFormField}>
+                      <Text style={styles.paymentFormLabel}>Vence el</Text>
+                      <TextInput
+                        style={[styles.paymentFormInput, { borderColor: "#D4AF3760" }]}
+                        value={getPaymentForm(u.id).expiresDate}
+                        onChangeText={(v) => setPaymentFormField(u.id, "expiresDate", v)}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#444"
+                        keyboardType="numbers-and-punctuation"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
                   <Pressable
-                    style={styles.membershipSaveBtn}
-                    onPress={() => saveMembershipDetails(u.id)}
+                    style={styles.paymentSubmitBtn}
+                    onPress={() => submitPayment(u.id)}
                   >
-                    <Ionicons name="save-outline" size={13} color="#000" />
-                    <Text style={styles.membershipSaveBtnText}>Guardar Detalles</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.paymentBtn}
-                    onPress={() => registerPayment(u.id)}
-                  >
-                    <MaterialCommunityIcons name="cash-check" size={13} color="#000" />
-                    <Text style={styles.paymentBtnText}>+30 días</Text>
+                    <MaterialCommunityIcons name="check-circle-outline" size={14} color="#000" />
+                    <Text style={styles.paymentSubmitBtnText}>Confirmar pago</Text>
                   </Pressable>
                 </View>
 
@@ -1141,7 +1209,7 @@ function UsersPanel({
                 </View>
               </View>
             )}
-          </Pressable>
+          </View>
         );
       })}
 
@@ -3382,17 +3450,6 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 4,
   },
-  paymentBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#D4AF37",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 2,
-    marginTop: 8,
-    alignSelf: "flex-start",
-  },
   membershipInput: {
     backgroundColor: "#111",
     borderWidth: 1,
@@ -3405,27 +3462,89 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     borderRadius: 2,
   },
-  membershipActionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 8,
-  },
   membershipSaveBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#D4AF37",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#333",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 2,
-    flex: 1,
+    alignSelf: "flex-start",
+    marginBottom: 12,
   },
   membershipSaveBtnText: {
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 11,
+    color: "#D4AF37",
+  },
+  paymentFormBox: {
+    borderWidth: 1,
+    borderColor: "#D4AF3740",
+    borderRadius: 2,
+    padding: 12,
+    backgroundColor: "#0D0B00",
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  paymentFormHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  paymentFormTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#D4AF37",
+    letterSpacing: 1.5,
+  },
+  paymentFormRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    marginBottom: 10,
+  },
+  paymentFormField: {
+    flex: 1,
+  },
+  paymentFormLabel: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#777",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  paymentFormInput: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#333",
+    color: "#fff",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 2,
+  },
+  paymentFormArrow: {
+    paddingBottom: 8,
+  },
+  paymentSubmitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#D4AF37",
+    paddingVertical: 9,
+    borderRadius: 2,
+  },
+  paymentSubmitBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
     color: "#000",
+    letterSpacing: 0.5,
   },
   paymentBtnText: {
     fontFamily: "NotoSansJP_700Bold",
