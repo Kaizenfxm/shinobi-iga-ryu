@@ -254,6 +254,7 @@ export default function ProfileScreen() {
     setEditCurrentPassword("");
     setEditNewPassword("");
     setEditConfirmPassword("");
+    setWeightInput(profile?.weightData?.currentWeight?.toString() ?? "");
     setEditing(true);
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: actionsSectionYRef.current, animated: true });
@@ -560,7 +561,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {data.weightData && (data.weightData.currentWeight || data.weightData.initialWeight || data.weightData.targetWeight) && (
+          {data.weightData && data.weightData.initialWeight != null && (
             <View style={weightStyles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionLine} />
@@ -682,6 +683,34 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
+              {data.weightData && data.weightData.initialWeight != null && (
+                <>
+                  <Text style={styles.editLabel}>Peso actual (kg)</Text>
+                  <View style={weightStyles.editRow}>
+                    <TextInput
+                      style={[styles.editInput, { flex: 1 }]}
+                      value={weightInput}
+                      onChangeText={(v) => setWeightInput(v)}
+                      placeholder="Ej: 72.5"
+                      placeholderTextColor="#444"
+                      keyboardType="decimal-pad"
+                      editable={!saving && !savingWeight}
+                    />
+                    <Pressable
+                      style={[weightStyles.editSaveBtn, savingWeight && { opacity: 0.6 }]}
+                      onPress={handleSaveWeight}
+                      disabled={savingWeight || saving}
+                    >
+                      {savingWeight ? (
+                        <ActivityIndicator size="small" color="#000" />
+                      ) : (
+                        <Text style={weightStyles.editSaveBtnText}>Actualizar</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </>
+              )}
+
               <Text style={[styles.editLabel, { marginTop: 12 }]}>Cambiar contraseña</Text>
               <Text style={{ color: "#555", fontSize: 11, fontFamily: "NotoSansJP_400Regular", marginBottom: 6 }}>
                 Dejar vacío si no deseas cambiarla
@@ -736,52 +765,6 @@ export default function ProfileScreen() {
               </View>
             </View>
           )}
-
-          <View style={weightStyles.editSection}>
-            <Pressable
-              style={weightStyles.editToggle}
-              onPress={() => {
-                if (editingWeight) {
-                  setEditingWeight(false);
-                  setWeightInput("");
-                } else {
-                  setWeightInput(data.weightData?.currentWeight?.toString() ?? "");
-                  setEditingWeight(true);
-                }
-              }}
-            >
-              <MaterialCommunityIcons name="scale-bathroom" size={16} color="#D4AF37" />
-              <Text style={weightStyles.editToggleText}>ACTUALIZAR PESO</Text>
-              <Ionicons name={editingWeight ? "chevron-up" : "chevron-down"} size={16} color="#666" />
-            </Pressable>
-            {editingWeight && (
-              <View style={weightStyles.editForm}>
-                <Text style={weightStyles.editLabel}>Peso actual (kg)</Text>
-                <View style={weightStyles.editRow}>
-                  <TextInput
-                    style={weightStyles.editInput}
-                    value={weightInput}
-                    onChangeText={setWeightInput}
-                    placeholder="Ej: 72.5"
-                    placeholderTextColor="#444"
-                    keyboardType="decimal-pad"
-                    editable={!savingWeight}
-                  />
-                  <Pressable
-                    style={[weightStyles.editSaveBtn, savingWeight && { opacity: 0.6 }]}
-                    onPress={handleSaveWeight}
-                    disabled={savingWeight}
-                  >
-                    {savingWeight ? (
-                      <ActivityIndicator size="small" color="#000" />
-                    ) : (
-                      <Text style={weightStyles.editSaveBtnText}>Guardar</Text>
-                    )}
-                  </Pressable>
-                </View>
-              </View>
-            )}
-          </View>
 
           {isAlumno && (
             <View style={membershipStyles.section}>
@@ -1340,44 +1323,6 @@ const weightStyles = StyleSheet.create({
     fontSize: 11,
     color: "#888",
     marginTop: 6,
-  },
-  editSection: {
-    marginBottom: 12,
-  },
-  editToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#080808",
-    borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderRadius: 2,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  editToggleText: {
-    flex: 1,
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 11,
-    color: "#D4AF37",
-    letterSpacing: 2,
-  },
-  editForm: {
-    backgroundColor: "#080808",
-    borderWidth: 1,
-    borderColor: "#1A1A1A",
-    borderTopWidth: 0,
-    borderRadius: 2,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    padding: 14,
-  },
-  editLabel: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 10,
-    color: "#888",
-    letterSpacing: 1,
-    marginBottom: 6,
   },
   editRow: {
     flexDirection: "row",
