@@ -854,57 +854,38 @@ function UsersPanel({
     }
   };
 
-  const deletePaymentRecord = async (userId: number, paymentId: number) => {
+  const deletePaymentRecord = (userId: number, paymentId: number) => {
     Alert.alert("Eliminar pago", "¿Confirmas que deseas eliminar este pago?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Eliminar",
         style: "destructive",
-        onPress: async () => {
-          try {
-            await adminApi.deletePayment(paymentId);
-            await loadPaymentHistory(userId);
-            const { users: fresh } = await adminApi.getUsers();
-            const updated = fresh.find((u) => u.id === userId);
-            if (updated) {
-              setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt } : u)));
-            }
-          } catch {
-            Alert.alert("Error", "No se pudo eliminar el pago");
-          }
+        onPress: () => {
+          adminApi.deletePayment(paymentId)
+            .then(() => {
+              loadPaymentHistory(userId);
+              return adminApi.getUsers();
+            })
+            .then(({ users: fresh }) => {
+              const updated = fresh.find((u) => u.id === userId);
+              if (updated) {
+                setUsers((prev) =>
+                  prev.map((u) =>
+                    u.id === userId
+                      ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt }
+                      : u
+                  )
+                );
+              }
+            })
+            .catch(() => {
+              Alert.alert("Error", "No se pudo eliminar el pago");
+            });
         },
       },
     ]);
   };
 
-  const [membershipEdits, setMembershipEdits] = useState<Record<number, { notes: string }>>({});
-
-  const getMembershipEdit = (u: UserData) =>
-    membershipEdits[u.id] ?? { notes: u.membershipNotes || "" };
-
-  const setMembershipEdit = (userId: number, field: "notes", value: string) => {
-    setMembershipEdits((prev) => ({
-      ...prev,
-      [userId]: { ...getMembershipEdit(users.find((u) => u.id === userId)!), [field]: value },
-    }));
-  };
-
-  const saveMembershipDetails = async (userId: number) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user) return;
-    const edit = getMembershipEdit(user);
-    try {
-      await adminApi.updateMembership(userId, { notes: edit.notes || null });
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId ? { ...u, membershipNotes: edit.notes || null } : u
-        )
-      );
-      Alert.alert("Guardado", "Notas de membresía actualizadas");
-    } catch {
-      Alert.alert("Error", "No se pudo guardar");
-    }
-  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const filteredUsers = searchQuery.trim() === ""
@@ -1106,25 +1087,6 @@ function UsersPanel({
                     Prueba hasta: {new Date(u.trialEndsAt).toLocaleDateString("es-CO")}
                   </Text>
                 )}
-
-                <Text style={styles.sectionLabel}>NOTAS</Text>
-                <TextInput
-                  style={[styles.membershipInput, { height: 56, textAlignVertical: "top" }]}
-                  value={getMembershipEdit(u).notes}
-                  onChangeText={(v) => setMembershipEdit(u.id, "notes", v)}
-                  placeholder="Observaciones de membresía..."
-                  placeholderTextColor="#444"
-                  multiline
-                  numberOfLines={2}
-                />
-
-                <Pressable
-                  style={styles.membershipSaveBtn}
-                  onPress={() => saveMembershipDetails(u.id)}
-                >
-                  <Ionicons name="save-outline" size={13} color="#000" />
-                  <Text style={styles.membershipSaveBtnText}>Guardar cambios</Text>
-                </Pressable>
 
                 {/* ── HISTORIAL DE PAGOS ── */}
                 <Pressable
