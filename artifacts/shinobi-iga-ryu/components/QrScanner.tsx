@@ -161,13 +161,16 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
         <View style={scannerStyles.container}>
           {result?.type === "success" ? (
             <View style={scannerStyles.resultContainer}>
-              <ViewShot ref={viewShotRef} style={{ alignSelf: "stretch" }}>
+              <Pressable onPress={closeAll} style={{ position: "absolute", top: 16, right: 16, zIndex: 10, padding: 6 }}>
+                <Ionicons name="close" size={20} color="#555" />
+              </Pressable>
+
+              <ViewShot ref={viewShotRef}>
                 <View style={[scannerStyles.resultCard, { backgroundColor: "#0a0a0a" }]}>
                   <Image
                     source={require("../assets/images/logo.png")}
-                    style={{ width: 72, height: 72, resizeMode: "contain", marginBottom: 6 }}
+                    style={{ width: 80, height: 80, resizeMode: "contain", marginBottom: 10 }}
                   />
-                  <MaterialCommunityIcons name="check-circle" size={52} color="#D4AF37" />
                   <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
                   <Text style={scannerStyles.resultClass}>{result.className}</Text>
                   {result.createdByName && (
@@ -195,21 +198,17 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
                     <Text style={scannerStyles.ratingThanks}>¡Gracias por tu calificación!</Text>
                   </View>
                 )}
-
-                <View style={{ flexDirection: "row", gap: 10, marginTop: 14, alignItems: "center" }}>
+                <View style={{ alignItems: "center", marginTop: 16 }}>
                   {sharing ? (
-                    <ActivityIndicator color="#D4AF37" size="small" style={{ width: 40 }} />
+                    <ActivityIndicator color="#D4AF37" size="small" />
                   ) : (
                     <Pressable
-                      style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#111", alignItems: "center", justifyContent: "center" }}
+                      style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#0a0a0a", alignItems: "center", justifyContent: "center" }}
                       onPress={handleShare}
                     >
                       <Ionicons name="share-social-outline" size={18} color="#D4AF37" />
                     </Pressable>
                   )}
-                  <Pressable style={[scannerStyles.closeBtn, { flex: 1, marginTop: 0, alignItems: "center" }]} onPress={closeAll}>
-                    <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
-                  </Pressable>
                 </View>
               </View>
             </View>
