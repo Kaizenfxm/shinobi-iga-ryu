@@ -169,10 +169,12 @@ authRouter.post("/auth/login", async (req, res) => {
     const isPrivileged = roleNames.includes("admin") || roleNames.includes("profesor");
 
     if (!isPrivileged && isMembershipExpired(user)) {
-      await db
-        .update(usersTable)
-        .set({ membershipStatus: "inactivo", updatedAt: new Date() })
-        .where(eq(usersTable.id, user.id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(usersTable)
+          .set({ membershipStatus: "inactivo", updatedAt: new Date() })
+          .where(and(eq(usersTable.id, user.id), eq(usersTable.membershipStatus, "activo")));
+      });
       user.membershipStatus = "inactivo";
     }
 

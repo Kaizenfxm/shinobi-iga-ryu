@@ -748,6 +748,43 @@ function UsersPanel({
     }
   };
 
+  const [membershipEdits, setMembershipEdits] = useState<Record<number, { notes: string; expiry: string }>>({});
+
+  const getMembershipEdit = (u: UserData) =>
+    membershipEdits[u.id] ?? {
+      notes: u.membershipNotes || "",
+      expiry: u.membershipExpiresAt ? u.membershipExpiresAt.split("T")[0] : "",
+    };
+
+  const setMembershipEdit = (userId: number, field: "notes" | "expiry", value: string) => {
+    setMembershipEdits((prev) => ({
+      ...prev,
+      [userId]: { ...getMembershipEdit(users.find((u) => u.id === userId)!), [field]: value },
+    }));
+  };
+
+  const saveMembershipDetails = async (userId: number) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+    const edit = getMembershipEdit(user);
+    try {
+      await adminApi.updateMembership(userId, {
+        membershipExpiresAt: edit.expiry ? new Date(edit.expiry).toISOString() : null,
+        notes: edit.notes || null,
+      });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId
+            ? { ...u, membershipExpiresAt: edit.expiry ? new Date(edit.expiry).toISOString() : null, membershipNotes: edit.notes || null }
+            : u
+        )
+      );
+      Alert.alert("Guardado", "Detalles de membresía actualizados");
+    } catch {
+      Alert.alert("Error", "No se pudo guardar");
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const filteredUsers = searchQuery.trim() === ""
     ? users
@@ -936,9 +973,9 @@ function UsersPanel({
                     );
                   })}
                 </View>
-                {u.membershipExpiresAt && (
+                {u.lastPaymentAt && (
                   <Text style={styles.membershipExpiry}>
-                    Vence: {new Date(u.membershipExpiresAt).toLocaleDateString("es-CO")}
+                    Último pago: {new Date(u.lastPaymentAt).toLocaleDateString("es-CO")}
                   </Text>
                 )}
                 {u.trialEndsAt && !u.membershipExpiresAt && (
@@ -946,13 +983,45 @@ function UsersPanel({
                     Prueba hasta: {new Date(u.trialEndsAt).toLocaleDateString("es-CO")}
                   </Text>
                 )}
-                <Pressable
-                  style={styles.paymentBtn}
-                  onPress={() => registerPayment(u.id)}
-                >
-                  <MaterialCommunityIcons name="cash-check" size={14} color="#000" />
-                  <Text style={styles.paymentBtnText}>Registrar Pago (30 días)</Text>
-                </Pressable>
+
+                <Text style={styles.sectionLabel}>FECHA DE VENCIMIENTO</Text>
+                <TextInput
+                  style={styles.membershipInput}
+                  value={getMembershipEdit(u).expiry}
+                  onChangeText={(v) => setMembershipEdit(u.id, "expiry", v)}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#444"
+                  keyboardType="numbers-and-punctuation"
+                  autoCapitalize="none"
+                />
+
+                <Text style={styles.sectionLabel}>NOTAS</Text>
+                <TextInput
+                  style={[styles.membershipInput, { height: 56, textAlignVertical: "top" }]}
+                  value={getMembershipEdit(u).notes}
+                  onChangeText={(v) => setMembershipEdit(u.id, "notes", v)}
+                  placeholder="Observaciones de membresía..."
+                  placeholderTextColor="#444"
+                  multiline
+                  numberOfLines={2}
+                />
+
+                <View style={styles.membershipActionRow}>
+                  <Pressable
+                    style={styles.membershipSaveBtn}
+                    onPress={() => saveMembershipDetails(u.id)}
+                  >
+                    <Ionicons name="save-outline" size={13} color="#000" />
+                    <Text style={styles.membershipSaveBtnText}>Guardar Detalles</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.paymentBtn}
+                    onPress={() => registerPayment(u.id)}
+                  >
+                    <MaterialCommunityIcons name="cash-check" size={13} color="#000" />
+                    <Text style={styles.paymentBtnText}>+30 días</Text>
+                  </Pressable>
+                </View>
 
                 <Pressable
                   style={styles.beltSectionToggle}
@@ -3323,6 +3392,40 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginTop: 8,
     alignSelf: "flex-start",
+  },
+  membershipInput: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#333",
+    color: "#fff",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 6,
+    borderRadius: 2,
+  },
+  membershipActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  membershipSaveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#D4AF37",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 2,
+    flex: 1,
+  },
+  membershipSaveBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#000",
   },
   paymentBtnText: {
     fontFamily: "NotoSansJP_700Bold",
