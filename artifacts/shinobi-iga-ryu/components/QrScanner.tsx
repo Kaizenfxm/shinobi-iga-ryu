@@ -59,7 +59,7 @@ const starStyles = StyleSheet.create({
 });
 
 export default function QrScannerButton() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasRole } = useAuth();
   const [showScanner, setShowScanner] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -68,11 +68,12 @@ export default function QrScannerButton() {
     className: string;
     classId: number;
     checkedInAt: string;
+    createdByName: string | null;
   } | null>(null);
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
-  if (!isAuthenticated || Platform.OS === "web") return null;
+  if (!isAuthenticated || Platform.OS === "web" || !hasRole("alumno")) return null;
 
   const handleBarCodeScanned = async (data: string) => {
     if (scanned || checking) return;
@@ -125,6 +126,11 @@ export default function QrScannerButton() {
                 <MaterialCommunityIcons name="check-circle" size={60} color="#D4AF37" />
                 <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
                 <Text style={scannerStyles.resultClass}>{result.className}</Text>
+                {result.createdByName && (
+                  <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 2 }}>
+                    Prof: {result.createdByName}
+                  </Text>
+                )}
                 <Text style={scannerStyles.resultTime}>
                   {new Date(result.checkedInAt).toLocaleTimeString("es-CO", {
                     hour: "2-digit",

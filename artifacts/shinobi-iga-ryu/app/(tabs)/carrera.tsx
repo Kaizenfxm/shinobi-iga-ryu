@@ -100,6 +100,11 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
           {new Date(att.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
         </Text>
       </View>
+      {att.createdByName && (
+        <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 1 }}>
+          Prof: {att.createdByName}
+        </Text>
+      )}
       {att.rating && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
           {[1, 2, 3, 4, 5].map((s) => (
