@@ -228,6 +228,56 @@ function CategoryCard({
   );
 }
 
+const UNCATEGORIZED_ID = -1;
+
+function KnowledgeList({ items }: { items: KnowledgeItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      {items.map((item) => (
+        <View key={item.id} style={styles.knowledgeCard}>
+          <View style={styles.cardGoldBar} />
+          <Text style={styles.knowledgeTitle}>{item.title}</Text>
+          {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
+          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+        </View>
+      ))}
+    </>
+  );
+}
+
+function ExerciseList({ items }: { items: ExerciseItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      {items.map((item) => (
+        <View key={item.id} style={styles.exerciseCard}>
+          <View style={styles.exerciseCardTop}>
+            <Text style={styles.exerciseTitle}>{item.title}</Text>
+            <View style={styles.exerciseMeta}>
+              {item.level ? (
+                <View style={[styles.levelBadge, { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
+                  <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
+                    {LEVEL_LABELS[item.level] ?? item.level}
+                  </Text>
+                </View>
+              ) : null}
+              {item.durationMinutes ? (
+                <View style={styles.durationTag}>
+                  <Ionicons name="time-outline" size={11} color="#555" />
+                  <Text style={styles.durationText}>{item.durationMinutes} min</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+          {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
+          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+        </View>
+      ))}
+    </>
+  );
+}
+
 function ConocimientoTab({
   items,
   categories,
@@ -239,10 +289,17 @@ function ConocimientoTab({
 }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
+  const uncategorized = useMemo(() => items.filter((i) => i.categoryId === null), [items]);
+  const categoriesWithItems = useMemo(
+    () => categories.filter((cat) => items.some((i) => i.categoryId === cat.id)),
+    [categories, items]
+  );
+
   const filteredItems = useMemo(() => {
-    if (selectedCategoryId === null) return items;
+    if (selectedCategoryId === null) return [];
+    if (selectedCategoryId === UNCATEGORIZED_ID) return uncategorized;
     return items.filter((i) => i.categoryId === selectedCategoryId);
-  }, [items, selectedCategoryId]);
+  }, [items, selectedCategoryId, uncategorized]);
 
   if (items.length === 0) {
     return (
@@ -254,13 +311,15 @@ function ConocimientoTab({
     );
   }
 
-  if (categories.length > 0 && selectedCategoryId === null) {
-    const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+  if (categoriesWithItems.length === 0 || selectedCategoryId === null) {
+    if (categoriesWithItems.length === 0) {
+      return <View style={styles.listContainer}><KnowledgeList items={items} /></View>;
+    }
     return (
-      <View>
+      <View style={{ gap: 10 }}>
         <Text style={styles.gridLabel}>CATEGORÍAS</Text>
         <View style={styles.catGrid}>
-          {categories.map((cat) => (
+          {categoriesWithItems.map((cat) => (
             <CategoryCard
               key={cat.id}
               category={cat}
@@ -268,35 +327,31 @@ function ConocimientoTab({
               onPress={() => setSelectedCategoryId(cat.id)}
             />
           ))}
+          {uncategorized.length > 0 && (
+            <GeneralesCard count={uncategorized.length} onPress={() => setSelectedCategoryId(UNCATEGORIZED_ID)} />
+          )}
         </View>
       </View>
     );
   }
 
-  const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+  const selectedCat = selectedCategoryId === UNCATEGORIZED_ID
+    ? { name: "Generales" }
+    : categories.find((c) => c.id === selectedCategoryId);
 
   return (
     <View style={styles.listContainer}>
-      {selectedCategoryId !== null && (
-        <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
-          <Ionicons name="arrow-back" size={14} color="#D4AF37" />
-          <Text style={styles.backToCatsText}>Categorías</Text>
-          {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
-        </Pressable>
-      )}
+      <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
+        <Ionicons name="arrow-back" size={14} color="#D4AF37" />
+        <Text style={styles.backToCatsText}>Categorías</Text>
+        {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
+      </Pressable>
       {filteredItems.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>Sin contenido en esta categoría</Text>
         </View>
       ) : (
-        filteredItems.map((item) => (
-          <View key={item.id} style={styles.knowledgeCard}>
-            <View style={styles.cardGoldBar} />
-            <Text style={styles.knowledgeTitle}>{item.title}</Text>
-            {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
-            {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
-          </View>
-        ))
+        <KnowledgeList items={filteredItems} />
       )}
     </View>
   );
@@ -313,10 +368,17 @@ function EjerciciosTab({
 }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
+  const uncategorized = useMemo(() => items.filter((i) => i.categoryId === null), [items]);
+  const categoriesWithItems = useMemo(
+    () => categories.filter((cat) => items.some((i) => i.categoryId === cat.id)),
+    [categories, items]
+  );
+
   const filteredItems = useMemo(() => {
-    if (selectedCategoryId === null) return items;
+    if (selectedCategoryId === null) return [];
+    if (selectedCategoryId === UNCATEGORIZED_ID) return uncategorized;
     return items.filter((i) => i.categoryId === selectedCategoryId);
-  }, [items, selectedCategoryId]);
+  }, [items, selectedCategoryId, uncategorized]);
 
   if (items.length === 0) {
     return (
@@ -328,12 +390,15 @@ function EjerciciosTab({
     );
   }
 
-  if (categories.length > 0 && selectedCategoryId === null) {
+  if (categoriesWithItems.length === 0 || selectedCategoryId === null) {
+    if (categoriesWithItems.length === 0) {
+      return <View style={styles.listContainer}><ExerciseList items={items} /></View>;
+    }
     return (
-      <View>
+      <View style={{ gap: 10 }}>
         <Text style={styles.gridLabel}>CATEGORÍAS</Text>
         <View style={styles.catGrid}>
-          {categories.map((cat) => (
+          {categoriesWithItems.map((cat) => (
             <CategoryCard
               key={cat.id}
               category={cat}
@@ -341,53 +406,55 @@ function EjerciciosTab({
               onPress={() => setSelectedCategoryId(cat.id)}
             />
           ))}
+          {uncategorized.length > 0 && (
+            <GeneralesCard count={uncategorized.length} onPress={() => setSelectedCategoryId(UNCATEGORIZED_ID)} />
+          )}
         </View>
       </View>
     );
   }
 
-  const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+  const selectedCat = selectedCategoryId === UNCATEGORIZED_ID
+    ? { name: "Generales" }
+    : categories.find((c) => c.id === selectedCategoryId);
 
   return (
     <View style={styles.listContainer}>
-      {selectedCategoryId !== null && (
-        <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
-          <Ionicons name="arrow-back" size={14} color="#D4AF37" />
-          <Text style={styles.backToCatsText}>Categorías</Text>
-          {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
-        </Pressable>
-      )}
+      <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
+        <Ionicons name="arrow-back" size={14} color="#D4AF37" />
+        <Text style={styles.backToCatsText}>Categorías</Text>
+        {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
+      </Pressable>
       {filteredItems.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>Sin ejercicios en esta categoría</Text>
         </View>
       ) : (
-        filteredItems.map((item) => (
-          <View key={item.id} style={styles.exerciseCard}>
-            <View style={styles.exerciseCardTop}>
-              <Text style={styles.exerciseTitle}>{item.title}</Text>
-              <View style={styles.exerciseMeta}>
-                {item.level ? (
-                  <View style={[styles.levelBadge, { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
-                    <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
-                      {LEVEL_LABELS[item.level] ?? item.level}
-                    </Text>
-                  </View>
-                ) : null}
-                {item.durationMinutes ? (
-                  <View style={styles.durationTag}>
-                    <Ionicons name="time-outline" size={11} color="#555" />
-                    <Text style={styles.durationText}>{item.durationMinutes} min</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-            {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
-            {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
-          </View>
-        ))
+        <ExerciseList items={filteredItems} />
       )}
     </View>
+  );
+}
+
+function GeneralesCard({ count, onPress }: { count: number; onPress: () => void }) {
+  const { width } = useWindowDimensions();
+  const gap = 10;
+  const padding = 16;
+  const cardSize = (width - padding * 2 - gap) / 2;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.catCard,
+        styles.generalesCard,
+        { width: cardSize, height: cardSize, opacity: pressed ? 0.85 : 1 },
+      ]}
+    >
+      <MaterialCommunityIcons name="infinity" size={32} color="#D4AF37" />
+      <Text style={[styles.catCardName, { marginTop: 8 }]}>Generales</Text>
+      <Text style={styles.catCardCount}>{count} {count === 1 ? "item" : "items"}</Text>
+    </Pressable>
   );
 }
 
@@ -542,6 +609,17 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 2,
     lineHeight: 14,
+  },
+  catCardCount: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#555",
+    marginTop: 2,
+  },
+  generalesCard: {
+    borderColor: "#2A2A2A",
+    justifyContent: "center",
+    alignItems: "center",
   },
   backToCats: {
     flexDirection: "row",
