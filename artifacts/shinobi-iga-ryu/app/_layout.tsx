@@ -66,6 +66,10 @@ function RootLayoutNav() {
         name="entrenamiento/[sistema]"
         options={{ headerShown: false, animation: "slide_from_right" }}
       />
+      <Stack.Screen
+        name="conocenos"
+        options={{ headerShown: false, animation: "slide_from_right" }}
+      />
     </Stack>
   );
 }

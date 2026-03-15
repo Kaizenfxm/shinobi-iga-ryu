@@ -203,7 +203,14 @@ export const profesorApi = {
 
 export const settingsApi = {
   getPublic: () =>
-    apiFetch<{ whatsappAdminNumber: string; paymentLinkUrl: string }>("/settings/public"),
+    apiFetch<{
+      whatsappAdminNumber: string;
+      paymentLinkUrl: string;
+      bogotaVideoUrl: string;
+      chiaVideoUrl: string;
+      bogotaAddress: string;
+      chiaAddress: string;
+    }>("/settings/public"),
 };
 
 export interface BeltDefinition {

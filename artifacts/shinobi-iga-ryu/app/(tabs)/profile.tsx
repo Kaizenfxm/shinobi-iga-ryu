@@ -446,11 +446,13 @@ export default function ProfileScreen() {
         >
           <View style={styles.headerSection}>
             <View style={styles.academyRow}>
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
+              <Pressable onPress={() => router.push("/conocenos")}>
+                <Image
+                  source={require("@/assets/images/logo.png")}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+              </Pressable>
             </View>
             <Text style={styles.academyName}>忍 SHINOBI IGA RYU 忍</Text>
           </View>

@@ -6,10 +6,11 @@ const settingsRouter = Router();
 
 settingsRouter.get("/settings/public", async (_req, res) => {
   try {
+    const publicKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address"];
     const rows = await db
       .select()
       .from(appSettingsTable)
-      .where(inArray(appSettingsTable.key, ["whatsapp_admin_number", "payment_link_url"]));
+      .where(inArray(appSettingsTable.key, publicKeys));
 
     const result: Record<string, string> = {};
     for (const r of rows) {
@@ -19,6 +20,10 @@ settingsRouter.get("/settings/public", async (_req, res) => {
     res.json({
       whatsappAdminNumber: result["whatsapp_admin_number"] || "",
       paymentLinkUrl: result["payment_link_url"] || "",
+      bogotaVideoUrl: result["bogota_video_url"] || "",
+      chiaVideoUrl: result["chia_video_url"] || "",
+      bogotaAddress: result["bogota_address"] || "",
+      chiaAddress: result["chia_address"] || "",
     });
   } catch (error) {
     console.error("Get public settings error:", error);
