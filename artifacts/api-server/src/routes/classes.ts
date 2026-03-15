@@ -9,7 +9,7 @@ const classesRouter = Router();
 const QR_VALIDITY_HOURS = 3;
 
 function generateQrToken(): string {
-  return crypto.randomBytes(16).toString("hex");
+  return crypto.randomUUID();
 }
 
 async function isAdminOrProfesor(userId: number): Promise<boolean> {
