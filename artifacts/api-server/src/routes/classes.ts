@@ -304,12 +304,6 @@ classesRouter.put("/classes/:id", requireAuth, async (req, res) => {
 classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const alumno = await isAlumno(userId);
-    if (!alumno) {
-      res.status(403).json({ error: "Solo alumnos pueden registrar asistencia" });
-      return;
-    }
-
     const { qrToken } = req.body;
 
     if (!qrToken || typeof qrToken !== "string") {
@@ -386,12 +380,6 @@ classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
 classesRouter.patch("/classes/:id/rating", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const alumno = await isAlumno(userId);
-    if (!alumno) {
-      res.status(403).json({ error: "Solo alumnos pueden calificar clases" });
-      return;
-    }
-
     const classId = parseInt(String(req.params.id), 10);
     if (isNaN(classId)) {
       res.status(400).json({ error: "ID de clase inválido" });

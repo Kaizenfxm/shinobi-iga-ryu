@@ -74,7 +74,7 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [webToken, setWebToken] = useState("");
 
-  if (!isAuthenticated || !hasRole("alumno")) return null;
+  if (!isAuthenticated) return null;
 
   const handleBarCodeScanned = async (data: string) => {
     if (scanned || checking) return;
