@@ -736,6 +736,7 @@ export interface MyAttendanceItem {
   classId: number;
   attendedAt: string;
   rating: number | null;
+  notes: string | null;
   systemNames: string[];
   createdByName: string | null;
 }

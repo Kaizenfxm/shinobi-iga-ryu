@@ -124,6 +124,11 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
           Prof: {att.createdByName}
         </Text>
       )}
+      {att.notes ? (
+        <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 4, fontStyle: "italic" }}>
+          {att.notes}
+        </Text>
+      ) : null}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
         {[1, 2, 3, 4, 5].map((s) => (
           <Pressable key={s} onPress={() => handleRate(s)} disabled={!!localRating || submitting}>
