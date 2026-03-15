@@ -7,6 +7,7 @@ export type Sede = typeof SEDES[number];
 
 export const roleEnum = pgEnum("user_role", ["admin", "profesor", "alumno"]);
 export const subscriptionLevelEnum = pgEnum("subscription_level", ["basico", "medio", "avanzado", "personalizado"]);
+export const membershipStatusEnum = pgEnum("membership_status", ["activo", "inactivo", "pausado"]);
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -18,7 +19,18 @@ export const usersTable = pgTable("users", {
   phone: varchar("phone", { length: 50 }),
   isFighter: boolean("is_fighter").default(false).notNull(),
   sedes: text("sedes").array().notNull().default([]),
+  membershipStatus: membershipStatusEnum("membership_status").default("activo").notNull(),
+  membershipExpiresAt: timestamp("membership_expires_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  lastPaymentAt: timestamp("last_payment_at"),
+  membershipNotes: text("membership_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const appSettingsTable = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable } from "@workspace/db";
 import { eq, and, or, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -17,6 +17,11 @@ async function fetchUsersWithRoles() {
       isFighter: usersTable.isFighter,
       phone: usersTable.phone,
       sedes: usersTable.sedes,
+      membershipStatus: usersTable.membershipStatus,
+      membershipExpiresAt: usersTable.membershipExpiresAt,
+      trialEndsAt: usersTable.trialEndsAt,
+      lastPaymentAt: usersTable.lastPaymentAt,
+      membershipNotes: usersTable.membershipNotes,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -85,6 +90,9 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
       ? sedes.filter((s: string) => validSedes.includes(s))
       : [];
 
+    const isPrivileged = userRoles.includes("admin") || userRoles.includes("profesor");
+    const trialEndsAt = isPrivileged ? null : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
     const [newUser] = await db
       .insert(usersTable)
       .values({
@@ -95,6 +103,8 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         subscriptionLevel: subLevel,
         isFighter: isFighter === true,
         sedes: sedesArray,
+        membershipStatus: "activo",
+        trialEndsAt,
       })
       .returning({
         id: usersTable.id,
@@ -105,6 +115,11 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         isFighter: usersTable.isFighter,
         phone: usersTable.phone,
         sedes: usersTable.sedes,
+        membershipStatus: usersTable.membershipStatus,
+        membershipExpiresAt: usersTable.membershipExpiresAt,
+        trialEndsAt: usersTable.trialEndsAt,
+        lastPaymentAt: usersTable.lastPaymentAt,
+        membershipNotes: usersTable.membershipNotes,
       });
 
     for (const role of userRoles) {
@@ -191,6 +206,11 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         isFighter: usersTable.isFighter,
         phone: usersTable.phone,
         sedes: usersTable.sedes,
+        membershipStatus: usersTable.membershipStatus,
+        membershipExpiresAt: usersTable.membershipExpiresAt,
+        trialEndsAt: usersTable.trialEndsAt,
+        lastPaymentAt: usersTable.lastPaymentAt,
+        membershipNotes: usersTable.membershipNotes,
       });
 
     res.json({ user: updated });
@@ -328,6 +348,150 @@ adminRouter.put("/admin/users/:id/subscription", requireAdmin, async (req, res) 
     res.json({ success: true, subscriptionLevel: user.subscriptionLevel });
   } catch (error) {
     console.error("Admin update subscription error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const { status, membershipExpiresAt, notes } = req.body;
+    const validStatuses = ["activo", "inactivo", "pausado"] as const;
+
+    const updates: Partial<typeof usersTable.$inferInsert> & { updatedAt: Date } = {
+      updatedAt: new Date(),
+    };
+
+    if (status !== undefined) {
+      if (!validStatuses.includes(status as typeof validStatuses[number])) {
+        res.status(400).json({ error: "Estado de membresía inválido" });
+        return;
+      }
+      updates.membershipStatus = status as typeof validStatuses[number];
+    }
+
+    if (membershipExpiresAt !== undefined) {
+      updates.membershipExpiresAt = membershipExpiresAt ? new Date(membershipExpiresAt) : null;
+    }
+
+    if (notes !== undefined) {
+      updates.membershipNotes = notes?.trim() || null;
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set(updates)
+      .where(eq(usersTable.id, userId))
+      .returning({
+        id: usersTable.id,
+        membershipStatus: usersTable.membershipStatus,
+        membershipExpiresAt: usersTable.membershipExpiresAt,
+        membershipNotes: usersTable.membershipNotes,
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    res.json({ success: true, ...updated });
+  } catch (error) {
+    console.error("Admin update membership error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/users/:id/payment", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.id), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+
+    const { membershipExpiresAt } = req.body;
+    if (!membershipExpiresAt) {
+      res.status(400).json({ error: "Se requiere la fecha de vencimiento" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({
+        membershipStatus: "activo",
+        membershipExpiresAt: new Date(membershipExpiresAt),
+        lastPaymentAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(usersTable.id, userId))
+      .returning({
+        id: usersTable.id,
+        membershipStatus: usersTable.membershipStatus,
+        membershipExpiresAt: usersTable.membershipExpiresAt,
+        lastPaymentAt: usersTable.lastPaymentAt,
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    res.json({ success: true, ...updated });
+  } catch (error) {
+    console.error("Admin register payment error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.get("/admin/settings", requireAdmin, async (_req, res) => {
+  try {
+    const rows = await db.select().from(appSettingsTable);
+    const settings: Record<string, string> = {};
+    for (const r of rows) {
+      settings[r.key] = r.value;
+    }
+    res.json({ settings });
+  } catch (error) {
+    console.error("Admin get settings error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.put("/admin/settings", requireAdmin, async (req, res) => {
+  try {
+    const { settings } = req.body as { settings?: Record<string, string> };
+    if (!settings || typeof settings !== "object") {
+      res.status(400).json({ error: "Se requiere un objeto settings" });
+      return;
+    }
+
+    const allowedKeys = ["whatsapp_admin_number", "payment_link_url"];
+    await db.transaction(async (tx) => {
+      for (const [key, value] of Object.entries(settings)) {
+        if (!allowedKeys.includes(key)) continue;
+        await tx
+          .insert(appSettingsTable)
+          .values({ key, value: String(value).trim(), updatedAt: new Date() })
+          .onConflictDoUpdate({
+            target: appSettingsTable.key,
+            set: { value: String(value).trim(), updatedAt: new Date() },
+          });
+      }
+    });
+
+    const rows = await db.select().from(appSettingsTable);
+    const result: Record<string, string> = {};
+    for (const r of rows) {
+      result[r.key] = r.value;
+    }
+    res.json({ settings: result });
+  } catch (error) {
+    console.error("Admin update settings error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

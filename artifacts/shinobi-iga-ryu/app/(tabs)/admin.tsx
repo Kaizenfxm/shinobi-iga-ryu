@@ -57,7 +57,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "configuracion";
 
 const TRAINING_SYSTEM_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
@@ -118,6 +118,18 @@ const SEDES_OPTIONS = [
   { value: "bogota", label: "Bogotá" },
   { value: "chia", label: "Chía" },
 ];
+
+const MEMBERSHIP_STATUSES = ["activo", "inactivo", "pausado"] as const;
+const MEMBERSHIP_LABELS: Record<string, string> = {
+  activo: "Activo",
+  inactivo: "Inactivo",
+  pausado: "Pausado",
+};
+const MEMBERSHIP_COLORS: Record<string, string> = {
+  activo: "#1a5c1a",
+  inactivo: "#5c1a1a",
+  pausado: "#5c4a1a",
+};
 
 const NOTIFICATION_TARGETS = [
   { value: "todas", label: "Todos" },
@@ -706,6 +718,36 @@ function UsersPanel({
     }
   };
 
+  const changeMembership = async (userId: number, status: string) => {
+    try {
+      await adminApi.updateMembership(userId, { status });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, membershipStatus: status as UserData["membershipStatus"] } : u
+        )
+      );
+    } catch {
+      Alert.alert("Error", "No se pudo cambiar la membresía");
+    }
+  };
+
+  const registerPayment = async (userId: number) => {
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      const res = await adminApi.registerPayment(userId, thirtyDaysFromNow);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId
+            ? { ...u, membershipStatus: res.membershipStatus as UserData["membershipStatus"], membershipExpiresAt: res.membershipExpiresAt, lastPaymentAt: res.lastPaymentAt }
+            : u
+        )
+      );
+      Alert.alert("Pago registrado", "Membresía activada por 30 días");
+    } catch {
+      Alert.alert("Error", "No se pudo registrar el pago");
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const filteredUsers = searchQuery.trim() === ""
     ? users
@@ -794,6 +836,11 @@ function UsersPanel({
                       {SUB_LABELS[u.subscriptionLevel] || u.subscriptionLevel}
                     </Text>
                   </View>
+                  <View style={[styles.membershipBadge, { backgroundColor: MEMBERSHIP_COLORS[u.membershipStatus] || "#333" }]}>
+                    <Text style={styles.membershipBadgeText}>
+                      {MEMBERSHIP_LABELS[u.membershipStatus] || u.membershipStatus}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <Ionicons
@@ -863,6 +910,49 @@ function UsersPanel({
                     );
                   })}
                 </View>
+
+                <Text style={styles.sectionLabel}>MEMBRESÍA</Text>
+                <View style={styles.toggleGroup}>
+                  {MEMBERSHIP_STATUSES.map((ms) => {
+                    const isActive = u.membershipStatus === ms;
+                    return (
+                      <Pressable
+                        key={ms}
+                        style={[
+                          styles.toggleButton,
+                          isActive && { backgroundColor: MEMBERSHIP_COLORS[ms], borderColor: MEMBERSHIP_COLORS[ms] },
+                        ]}
+                        onPress={() => changeMembership(u.id, ms)}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            isActive && { color: "#FFF", fontFamily: "NotoSansJP_700Bold" },
+                          ]}
+                        >
+                          {MEMBERSHIP_LABELS[ms]}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {u.membershipExpiresAt && (
+                  <Text style={styles.membershipExpiry}>
+                    Vence: {new Date(u.membershipExpiresAt).toLocaleDateString("es-CO")}
+                  </Text>
+                )}
+                {u.trialEndsAt && !u.membershipExpiresAt && (
+                  <Text style={styles.membershipExpiry}>
+                    Prueba hasta: {new Date(u.trialEndsAt).toLocaleDateString("es-CO")}
+                  </Text>
+                )}
+                <Pressable
+                  style={styles.paymentBtn}
+                  onPress={() => registerPayment(u.id)}
+                >
+                  <MaterialCommunityIcons name="cash-check" size={14} color="#000" />
+                  <Text style={styles.paymentBtnText}>Registrar Pago (30 días)</Text>
+                </Pressable>
 
                 <Pressable
                   style={styles.beltSectionToggle}
@@ -2606,6 +2696,128 @@ const trnStyles = StyleSheet.create({
   },
 });
 
+function SettingsPanel() {
+  const [whatsapp, setWhatsapp] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    adminApi.getSettings().then(({ settings }) => {
+      setWhatsapp(settings["whatsapp_admin_number"] || "");
+      setPaymentLink(settings["payment_link_url"] || "");
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminApi.updateSettings({
+        whatsapp_admin_number: whatsapp.trim(),
+        payment_link_url: paymentLink.trim(),
+      });
+      Alert.alert("Guardado", "Configuración actualizada");
+    } catch {
+      Alert.alert("Error", "No se pudo guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <ActivityIndicator color="#D4AF37" style={{ marginVertical: 20 }} />;
+  }
+
+  return (
+    <View>
+      <Text style={settingsPanelStyles.title}>Configuración General</Text>
+
+      <Text style={settingsPanelStyles.label}>WHATSAPP ADMIN</Text>
+      <Text style={settingsPanelStyles.hint}>Número con código de país (ej: 573001234567)</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={whatsapp}
+        onChangeText={setWhatsapp}
+        placeholder="573001234567"
+        placeholderTextColor="#444"
+        keyboardType="phone-pad"
+      />
+
+      <Text style={settingsPanelStyles.label}>ENLACE DE PAGO</Text>
+      <Text style={settingsPanelStyles.hint}>URL del enlace de pago (Nequi, Daviplata, etc.)</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={paymentLink}
+        onChangeText={setPaymentLink}
+        placeholder="https://..."
+        placeholderTextColor="#444"
+        keyboardType="url"
+        autoCapitalize="none"
+      />
+
+      <Pressable
+        style={[settingsPanelStyles.saveBtn, saving && { opacity: 0.6 }]}
+        onPress={handleSave}
+        disabled={saving}
+      >
+        {saving ? (
+          <ActivityIndicator color="#000" size="small" />
+        ) : (
+          <Text style={settingsPanelStyles.saveBtnText}>Guardar Configuración</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+const settingsPanelStyles = StyleSheet.create({
+  title: {
+    color: "#FFF",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    letterSpacing: 1,
+    marginBottom: 16,
+  },
+  label: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginBottom: 4,
+    marginTop: 16,
+  },
+  hint: {
+    color: "#666",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 2,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  saveBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  saveBtnText: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    letterSpacing: 1,
+  },
+});
+
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -2710,6 +2922,16 @@ export default function AdminScreen() {
               color={activeTab === "entrenamiento" ? "#000" : "#666"}
             />
           </Pressable>
+          <Pressable
+            style={[styles.tabButton, activeTab === "configuracion" && styles.tabButtonActive]}
+            onPress={() => setActiveTab("configuracion")}
+          >
+            <Ionicons
+              name="settings"
+              size={20}
+              color={activeTab === "configuracion" ? "#000" : "#666"}
+            />
+          </Pressable>
         </View>
 
         <View style={styles.divider} />
@@ -2731,6 +2953,8 @@ export default function AdminScreen() {
           }} />
         ) : activeTab === "entrenamiento" ? (
           <EntrenamientoPanel />
+        ) : activeTab === "configuracion" ? (
+          <SettingsPanel />
         ) : (
           <NotificationsPanel />
         )}
@@ -3070,6 +3294,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#D4AF37",
     letterSpacing: 0.8,
+  },
+  membershipBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 1,
+  },
+  membershipBadgeText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 9,
+    color: "#FFF",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  membershipExpiry: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#888",
+    marginTop: 4,
+  },
+  paymentBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#D4AF37",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 2,
+    marginTop: 8,
+    alignSelf: "flex-start",
+  },
+  paymentBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#000",
+    letterSpacing: 0.5,
   },
   expandedContent: {
     marginTop: 2,
