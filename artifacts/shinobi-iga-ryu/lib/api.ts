@@ -475,6 +475,7 @@ export interface ExerciseCategoryData {
   trainingSystemId: number;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
@@ -485,6 +486,7 @@ export interface KnowledgeCategoryData {
   trainingSystemId: number;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   orderIndex: number;
   isActive: boolean;
   createdAt: string;

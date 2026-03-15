@@ -116,10 +116,11 @@ trainingRouter.get("/training/systems/:key/knowledge-categories", requireAuth, a
 
 trainingRouter.post("/admin/training/exercise-categories", requireAdmin, async (req, res) => {
   try {
-    const { trainingSystemId, name, description, orderIndex } = req.body as {
+    const { trainingSystemId, name, description, imageUrl, orderIndex } = req.body as {
       trainingSystemId?: number;
       name?: string;
       description?: string;
+      imageUrl?: string;
       orderIndex?: number;
     };
     if (!trainingSystemId || !name?.trim()) {
@@ -132,6 +133,7 @@ trainingRouter.post("/admin/training/exercise-categories", requireAdmin, async (
         trainingSystemId,
         name: name.trim(),
         description: description?.trim() || null,
+        imageUrl: imageUrl?.trim() || null,
         orderIndex: orderIndex ?? 0,
       })
       .returning();
@@ -147,10 +149,11 @@ trainingRouter.put("/admin/training/exercise-categories/:id", requireAdmin, asyn
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
 
-    const { name, description, orderIndex, isActive } = req.body;
+    const { name, description, imageUrl, orderIndex, isActive } = req.body;
     const updates: Partial<typeof exerciseCategoriesTable.$inferInsert> = {};
     if (name !== undefined && name.trim()) updates.name = name.trim();
     if (description !== undefined) updates.description = description?.trim() || null;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
 
@@ -181,10 +184,11 @@ trainingRouter.delete("/admin/training/exercise-categories/:id", requireAdmin, a
 
 trainingRouter.post("/admin/training/knowledge-categories", requireAdmin, async (req, res) => {
   try {
-    const { trainingSystemId, name, description, orderIndex } = req.body as {
+    const { trainingSystemId, name, description, imageUrl, orderIndex } = req.body as {
       trainingSystemId?: number;
       name?: string;
       description?: string;
+      imageUrl?: string;
       orderIndex?: number;
     };
     if (!trainingSystemId || !name?.trim()) {
@@ -197,6 +201,7 @@ trainingRouter.post("/admin/training/knowledge-categories", requireAdmin, async 
         trainingSystemId,
         name: name.trim(),
         description: description?.trim() || null,
+        imageUrl: imageUrl?.trim() || null,
         orderIndex: orderIndex ?? 0,
       })
       .returning();
@@ -212,10 +217,11 @@ trainingRouter.put("/admin/training/knowledge-categories/:id", requireAdmin, asy
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
 
-    const { name, description, orderIndex, isActive } = req.body;
+    const { name, description, imageUrl, orderIndex, isActive } = req.body;
     const updates: Partial<typeof knowledgeCategoriesTable.$inferInsert> = {};
     if (name !== undefined && name.trim()) updates.name = name.trim();
     if (description !== undefined) updates.description = description?.trim() || null;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl?.trim() || null;
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
 

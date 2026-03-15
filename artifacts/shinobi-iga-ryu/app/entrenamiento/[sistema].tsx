@@ -5,9 +5,12 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
+  Image,
+  ImageSourcePropType,
   Platform,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,6 +43,30 @@ const LEVEL_LABELS: Record<string, string> = {
   avanzado: "Avanzado",
   elite: "Élite",
 };
+
+const SYSTEM_ART_IMAGES: Record<string, ImageSourcePropType> = {
+  ninjutsu: require("@/assets/images/arts/ninjutsu.jpg"),
+  mma: require("@/assets/images/arts/mma.jpg"),
+  box: require("@/assets/images/arts/box.jpg"),
+  jiujitsu: require("@/assets/images/arts/jiujitsu.jpg"),
+  muaythai: require("@/assets/images/arts/muaythai.jpg"),
+  kickboxing: require("@/assets/images/arts/kickboxing.png"),
+  funcional: require("@/assets/images/arts/funcional.jpg"),
+};
+
+const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
+  gimnasia: require("@/assets/images/categories/gimnasia.png"),
+  patadas: require("@/assets/images/categories/patadas.png"),
+  combates: require("@/assets/images/categories/combates.png"),
+  "resistencia al dolor": require("@/assets/images/categories/resistencia.png"),
+  katas: require("@/assets/images/categories/katas.png"),
+};
+
+function getCategoryImage(name: string, systemKey: string): ImageSourcePropType {
+  const key = name.toLowerCase().trim();
+  if (CATEGORY_IMAGES[key]) return CATEGORY_IMAGES[key];
+  return SYSTEM_ART_IMAGES[systemKey] ?? require("@/assets/images/arts/ninjutsu.jpg");
+}
 
 export default function EntrenamientoScreen() {
   const params = useLocalSearchParams<{ sistema: string; tab?: string }>();
@@ -81,7 +108,7 @@ export default function EntrenamientoScreen() {
   const name = data?.system.name ?? sistemaKey.toUpperCase();
 
   return (
-    <View style={[styles.root, { paddingTop: isWeb ? 0 : 0 }]}>
+    <View style={styles.root}>
       <View style={[styles.header, { paddingTop: isWeb ? 20 : insets.top + 8 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={20} color="#888" />
@@ -98,33 +125,22 @@ export default function EntrenamientoScreen() {
           style={[styles.subTab, activeTab === "conocimiento" && styles.subTabActive]}
           onPress={() => setActiveTab("conocimiento")}
         >
-          <Ionicons
-            name="book-outline"
-            size={14}
-            color={activeTab === "conocimiento" ? "#D4AF37" : "#555"}
-          />
+          <Ionicons name="book-outline" size={14} color={activeTab === "conocimiento" ? "#D4AF37" : "#555"} />
           <Text style={[styles.subTabText, activeTab === "conocimiento" && styles.subTabTextActive]}>
             CONOCIMIENTO
           </Text>
         </Pressable>
-
         <View style={styles.subTabSep} />
-
         <Pressable
           style={[styles.subTab, activeTab === "ejercicios" && styles.subTabActive]}
           onPress={() => setActiveTab("ejercicios")}
         >
-          <MaterialCommunityIcons
-            name="dumbbell"
-            size={14}
-            color={activeTab === "ejercicios" ? "#D4AF37" : "#555"}
-          />
+          <MaterialCommunityIcons name="dumbbell" size={14} color={activeTab === "ejercicios" ? "#D4AF37" : "#555"} />
           <Text style={[styles.subTabText, activeTab === "ejercicios" && styles.subTabTextActive]}>
             EJERCICIOS
           </Text>
         </Pressable>
       </View>
-
       <View style={styles.subTabUnderline} />
 
       {loading ? (
@@ -132,29 +148,21 @@ export default function EntrenamientoScreen() {
       ) : (
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: isWeb ? 40 : insets.bottom + 80 },
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: isWeb ? 40 : insets.bottom + 80 }]}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#D4AF37"
-              colors={["#D4AF37"]}
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
         >
           {activeTab === "conocimiento" ? (
             <ConocimientoTab
               items={data?.knowledge ?? []}
               categories={data?.knowledgeCategories ?? []}
+              sistemaKey={sistemaKey}
             />
           ) : (
             <EjerciciosTab
               items={data?.exercises ?? []}
               categories={data?.exerciseCategories ?? []}
+              sistemaKey={sistemaKey}
             />
           )}
         </ScrollView>
@@ -185,18 +193,56 @@ type ExerciseItem = {
   categoryId: number | null;
 };
 
-function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; categories: KnowledgeCategoryData[] }) {
-  const grouped = useMemo(() => {
-    if (categories.length === 0) return [{ category: null, items }];
-    const groups: { category: KnowledgeCategoryData | null; items: KnowledgeItem[] }[] = [];
-    for (const cat of categories) {
-      const catItems = items.filter((i) => i.categoryId === cat.id);
-      if (catItems.length > 0) groups.push({ category: cat, items: catItems });
-    }
-    const uncategorized = items.filter((i) => !i.categoryId);
-    if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
-    return groups;
-  }, [items, categories]);
+function CategoryCard({
+  category,
+  sistemaKey,
+  onPress,
+}: {
+  category: KnowledgeCategoryData | ExerciseCategoryData;
+  sistemaKey: string;
+  onPress: () => void;
+}) {
+  const { width } = useWindowDimensions();
+  const gap = 10;
+  const padding = 16;
+  const cardSize = (width - padding * 2 - gap) / 2;
+  const img = getCategoryImage(category.name, sistemaKey);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.catCard,
+        { width: cardSize, height: cardSize, opacity: pressed ? 0.85 : 1 },
+      ]}
+    >
+      <Image source={img} style={styles.catCardBg} resizeMode="cover" />
+      <View style={styles.catCardOverlay} />
+      <View style={styles.catCardContent}>
+        <Text style={styles.catCardName}>{category.name}</Text>
+        {category.description ? (
+          <Text style={styles.catCardDesc} numberOfLines={2}>{category.description}</Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+function ConocimientoTab({
+  items,
+  categories,
+  sistemaKey,
+}: {
+  items: KnowledgeItem[];
+  categories: KnowledgeCategoryData[];
+  sistemaKey: string;
+}) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+
+  const filteredItems = useMemo(() => {
+    if (selectedCategoryId === null) return items;
+    return items.filter((i) => i.categoryId === selectedCategoryId);
+  }, [items, selectedCategoryId]);
 
   if (items.length === 0) {
     return (
@@ -208,53 +254,69 @@ function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; catego
     );
   }
 
-  return (
-    <View style={styles.listContainer}>
-      {grouped.map((group, gi) => (
-        <View key={group.category?.id ?? "uncategorized"} style={gi > 0 ? { marginTop: 12 } : undefined}>
-          {group.category ? (
-            <View style={styles.categoryHeader}>
-              <View style={styles.categoryBar} />
-              <Text style={styles.categoryName}>{group.category.name}</Text>
-              {group.category.description ? (
-                <Text style={styles.categoryDesc}>{group.category.description}</Text>
-              ) : null}
-            </View>
-          ) : categories.length > 0 ? (
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryNameGeneral}>General</Text>
-            </View>
-          ) : null}
-          {group.items.map((item) => (
-            <View key={item.id} style={styles.knowledgeCard}>
-              <View style={styles.cardGoldBar} />
-              <Text style={styles.knowledgeTitle}>{item.title}</Text>
-              {item.content ? (
-                <Text style={styles.knowledgeContent}>{item.content}</Text>
-              ) : null}
-              {item.videoUrl ? (
-                <YouTubePlayer videoUrl={item.videoUrl} />
-              ) : null}
-            </View>
+  if (categories.length > 0 && selectedCategoryId === null) {
+    const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+    return (
+      <View>
+        <Text style={styles.gridLabel}>CATEGORÍAS</Text>
+        <View style={styles.catGrid}>
+          {categories.map((cat) => (
+            <CategoryCard
+              key={cat.id}
+              category={cat}
+              sistemaKey={sistemaKey}
+              onPress={() => setSelectedCategoryId(cat.id)}
+            />
           ))}
         </View>
-      ))}
+      </View>
+    );
+  }
+
+  const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+
+  return (
+    <View style={styles.listContainer}>
+      {selectedCategoryId !== null && (
+        <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
+          <Ionicons name="arrow-back" size={14} color="#D4AF37" />
+          <Text style={styles.backToCatsText}>Categorías</Text>
+          {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
+        </Pressable>
+      )}
+      {filteredItems.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Sin contenido en esta categoría</Text>
+        </View>
+      ) : (
+        filteredItems.map((item) => (
+          <View key={item.id} style={styles.knowledgeCard}>
+            <View style={styles.cardGoldBar} />
+            <Text style={styles.knowledgeTitle}>{item.title}</Text>
+            {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
+            {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+          </View>
+        ))
+      )}
     </View>
   );
 }
 
-function EjerciciosTab({ items, categories }: { items: ExerciseItem[]; categories: ExerciseCategoryData[] }) {
-  const grouped = useMemo(() => {
-    if (categories.length === 0) return [{ category: null, items }];
-    const groups: { category: ExerciseCategoryData | null; items: ExerciseItem[] }[] = [];
-    for (const cat of categories) {
-      const catItems = items.filter((i) => i.categoryId === cat.id);
-      if (catItems.length > 0) groups.push({ category: cat, items: catItems });
-    }
-    const uncategorized = items.filter((i) => !i.categoryId);
-    if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
-    return groups;
-  }, [items, categories]);
+function EjerciciosTab({
+  items,
+  categories,
+  sistemaKey,
+}: {
+  items: ExerciseItem[];
+  categories: ExerciseCategoryData[];
+  sistemaKey: string;
+}) {
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+
+  const filteredItems = useMemo(() => {
+    if (selectedCategoryId === null) return items;
+    return items.filter((i) => i.categoryId === selectedCategoryId);
+  }, [items, selectedCategoryId]);
 
   if (items.length === 0) {
     return (
@@ -266,63 +328,65 @@ function EjerciciosTab({ items, categories }: { items: ExerciseItem[]; categorie
     );
   }
 
-  return (
-    <View style={styles.listContainer}>
-      {grouped.map((group, gi) => (
-        <View key={group.category?.id ?? "uncategorized"} style={gi > 0 ? { marginTop: 12 } : undefined}>
-          {group.category ? (
-            <View style={styles.categoryHeader}>
-              <View style={styles.categoryBar} />
-              <Text style={styles.categoryName}>{group.category.name}</Text>
-              {group.category.description ? (
-                <Text style={styles.categoryDesc}>{group.category.description}</Text>
-              ) : null}
-            </View>
-          ) : categories.length > 0 ? (
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryNameGeneral}>General</Text>
-            </View>
-          ) : null}
-          {group.items.map((item) => (
-            <View key={item.id} style={styles.exerciseCard}>
-              <View style={styles.exerciseCardTop}>
-                <Text style={styles.exerciseTitle}>{item.title}</Text>
-                <View style={styles.exerciseMeta}>
-                  {item.level ? (
-                    <View
-                      style={[
-                        styles.levelBadge,
-                        { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.levelBadgeText,
-                          { color: LEVEL_COLORS[item.level] ?? "#D4AF37" },
-                        ]}
-                      >
-                        {LEVEL_LABELS[item.level] ?? item.level}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {item.durationMinutes ? (
-                    <View style={styles.durationTag}>
-                      <Ionicons name="time-outline" size={11} color="#555" />
-                      <Text style={styles.durationText}>{item.durationMinutes} min</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-              {item.description ? (
-                <Text style={styles.exerciseDesc}>{item.description}</Text>
-              ) : null}
-              {item.videoUrl ? (
-                <YouTubePlayer videoUrl={item.videoUrl} />
-              ) : null}
-            </View>
+  if (categories.length > 0 && selectedCategoryId === null) {
+    return (
+      <View>
+        <Text style={styles.gridLabel}>CATEGORÍAS</Text>
+        <View style={styles.catGrid}>
+          {categories.map((cat) => (
+            <CategoryCard
+              key={cat.id}
+              category={cat}
+              sistemaKey={sistemaKey}
+              onPress={() => setSelectedCategoryId(cat.id)}
+            />
           ))}
         </View>
-      ))}
+      </View>
+    );
+  }
+
+  const selectedCat = categories.find((c) => c.id === selectedCategoryId);
+
+  return (
+    <View style={styles.listContainer}>
+      {selectedCategoryId !== null && (
+        <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
+          <Ionicons name="arrow-back" size={14} color="#D4AF37" />
+          <Text style={styles.backToCatsText}>Categorías</Text>
+          {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
+        </Pressable>
+      )}
+      {filteredItems.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Sin ejercicios en esta categoría</Text>
+        </View>
+      ) : (
+        filteredItems.map((item) => (
+          <View key={item.id} style={styles.exerciseCard}>
+            <View style={styles.exerciseCardTop}>
+              <Text style={styles.exerciseTitle}>{item.title}</Text>
+              <View style={styles.exerciseMeta}>
+                {item.level ? (
+                  <View style={[styles.levelBadge, { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
+                    <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
+                      {LEVEL_LABELS[item.level] ?? item.level}
+                    </Text>
+                  </View>
+                ) : null}
+                {item.durationMinutes ? (
+                  <View style={styles.durationTag}>
+                    <Ionicons name="time-outline" size={11} color="#555" />
+                    <Text style={styles.durationText}>{item.durationMinutes} min</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
+            {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -368,7 +432,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 0,
   },
   subTab: {
     flex: 1,
@@ -431,38 +494,75 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 20,
   },
-  listContainer: {
+  gridLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 10,
+    color: "#444",
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  catGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
   },
-  categoryHeader: {
-    marginBottom: 8,
-    gap: 2,
+  catCard: {
+    borderRadius: 2,
     overflow: "hidden",
+    backgroundColor: "#111111",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
   },
-  categoryBar: {
-    height: 2,
-    backgroundColor: "#D4AF37",
-    width: 40,
-    marginBottom: 6,
+  catCardBg: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0.35,
   },
-  categoryName: {
+  catCardOverlay: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  catCardContent: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: 12,
+  },
+  catCardName: {
     fontFamily: "NotoSansJP_700Bold",
-    fontSize: 13,
-    color: "#D4AF37",
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    fontSize: 14,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
-  categoryNameGeneral: {
+  catCardDesc: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#888",
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  backToCats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  backToCatsText: {
     fontFamily: "NotoSansJP_500Medium",
     fontSize: 12,
-    color: "#555",
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    color: "#D4AF37",
+    letterSpacing: 0.5,
   },
-  categoryDesc: {
+  backToCatsCurrent: {
     fontFamily: "NotoSansJP_400Regular",
-    fontSize: 11,
-    color: "#444",
+    fontSize: 12,
+    color: "#555",
+  },
+  listContainer: {
+    gap: 10,
   },
   knowledgeCard: {
     backgroundColor: "#080808",
