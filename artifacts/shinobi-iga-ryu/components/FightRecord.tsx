@@ -46,14 +46,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1A1A1A",
     borderRadius: 2,
-    padding: 14,
+    padding: 10,
     alignItems: "center",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   line: {
     flex: 1,
@@ -71,16 +71,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statItem: {
     alignItems: "center",
-    minWidth: 36,
+    minWidth: 32,
   },
   statNumber: {
     fontFamily: "Inter_700Bold",
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 26,
   },
   statLabel: {
     fontFamily: "NotoSansJP_500Medium",
