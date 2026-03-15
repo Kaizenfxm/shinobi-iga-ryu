@@ -22,11 +22,18 @@ const MEMBERSHIP_FIELDS = {
   membershipNotes: usersTable.membershipNotes,
 };
 
+const GRACE_DAYS = 5;
+const GRACE_MS = GRACE_DAYS * 24 * 60 * 60 * 1000;
+
 function isMembershipExpired(user: { membershipStatus: string; trialEndsAt: Date | null; membershipExpiresAt: Date | null }): boolean {
   if (user.membershipStatus !== "activo") return false;
   const now = new Date();
-  if (user.membershipExpiresAt && user.membershipExpiresAt <= now) return true;
-  if (!user.membershipExpiresAt && user.trialEndsAt && user.trialEndsAt <= now) return true;
+  if (user.membershipExpiresAt) {
+    return user.membershipExpiresAt.getTime() + GRACE_MS <= now.getTime();
+  }
+  if (user.trialEndsAt) {
+    return user.trialEndsAt.getTime() + GRACE_MS <= now.getTime();
+  }
   return false;
 }
 

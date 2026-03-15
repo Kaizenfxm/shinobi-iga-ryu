@@ -1,6 +1,18 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, usersTable, userRolesTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { db, usersTable, userRolesTable, paymentHistoryTable } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
+
+const GRACE_DAYS = 5;
+
+export async function getEffectiveMembershipExpiry(userId: number): Promise<Date | null> {
+  const [latest] = await db
+    .select({ expiresDate: paymentHistoryTable.expiresDate })
+    .from(paymentHistoryTable)
+    .where(eq(paymentHistoryTable.userId, userId))
+    .orderBy(desc(paymentHistoryTable.expiresDate))
+    .limit(1);
+  return latest ? new Date(latest.expiresDate + "T23:59:59Z") : null;
+}
 
 declare module "express-session" {
   interface SessionData {

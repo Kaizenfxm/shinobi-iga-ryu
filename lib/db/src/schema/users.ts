@@ -34,6 +34,23 @@ export const appSettingsTable = pgTable("app_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const paymentMethodEnum = pgEnum("payment_method", ["nequi", "daviplata", "banco", "link", "tarjeta"]);
+
+export const paymentHistoryTable = pgTable("payment_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id, { onDelete: "cascade" }).notNull(),
+  paymentDate: date("payment_date").notNull(),
+  expiresDate: date("expires_date").notNull(),
+  amount: integer("amount"),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  notes: text("notes"),
+  registeredBy: integer("registered_by").references(() => usersTable.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type PaymentHistory = typeof paymentHistoryTable.$inferSelect;
+
 export const fightResultEnum = pgEnum("fight_result", ["victoria", "derrota", "empate"]);
 export const fightMethodEnum = pgEnum("fight_method", ["ko", "tko", "sumision", "decision", "decision_unanime", "decision_dividida", "descalificacion", "no_contest"]);
 export const fightDisciplineEnum = pgEnum("fight_discipline", ["mma", "box", "jiujitsu", "muay_thai", "ninjutsu", "otro"]);

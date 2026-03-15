@@ -92,6 +92,20 @@ export interface UserData {
   membershipNotes: string | null;
 }
 
+export type PaymentMethod = "nequi" | "daviplata" | "banco" | "link" | "tarjeta";
+
+export interface PaymentRecord {
+  id: number;
+  userId: number;
+  paymentDate: string;
+  expiresDate: string;
+  amount: number | null;
+  paymentMethod: PaymentMethod;
+  notes: string | null;
+  registeredBy: number;
+  createdAt: string;
+}
+
 export interface AuthResponse {
   user: UserData;
 }
@@ -152,11 +166,29 @@ export const adminApi = {
       { method: "PUT", body: data }
     ),
 
-  registerPayment: (userId: number, membershipExpiresAt: string, lastPaymentAt?: string) =>
-    apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string; lastPaymentAt: string }>(
-      `/admin/users/${userId}/payment`,
-      { method: "PUT", body: { membershipExpiresAt, ...(lastPaymentAt ? { lastPaymentAt } : {}) } }
-    ),
+  getPaymentHistory: (userId: number) =>
+    apiFetch<{ payments: PaymentRecord[] }>(`/admin/users/${userId}/payments`),
+
+  createPayment: (userId: number, data: {
+    paymentDate: string;
+    expiresDate: string;
+    amount?: number | null;
+    paymentMethod: PaymentMethod;
+    notes?: string | null;
+  }) =>
+    apiFetch<{ payment: PaymentRecord }>(`/admin/users/${userId}/payments`, { method: "POST", body: data }),
+
+  updatePayment: (paymentId: number, data: {
+    paymentDate?: string;
+    expiresDate?: string;
+    amount?: number | null;
+    paymentMethod?: PaymentMethod;
+    notes?: string | null;
+  }) =>
+    apiFetch<{ payment: PaymentRecord }>(`/admin/payments/${paymentId}`, { method: "PUT", body: data }),
+
+  deletePayment: (paymentId: number) =>
+    apiFetch<{ success: boolean }>(`/admin/payments/${paymentId}`, { method: "DELETE" }),
 
   getSettings: () =>
     apiFetch<{ settings: Record<string, string> }>("/admin/settings"),
