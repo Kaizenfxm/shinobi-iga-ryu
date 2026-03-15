@@ -146,7 +146,6 @@ export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: 
         >
           <View style={styles.inactiveContainer}>
             <MaterialCommunityIcons name="sword-cross" size={64} color="#333" />
-            <Text style={styles.inactiveTitle}>Modo Peleador</Text>
             <Text style={styles.inactiveSubtitle}>No Activado</Text>
             <View style={styles.divider} />
             <Text style={styles.inactiveDesc}>
@@ -170,11 +169,6 @@ export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: 
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#D4AF37" />
         }
       >
-        <View style={styles.headerRow}>
-          <MaterialCommunityIcons name="sword-cross" size={24} color="#D4AF37" />
-          <Text style={styles.headerTitle}>Modo Peleador</Text>
-        </View>
-
         {stats && <FightRecord stats={stats} />}
 
         <Text style={styles.sectionTitle}>Historial de Peleas</Text>
