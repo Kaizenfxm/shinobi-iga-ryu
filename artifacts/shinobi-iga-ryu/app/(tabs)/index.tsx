@@ -116,7 +116,7 @@ export default function MartialArtsScreen() {
                 resizeMode="contain"
               />
             </Pressable>
-            {user && (() => {
+            {user && !user.roles?.includes("admin") && (() => {
               if (!user.membershipExpiresAt || user.membershipStatus === "inactivo") {
                 return (
                   <Text style={[styles.headerSubtitle, { color: "#555" }]}>Sin membresía activa</Text>
