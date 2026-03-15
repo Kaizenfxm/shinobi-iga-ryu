@@ -452,6 +452,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         classId: classAttendancesTable.classId,
         attendedAt: classAttendancesTable.attendedAt,
         rating: classAttendancesTable.rating,
+        notes: classesTable.notes,
         professorName: professorUsers.displayName,
       })
       .from(classAttendancesTable)
@@ -489,6 +490,7 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
         classId: a.classId,
         attendedAt: a.attendedAt.toISOString(),
         rating: a.rating,
+        notes: a.notes || null,
         systemNames: systemsByClass.get(a.classId) || [],
         createdByName: a.professorName || null,
       })),
