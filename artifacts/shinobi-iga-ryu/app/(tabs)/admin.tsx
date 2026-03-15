@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Switch,
   Image,
+  Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -888,13 +889,41 @@ function UsersPanel({
 
 
   const [searchQuery, setSearchQuery] = useState("");
-  const filteredUsers = searchQuery.trim() === ""
-    ? users
-    : users.filter(
-        (u) =>
-          u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const [showInactiveFilter, setShowInactiveFilter] = useState(false);
+
+  const openWhatsApp = (u: UserData) => {
+    let phone = (u.phone || "").replace(/\D/g, "");
+    if (phone.length === 10 && phone.startsWith("3")) {
+      phone = "57" + phone;
+    }
+    const expiryDate = u.membershipExpiresAt
+      ? new Date(u.membershipExpiresAt).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
+      : u.trialEndsAt
+      ? new Date(u.trialEndsAt).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
+      : "reciente";
+    const message = `Hola ${u.displayName} te escribimos porque el ${expiryDate} se venció tu suscripción y queremos que puedas continuar con tu membresía, estás listo para renovar o hubo alguna situación?`;
+    Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`);
+  };
+
+  const filteredUsers = (() => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    let list = searchQuery.trim() === ""
+      ? users
+      : users.filter(
+          (u) =>
+            u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    if (showInactiveFilter) {
+      list = list.filter((u) => {
+        if (u.membershipStatus !== "inactivo") return false;
+        const expiry = u.membershipExpiresAt ?? u.trialEndsAt;
+        if (!expiry) return false;
+        return new Date(expiry) >= thirtyDaysAgo;
+      });
+    }
+    return list;
+  })();
 
   return (
     <>
@@ -924,14 +953,32 @@ function UsersPanel({
             </Pressable>
           )}
         </View>
+        <Pressable
+          style={[styles.inactiveFilterBtn, showInactiveFilter && styles.inactiveFilterBtnActive]}
+          onPress={() => setShowInactiveFilter((v) => !v)}
+        >
+          <MaterialCommunityIcons
+            name="account-clock-outline"
+            size={18}
+            color={showInactiveFilter ? "#000" : "#D4AF37"}
+          />
+        </Pressable>
         <Pressable style={styles.addUserBtn} onPress={openCreate}>
           <Ionicons name="add" size={22} color="#D4AF37" />
         </Pressable>
       </View>
-      {filteredUsers.length === 0 && searchQuery.trim() !== "" && (
+      {showInactiveFilter && (
+        <View style={styles.inactiveFilterBanner}>
+          <MaterialCommunityIcons name="account-clock-outline" size={13} color="#D4AF37" />
+          <Text style={styles.inactiveFilterBannerText}>Inactivados en los últimos 30 días</Text>
+        </View>
+      )}
+      {filteredUsers.length === 0 && (searchQuery.trim() !== "" || showInactiveFilter) && (
         <View style={{ alignItems: "center", paddingVertical: 24 }}>
           <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 14 }}>
-            Sin resultados para "{searchQuery}"
+            {showInactiveFilter
+              ? "Sin inactivados en los últimos 30 días"
+              : `Sin resultados para "${searchQuery}"`}
           </Text>
         </View>
       )}
@@ -1082,10 +1129,22 @@ function UsersPanel({
                     Último pago: {new Date(u.lastPaymentAt).toLocaleDateString("es-CO")}
                   </Text>
                 )}
+                {u.membershipExpiresAt && (
+                  <Text style={styles.membershipExpiry}>
+                    Vence: {new Date(u.membershipExpiresAt).toLocaleDateString("es-CO")}
+                  </Text>
+                )}
                 {u.trialEndsAt && !u.membershipExpiresAt && (
                   <Text style={styles.membershipExpiry}>
                     Prueba hasta: {new Date(u.trialEndsAt).toLocaleDateString("es-CO")}
                   </Text>
+                )}
+
+                {u.membershipStatus === "inactivo" && u.phone && (
+                  <Pressable style={styles.whatsappBtn} onPress={() => openWhatsApp(u)}>
+                    <MaterialCommunityIcons name="whatsapp" size={15} color="#25D366" />
+                    <Text style={styles.whatsappBtnText}>Contactar por WhatsApp</Text>
+                  </Pressable>
                 )}
 
                 {/* ── HISTORIAL DE PAGOS ── */}
@@ -4709,6 +4768,51 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 10,
     color: "#D4AF37",
+    letterSpacing: 0.5,
+  },
+  inactiveFilterBtn: {
+    width: 38,
+    height: 38,
+    borderWidth: 1,
+    borderColor: "#D4AF3760",
+    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 6,
+  },
+  inactiveFilterBtnActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  inactiveFilterBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  inactiveFilterBannerText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 0.3,
+  },
+  whatsappBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderWidth: 1,
+    borderColor: "#25D36640",
+    borderRadius: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+    backgroundColor: "#001a0a",
+  },
+  whatsappBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#25D366",
     letterSpacing: 0.5,
   },
 });
