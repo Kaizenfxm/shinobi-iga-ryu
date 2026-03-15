@@ -132,15 +132,17 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
         ) : null}
       </View>
       <View style={{ alignItems: "center", justifyContent: "center", paddingLeft: 10 }}>
-        {[1, 2, 3, 4, 5].map((s) => (
-          <Pressable key={s} onPress={() => handleRate(s)} disabled={!canRate || submitting} style={{ paddingVertical: 1 }}>
-            <MaterialCommunityIcons
-              name={s <= (localRating ?? 0) ? "star" : "star-outline"}
-              size={14}
-              color={s <= (localRating ?? 0) ? "#D4AF37" : canRate ? "#444" : "#2a2a2a"}
-            />
-          </Pressable>
-        ))}
+        <View style={{ flexDirection: "row", gap: 2 }}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <Pressable key={s} onPress={() => handleRate(s)} disabled={!canRate || submitting} style={{ padding: 1 }}>
+              <MaterialCommunityIcons
+                name={s <= (localRating ?? 0) ? "star" : "star-outline"}
+                size={14}
+                color={s <= (localRating ?? 0) ? "#D4AF37" : canRate ? "#444" : "#2a2a2a"}
+              />
+            </Pressable>
+          ))}
+        </View>
         {submitting && (
           <ActivityIndicator size="small" color="#D4AF37" style={{ marginTop: 2 }} />
         )}
