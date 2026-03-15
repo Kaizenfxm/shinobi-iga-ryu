@@ -991,52 +991,64 @@ function UsersPanel({
             key={u.id}
             style={styles.userCard}
           >
-            <Pressable
-              style={styles.userHeader}
-              onPress={() => setExpandedUser(isExpanded ? null : u.id)}
-            >
-              <View style={styles.userAvatar}>
-                {getAvatarServingUrl(u.avatarUrl ?? null) ? (
-                  <Image
-                    source={{ uri: getAvatarServingUrl(u.avatarUrl ?? null)! }}
-                    style={styles.userAvatarImage}
-                  />
-                ) : (
-                  <Ionicons name="person" size={14} color="#333" />
-                )}
-              </View>
-              <View style={styles.userInfo}>
-                <View style={styles.userNameRow}>
-                  <Text style={styles.userName}>{u.displayName}</Text>
-                  {isCurrentUser && <Text style={styles.youBadge}>Tú</Text>}
+            <View style={styles.userHeader}>
+              <Pressable
+                style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}
+                onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+              >
+                <View style={styles.userAvatar}>
+                  {getAvatarServingUrl(u.avatarUrl ?? null) ? (
+                    <Image
+                      source={{ uri: getAvatarServingUrl(u.avatarUrl ?? null)! }}
+                      style={styles.userAvatarImage}
+                    />
+                  ) : (
+                    <Ionicons name="person" size={14} color="#333" />
+                  )}
                 </View>
-                <Text style={styles.userEmail}>{u.email}</Text>
-                <View style={styles.roleBadges}>
-                  {u.roles.map((r) => (
-                    <View key={r} style={styles.roleBadge}>
-                      <Text style={styles.roleBadgeText}>
-                        {ROLE_LABELS[r] || r}
+                <View style={styles.userInfo}>
+                  <View style={styles.userNameRow}>
+                    <Text style={styles.userName}>{u.displayName}</Text>
+                    {isCurrentUser && <Text style={styles.youBadge}>Tú</Text>}
+                  </View>
+                  <Text style={styles.userEmail}>{u.email}</Text>
+                  <View style={styles.roleBadges}>
+                    {u.roles.map((r) => (
+                      <View key={r} style={styles.roleBadge}>
+                        <Text style={styles.roleBadgeText}>
+                          {ROLE_LABELS[r] || r}
+                        </Text>
+                      </View>
+                    ))}
+                    <View style={styles.subBadge}>
+                      <Text style={styles.subBadgeText}>
+                        {SUB_LABELS[u.subscriptionLevel] || u.subscriptionLevel}
                       </Text>
                     </View>
-                  ))}
-                  <View style={styles.subBadge}>
-                    <Text style={styles.subBadgeText}>
-                      {SUB_LABELS[u.subscriptionLevel] || u.subscriptionLevel}
-                    </Text>
-                  </View>
-                  <View style={[styles.membershipBadge, { backgroundColor: MEMBERSHIP_COLORS[u.membershipStatus] || "#333" }]}>
-                    <Text style={styles.membershipBadgeText}>
-                      {MEMBERSHIP_LABELS[u.membershipStatus] || u.membershipStatus}
-                    </Text>
+                    <View style={[styles.membershipBadge, { backgroundColor: MEMBERSHIP_COLORS[u.membershipStatus] || "#333" }]}>
+                      <Text style={styles.membershipBadgeText}>
+                        {MEMBERSHIP_LABELS[u.membershipStatus] || u.membershipStatus}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={13}
-                color="#444"
-              />
-            </Pressable>
+              </Pressable>
+              {u.membershipStatus === "inactivo" && u.phone && (
+                <Pressable style={styles.headerWhatsappBtn} onPress={() => openWhatsApp(u)}>
+                  <MaterialCommunityIcons name="whatsapp" size={19} color="#25D366" />
+                </Pressable>
+              )}
+              <Pressable
+                style={{ paddingLeft: 4 }}
+                onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+              >
+                <Ionicons
+                  name={isExpanded ? "chevron-up" : "chevron-down"}
+                  size={13}
+                  color="#444"
+                />
+              </Pressable>
+            </View>
 
             {isExpanded && (
               <View style={styles.expandedContent}>
@@ -1138,13 +1150,6 @@ function UsersPanel({
                   <Text style={styles.membershipExpiry}>
                     Prueba hasta: {new Date(u.trialEndsAt).toLocaleDateString("es-CO")}
                   </Text>
-                )}
-
-                {u.membershipStatus === "inactivo" && u.phone && (
-                  <Pressable style={styles.whatsappBtn} onPress={() => openWhatsApp(u)}>
-                    <MaterialCommunityIcons name="whatsapp" size={15} color="#25D366" />
-                    <Text style={styles.whatsappBtnText}>Contactar por WhatsApp</Text>
-                  </Pressable>
                 )}
 
                 {/* ── HISTORIAL DE PAGOS ── */}
@@ -4797,22 +4802,7 @@ const styles = StyleSheet.create({
     color: "#D4AF37",
     letterSpacing: 0.3,
   },
-  whatsappBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    borderWidth: 1,
-    borderColor: "#25D36640",
-    borderRadius: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 8,
-    backgroundColor: "#001a0a",
-  },
-  whatsappBtnText: {
-    fontFamily: "NotoSansJP_700Bold",
-    fontSize: 11,
-    color: "#25D366",
-    letterSpacing: 0.5,
+  headerWhatsappBtn: {
+    padding: 7,
   },
 });
