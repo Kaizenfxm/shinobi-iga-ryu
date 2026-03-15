@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import YoutubeIframe from "react-native-youtube-iframe";
@@ -29,12 +29,7 @@ function isAllowedUrl(url: string): boolean {
 
 export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
   const [expanded, setExpanded] = useState(false);
-  const [playing, setPlaying] = useState(false);
   const videoId = extractYouTubeId(videoUrl);
-
-  const onStateChange = useCallback((state: string) => {
-    if (state === "ended") setPlaying(false);
-  }, []);
 
   if (!videoId) return null;
 
@@ -64,8 +59,7 @@ export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
           <YoutubeIframe
             videoId={videoId}
             height={200}
-            play={playing}
-            onChangeState={onStateChange}
+            play={false}
             webViewProps={{
               allowsInlineMediaPlayback: true,
               mediaPlaybackRequiresUserAction: false,
