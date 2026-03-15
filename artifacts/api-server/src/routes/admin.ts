@@ -1,10 +1,37 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable } from "@workspace/db";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, isNotNull, isNull, lte, notInArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
 const adminRouter = Router();
+
+const MEMBERSHIP_GRACE_DAYS = 5;
+
+async function runMembershipExpiryCheck() {
+  const graceCutoff = new Date(Date.now() - MEMBERSHIP_GRACE_DAYS * 24 * 60 * 60 * 1000);
+
+  const privilegedRows = await db
+    .select({ userId: userRolesTable.userId })
+    .from(userRolesTable)
+    .where(or(eq(userRolesTable.role, "admin"), eq(userRolesTable.role, "profesor")));
+  const privilegedIds = privilegedRows.map((r) => r.userId);
+
+  const baseCondition = and(
+    eq(usersTable.membershipStatus, "activo"),
+    ...(privilegedIds.length > 0 ? [notInArray(usersTable.id, privilegedIds)] : [])
+  );
+
+  await db
+    .update(usersTable)
+    .set({ membershipStatus: "inactivo" })
+    .where(and(baseCondition, isNotNull(usersTable.membershipExpiresAt), lte(usersTable.membershipExpiresAt, graceCutoff)));
+
+  await db
+    .update(usersTable)
+    .set({ membershipStatus: "inactivo" })
+    .where(and(baseCondition, isNull(usersTable.membershipExpiresAt), isNotNull(usersTable.trialEndsAt), lte(usersTable.trialEndsAt, graceCutoff)));
+}
 
 async function fetchUsersWithRoles() {
   const users = await db
@@ -43,6 +70,7 @@ async function fetchUsersWithRoles() {
 
 adminRouter.get("/admin/users", requireAdmin, async (_req, res) => {
   try {
+    await runMembershipExpiryCheck();
     const users = await fetchUsersWithRoles();
     res.json({ users });
   } catch (error) {
