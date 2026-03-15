@@ -222,10 +222,6 @@ export default function CarreraScreen() {
             style={styles.logoImage}
             resizeMode="contain"
           />
-          <View>
-            <Text style={styles.logoTitle}>SHINOBI IGA RYU</Text>
-            <Text style={styles.logoSubtitle}>武道 · Artes Marciales</Text>
-          </View>
         </View>
         <View style={styles.subTabBar}>
           <Pressable
