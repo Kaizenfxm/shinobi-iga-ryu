@@ -199,7 +199,7 @@ export const adminApi = {
   getAnthropometry: (userId: number) =>
     apiFetch<{ anthropometry: WeightData | null }>(`/admin/users/${userId}/anthropometry`),
 
-  updateAnthropometry: (userId: number, data: { initialWeight?: number | null; currentWeight?: number | null; targetWeight?: number | null }) =>
+  updateAnthropometry: (userId: number, data: { initialWeight?: number | null; targetWeight?: number | null }) =>
     apiFetch<{ success: boolean; anthropometry: WeightData }>(`/admin/users/${userId}/anthropometry`, {
       method: "PUT",
       body: data,
