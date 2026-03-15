@@ -58,18 +58,17 @@ const starStyles = StyleSheet.create({
   },
 });
 
-export default function QrScannerButton() {
+type ScanResult =
+  | { type: "success"; className: string; classId: number; attendedAt: string; createdByName: string | null }
+  | { type: "duplicate"; message: string }
+  | null;
+
+export default function QrScannerButton({ onAttendanceRecorded }: { onAttendanceRecorded?: () => void } = {}) {
   const { isAuthenticated, hasRole } = useAuth();
   const [showScanner, setShowScanner] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{
-    success: boolean;
-    className: string;
-    classId: number;
-    attendedAt: string;
-    createdByName: string | null;
-  } | null>(null);
+  const [result, setResult] = useState<ScanResult>(null);
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
@@ -82,11 +81,16 @@ export default function QrScannerButton() {
 
     try {
       const res = await classesApi.scan(data);
-      setResult(res);
+      setResult({ type: "success", ...res });
+      onAttendanceRecorded?.();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al registrar asistencia";
-      Alert.alert("Error", msg);
-      setScanned(false);
+      if (msg.includes("Ya registraste")) {
+        setResult({ type: "duplicate", message: msg });
+      } else {
+        Alert.alert("Error", msg);
+        setScanned(false);
+      }
     } finally {
       setChecking(false);
     }
@@ -94,7 +98,7 @@ export default function QrScannerButton() {
 
   const handleRate = async (r: number) => {
     setRating(r);
-    if (result) {
+    if (result?.type === "success") {
       try {
         await classesApi.rate(result.classId, r);
         setRatingSubmitted(true);
@@ -120,7 +124,7 @@ export default function QrScannerButton() {
 
       <Modal visible={showScanner} animationType="slide" onRequestClose={closeAll}>
         <View style={scannerStyles.container}>
-          {result ? (
+          {result?.type === "success" ? (
             <View style={scannerStyles.resultContainer}>
               <View style={scannerStyles.resultCard}>
                 <MaterialCommunityIcons name="check-circle" size={60} color="#D4AF37" />
@@ -150,6 +154,22 @@ export default function QrScannerButton() {
                   </View>
                 )}
 
+                <Pressable style={scannerStyles.closeBtn} onPress={closeAll}>
+                  <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : result?.type === "duplicate" ? (
+            <View style={scannerStyles.resultContainer}>
+              <View style={scannerStyles.resultCard}>
+                <MaterialCommunityIcons name="calendar-check" size={60} color="#D4AF37" />
+                <Text style={scannerStyles.resultTitle}>Ya Registrado</Text>
+                <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 13, marginTop: 8, textAlign: "center" }}>
+                  {result.message}
+                </Text>
+                <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 4, textAlign: "center" }}>
+                  Tu asistencia a esta clase ya fue marcada anteriormente.
+                </Text>
                 <Pressable style={scannerStyles.closeBtn} onPress={closeAll}>
                   <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
                 </Pressable>
@@ -268,18 +288,18 @@ function CameraScanner({
 const fabStyles = StyleSheet.create({
   fab: {
     position: "absolute",
-    bottom: 100,
+    bottom: 20,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "rgba(212, 175, 55, 0.7)",
+    backgroundColor: "rgba(212, 175, 55, 0.85)",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
     shadowColor: "#D4AF37",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     zIndex: 999,
   },

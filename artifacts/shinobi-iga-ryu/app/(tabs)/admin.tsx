@@ -3427,15 +3427,15 @@ const settingsPanelStyles = StyleSheet.create({
 });
 
 function ClassesPanel({ users }: { users: UserData[] }) {
+  const { user: panelUser } = useAuth();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [expandedClass, setExpandedClass] = useState<number | null>(null);
-  const [attendees, setAttendees] = useState<ClassAttendee[]>([]);
-  const [loadingAttendees, setLoadingAttendees] = useState(false);
   const [qrModalClass, setQrModalClass] = useState<ClassData | null>(null);
   const [trainingSystems, setTrainingSystems] = useState<{ id: number; key: string; name: string }[]>([]);
+  const [professors, setProfessors] = useState<{ id: number; displayName: string; email: string }[]>([]);
   const [selectedSystems, setSelectedSystems] = useState<number[]>([]);
+  const [selectedProfessorId, setSelectedProfessorId] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -3457,10 +3457,27 @@ function ClassesPanel({ users }: { users: UserData[] }) {
     } catch {}
   }, []);
 
+  const fetchProfessors = useCallback(async () => {
+    try {
+      const res = await classesApi.getProfessors();
+      setProfessors(res.professors);
+      if (panelUser && !selectedProfessorId) {
+        setSelectedProfessorId(panelUser.id);
+      }
+    } catch {}
+  }, [panelUser, selectedProfessorId]);
+
   useEffect(() => {
     fetchClasses();
     fetchSystems();
-  }, [fetchClasses, fetchSystems]);
+    fetchProfessors();
+  }, [fetchClasses, fetchSystems, fetchProfessors]);
+
+  useEffect(() => {
+    if (panelUser && selectedProfessorId === null) {
+      setSelectedProfessorId(panelUser.id);
+    }
+  }, [panelUser]);
 
   const toggleSystem = (id: number) => {
     setSelectedSystems((prev) =>
@@ -3478,6 +3495,7 @@ function ClassesPanel({ users }: { users: UserData[] }) {
       const res = await classesApi.create({
         trainingSystemIds: selectedSystems,
         notes: notes.trim() || undefined,
+        professorId: selectedProfessorId ?? undefined,
       });
       setShowCreate(false);
       setSelectedSystems([]);
@@ -3507,28 +3525,6 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         },
       },
     ]);
-  };
-
-  const loadAttendees = async (classId: number) => {
-    setLoadingAttendees(true);
-    try {
-      const res = await classesApi.getAttendees(classId);
-      setAttendees(res.attendees);
-    } catch {
-      setAttendees([]);
-    } finally {
-      setLoadingAttendees(false);
-    }
-  };
-
-  const toggleExpand = (classId: number) => {
-    if (expandedClass === classId) {
-      setExpandedClass(null);
-      setAttendees([]);
-    } else {
-      setExpandedClass(classId);
-      loadAttendees(classId);
-    }
   };
 
   const getTimeRemaining = (expiresAt: string) => {
@@ -3597,6 +3593,30 @@ function ClassesPanel({ users }: { users: UserData[] }) {
               })}
             </View>
 
+            <Text style={cpStyles.label}>PROFESOR</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {professors.map((prof) => {
+                  const isSelected = selectedProfessorId === prof.id;
+                  return (
+                    <Pressable
+                      key={prof.id}
+                      style={{
+                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+                        backgroundColor: isSelected ? "#D4AF37" : "#1a1a1a",
+                        borderWidth: 1, borderColor: isSelected ? "#D4AF37" : "#333",
+                      }}
+                      onPress={() => setSelectedProfessorId(prof.id)}
+                    >
+                      <Text style={{ color: isSelected ? "#000" : "#888", fontFamily: "NotoSansJP_500Medium", fontSize: 11 }}>
+                        {prof.displayName}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
             <Text style={cpStyles.label}>NOTA (OPCIONAL)</Text>
             <TextInput
               style={cpStyles.input}
@@ -3639,13 +3659,12 @@ function ClassesPanel({ users }: { users: UserData[] }) {
         </View>
       ) : (
         classes.map((cls) => {
-          const isExpand = expandedClass === cls.id;
           const expired = isExpired(cls.expiresAt);
           return (
             <View key={cls.id} style={{ backgroundColor: "#070707", borderWidth: 1, borderColor: "#111", borderRadius: 2, borderTopWidth: 1, borderTopColor: expired ? "#333" : "#D4AF3722", padding: 10, marginBottom: 6 }}>
-              <Pressable onPress={() => toggleExpand(cls.id)} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={{ color: expired ? "#666" : "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 13 }}>
                       {cls.trainingSystems.map((ts) => ts.name).join(", ") || "Clase"}
                     </Text>
@@ -3655,91 +3674,45 @@ function ClassesPanel({ users }: { users: UserData[] }) {
                       </Text>
                     </View>
                   </View>
+                  <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 2 }}>
+                    {new Date(cls.createdAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
+                    {" · "}
+                    {getTimeRemaining(cls.expiresAt)}
+                  </Text>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
-                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 10 }}>
-                      {new Date(cls.createdAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
-                      {" · "}
-                      {getTimeRemaining(cls.expiresAt)}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
-                    {cls.createdByName && (
+                    {cls.professorName && (
                       <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
-                        Por: {cls.createdByName}
+                        Prof: {cls.professorName}
                       </Text>
                     )}
                     <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
                       {cls.attendanceCount} asistentes
                     </Text>
                   </View>
-                </View>
-                <MaterialCommunityIcons name={isExpand ? "chevron-up" : "chevron-down"} size={20} color="#555" />
-              </Pressable>
-
-              {isExpand && (
-                <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: "#1a1a1a", paddingTop: 8 }}>
-                  <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
-                    {!expired && cls.qrToken && (
-                      <Pressable
-                        style={{ backgroundColor: "#1a1a1a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, flexDirection: "row", alignItems: "center", gap: 4 }}
-                        onPress={() => setQrModalClass(cls)}
-                      >
-                        <MaterialCommunityIcons name="qrcode" size={14} color="#D4AF37" />
-                        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>VER QR</Text>
-                      </Pressable>
-                    )}
-
-                    <Pressable
-                      style={{ backgroundColor: "#1a0a0a", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5, marginLeft: "auto" }}
-                      onPress={() => handleDelete(cls.id)}
-                    >
-                      <Ionicons name="trash" size={12} color="#8f1a1a" />
-                    </Pressable>
-                  </View>
-
                   {cls.notes ? (
-                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginBottom: 6 }}>
+                    <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 3, fontStyle: "italic" }}>
                       {cls.notes}
                     </Text>
                   ) : null}
-
-                  <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1.5, marginBottom: 4 }}>
-                    ASISTENTES ({cls.attendanceCount})
-                  </Text>
-
-                  {loadingAttendees ? (
-                    <ActivityIndicator color="#D4AF37" size="small" />
-                  ) : attendees.length === 0 ? (
-                    <Text style={{ color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 10 }}>
-                      Sin asistentes aún
-                    </Text>
-                  ) : (
-                    attendees.map((att) => (
-                      <View key={att.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 3 }}>
-                        <View style={{ width: 20, height: 20, borderRadius: 2, backgroundColor: "#111", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
-                          {att.avatarUrl ? (
-                            <Image source={{ uri: getAvatarServingUrl(att.avatarUrl) || undefined }} style={{ width: 20, height: 20, borderRadius: 2 }} />
-                          ) : (
-                            <Ionicons name="person" size={10} color="#444" />
-                          )}
-                        </View>
-                        <Text style={{ color: "#CCC", fontFamily: "NotoSansJP_400Regular", fontSize: 10, flex: 1 }}>
-                          {att.displayName}
-                        </Text>
-                        {att.rating && (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                            <MaterialCommunityIcons name="star" size={10} color="#D4AF37" />
-                            <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>{att.rating}</Text>
-                          </View>
-                        )}
-                        <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>
-                          {new Date(att.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                        </Text>
-                      </View>
-                    ))
-                  )}
                 </View>
-              )}
+                <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+                  {!expired && cls.qrToken && (
+                    <Pressable
+                      style={{ backgroundColor: "#1a1a1a", borderRadius: 4, padding: 7, flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "#D4AF3744" }}
+                      onPress={() => setQrModalClass(cls)}
+                    >
+                      <MaterialCommunityIcons name="qrcode" size={14} color="#D4AF37" />
+                      <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9 }}>QR</Text>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    style={{ backgroundColor: "#1a0a0a", borderRadius: 4, padding: 7 }}
+                    onPress={() => handleDelete(cls.id)}
+                  >
+                    <Ionicons name="trash" size={13} color="#8f1a1a" />
+                  </Pressable>
+                </View>
+              </View>
             </View>
           );
         })
@@ -3757,14 +3730,16 @@ function ClassesPanel({ users }: { users: UserData[] }) {
               </Text>
             )}
 
-            {qrModalClass?.qrToken && Platform.OS !== "web" ? (
-              <QrCodeDisplay value={qrModalClass.qrToken} size={200} />
-            ) : (
-              <View style={{ width: 200, height: 200, backgroundColor: "#FFF", justifyContent: "center", alignItems: "center", borderRadius: 4 }}>
-                <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 10, textAlign: "center", padding: 8 }}>
-                  QR: {qrModalClass?.qrToken?.slice(0, 12)}...
-                </Text>
-              </View>
+            {qrModalClass?.qrToken && (
+              Platform.OS === "web" ? (
+                <Image
+                  source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrModalClass.qrToken)}&bgcolor=ffffff&color=000000` }}
+                  style={{ width: 200, height: 200, borderRadius: 4 }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <QrCodeDisplay value={qrModalClass.qrToken} size={200} />
+              )
             )}
 
             <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 8, textAlign: "center" }}>
@@ -3865,8 +3840,11 @@ export default function AdminScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
-        <MaterialCommunityIcons name="shield-crown" size={24} color="#D4AF37" />
-        <Text style={styles.headerTitle}>Panel de Admin</Text>
+        <Image source={require("@/assets/images/logo.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
+        <View>
+          <Text style={styles.headerTitle}>PANEL DE ADMIN</Text>
+          <Text style={{ color: "#D4AF37", fontSize: 10, fontFamily: "NotoSansJP_400Regular", letterSpacing: 1 }}>Shinobi Iga Ryu</Text>
+        </View>
       </View>
 
       <View style={styles.tabBar}>

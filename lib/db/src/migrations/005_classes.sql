@@ -1,11 +1,14 @@
 CREATE TABLE IF NOT EXISTS classes (
   id SERIAL PRIMARY KEY,
   created_by_user_id INTEGER NOT NULL REFERENCES users(id),
+  professor_user_id INTEGER REFERENCES users(id),
   notes TEXT,
   qr_token VARCHAR(100) NOT NULL UNIQUE,
   expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
+
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS professor_user_id INTEGER REFERENCES users(id);
 
 CREATE TABLE IF NOT EXISTS class_training_systems (
   id SERIAL PRIMARY KEY,
