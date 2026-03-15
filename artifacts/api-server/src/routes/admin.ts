@@ -52,7 +52,7 @@ async function fetchUsersWithRoles() {
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
-    .orderBy(desc(usersTable.id));
+    .orderBy(desc(usersTable.createdAt));
 
   const allRoles = await db
     .select({ userId: userRolesTable.userId, role: userRolesTable.role })
