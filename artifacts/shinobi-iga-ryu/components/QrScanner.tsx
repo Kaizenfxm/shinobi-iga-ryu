@@ -160,59 +160,61 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
       <Modal visible={showScanner} animationType="slide" onRequestClose={closeAll}>
         <View style={scannerStyles.container}>
           {result?.type === "success" ? (
-            <View style={scannerStyles.resultContainer}>
+            <Pressable style={scannerStyles.resultContainer} onPress={closeAll}>
               <Pressable onPress={closeAll} style={{ position: "absolute", top: 16, right: 16, zIndex: 10, padding: 6 }}>
                 <Ionicons name="close" size={20} color="#555" />
               </Pressable>
 
-              <ViewShot ref={viewShotRef}>
-                <View style={[scannerStyles.resultCard, { backgroundColor: "#0a0a0a" }]}>
-                  <Image
-                    source={require("../assets/images/logo.png")}
-                    style={{ width: 80, height: 80, resizeMode: "contain", marginBottom: 10 }}
-                  />
-                  <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
-                  <Text style={scannerStyles.resultClass}>{result.className}</Text>
-                  {result.createdByName && (
-                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 2 }}>
-                      Prof: {result.createdByName}
+              <Pressable onPress={() => {}} style={{ width: "100%", maxWidth: 320 }}>
+                <ViewShot ref={viewShotRef} style={{ width: "100%" }}>
+                  <View style={[scannerStyles.resultCard, { backgroundColor: "#0a0a0a", width: "100%" }]}>
+                    <Image
+                      source={require("../assets/images/logo.png")}
+                      style={{ width: 80, height: 80, resizeMode: "contain", marginBottom: 10 }}
+                    />
+                    <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
+                    <Text style={scannerStyles.resultClass}>{result.className}</Text>
+                    {result.createdByName && (
+                      <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 2 }}>
+                        Prof: {result.createdByName}
+                      </Text>
+                    )}
+                    <Text style={scannerStyles.resultTime}>
+                      {new Date(result.attendedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+                      {"  "}
+                      {new Date(result.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                     </Text>
-                  )}
-                  <Text style={scannerStyles.resultTime}>
-                    {new Date(result.attendedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
-                    {"  "}
-                    {new Date(result.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-                  </Text>
-                </View>
-              </ViewShot>
+                  </View>
+                </ViewShot>
 
-              <View style={[scannerStyles.resultCard, { marginTop: 8 }]}>
-                {!ratingSubmitted ? (
-                  <View style={scannerStyles.ratingSection}>
-                    <Text style={scannerStyles.ratingLabel}>¿Cómo estuvo la clase?</Text>
-                    <StarRating rating={rating} onRate={handleRate} />
-                  </View>
-                ) : (
-                  <View style={scannerStyles.ratingSection}>
-                    <MaterialCommunityIcons name="check" size={16} color="#D4AF37" />
-                    <Text style={scannerStyles.ratingThanks}>¡Gracias por tu calificación!</Text>
-                  </View>
-                )}
-                <View style={{ alignItems: "center", marginTop: 16 }}>
-                  {sharing ? (
-                    <ActivityIndicator color="#D4AF37" size="small" />
+                <View style={[scannerStyles.resultCard, { marginTop: 8, width: "100%" }]}>
+                  {!ratingSubmitted ? (
+                    <View style={scannerStyles.ratingSection}>
+                      <Text style={scannerStyles.ratingLabel}>¿Cómo estuvo la clase?</Text>
+                      <StarRating rating={rating} onRate={handleRate} />
+                    </View>
                   ) : (
-                    <Pressable
-                      style={{ flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#0a0a0a", paddingHorizontal: 20, paddingVertical: 10 }}
-                      onPress={handleShare}
-                    >
-                      <Ionicons name="share-social-outline" size={15} color="#D4AF37" />
-                      <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 }}>COMPARTIR</Text>
-                    </Pressable>
+                    <View style={scannerStyles.ratingSection}>
+                      <MaterialCommunityIcons name="check" size={16} color="#D4AF37" />
+                      <Text style={scannerStyles.ratingThanks}>¡Gracias por tu calificación!</Text>
+                    </View>
                   )}
+                  <View style={{ alignItems: "center", marginTop: 16 }}>
+                    {sharing ? (
+                      <ActivityIndicator color="#D4AF37" size="small" />
+                    ) : (
+                      <Pressable
+                        style={{ flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#0a0a0a", paddingHorizontal: 20, paddingVertical: 10 }}
+                        onPress={handleShare}
+                      >
+                        <Ionicons name="share-social-outline" size={15} color="#D4AF37" />
+                        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 }}>COMPARTIR</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
-              </View>
-            </View>
+              </Pressable>
+            </Pressable>
           ) : result?.type === "duplicate" ? (
             <View style={scannerStyles.resultContainer}>
               <View style={scannerStyles.resultCard}>
