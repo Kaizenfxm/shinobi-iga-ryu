@@ -243,6 +243,64 @@ classesRouter.delete("/classes/:id", requireAuth, async (req, res) => {
   }
 });
 
+classesRouter.put("/classes/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const classId = parseInt(String(req.params.id), 10);
+    if (isNaN(classId)) {
+      res.status(400).json({ error: "ID de clase inválido" });
+      return;
+    }
+
+    const privileged = await isAdminOrProfesor(userId);
+    if (!privileged) {
+      res.status(403).json({ error: "Solo admin o profesor pueden editar clases" });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: classesTable.id, createdByUserId: classesTable.createdByUserId })
+      .from(classesTable)
+      .where(eq(classesTable.id, classId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "Clase no encontrada" });
+      return;
+    }
+
+    const userIsAdmin = await isAdmin(userId);
+    if (existing.createdByUserId !== userId && !userIsAdmin) {
+      res.status(403).json({ error: "Solo el creador o un admin pueden editar esta clase" });
+      return;
+    }
+
+    const { trainingSystemIds, notes, professorId } = req.body;
+
+    await db.transaction(async (tx) => {
+      const updates: Partial<typeof classesTable.$inferInsert> = {};
+      if (notes !== undefined) updates.notes = notes?.trim() || null;
+      if (professorId !== undefined) updates.professorUserId = professorId || null;
+
+      if (Object.keys(updates).length > 0) {
+        await tx.update(classesTable).set(updates).where(eq(classesTable.id, classId));
+      }
+
+      if (Array.isArray(trainingSystemIds) && trainingSystemIds.length > 0) {
+        await tx.delete(classTrainingSystemsTable).where(eq(classTrainingSystemsTable.classId, classId));
+        for (const systemId of trainingSystemIds) {
+          await tx.insert(classTrainingSystemsTable).values({ classId, trainingSystemId: systemId });
+        }
+      }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Update class error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 classesRouter.post("/classes/scan", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

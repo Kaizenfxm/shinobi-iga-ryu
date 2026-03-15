@@ -3431,6 +3431,9 @@ function ClassesPanel({ users }: { users: UserData[] }) {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingClass, setEditingClass] = useState<ClassData | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [qrModalClass, setQrModalClass] = useState<ClassData | null>(null);
   const [trainingSystems, setTrainingSystems] = useState<{ id: number; key: string; name: string }[]>([]);
   const [professors, setProfessors] = useState<{ id: number; displayName: string; email: string }[]>([]);
@@ -3438,6 +3441,7 @@ function ClassesPanel({ users }: { users: UserData[] }) {
   const [selectedProfessorId, setSelectedProfessorId] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -3509,22 +3513,50 @@ function ClassesPanel({ users }: { users: UserData[] }) {
     }
   };
 
-  const handleDelete = (classId: number) => {
-    Alert.alert("Eliminar clase", "¿Estás seguro?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await classesApi.delete(classId);
-            fetchClasses();
-          } catch {
-            Alert.alert("Error", "No se pudo eliminar");
-          }
-        },
-      },
-    ]);
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+    setDeleting(true);
+    try {
+      await classesApi.delete(deleteConfirmId);
+      setDeleteConfirmId(null);
+      fetchClasses();
+    } catch {
+      setDeleteConfirmId(null);
+      Alert.alert("Error", "No se pudo eliminar");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openEdit = (cls: ClassData) => {
+    setEditingClass(cls);
+    setSelectedSystems(cls.trainingSystems.map((ts) => ts.id));
+    setSelectedProfessorId(cls.professorUserId ?? panelUser?.id ?? null);
+    setNotes(cls.notes ?? "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingClass) return;
+    if (selectedSystems.length === 0) {
+      Alert.alert("Error", "Selecciona al menos un sistema de entrenamiento");
+      return;
+    }
+    setSaving(true);
+    try {
+      await classesApi.update(editingClass.id, {
+        trainingSystemIds: selectedSystems,
+        notes: notes.trim() || null,
+        professorId: selectedProfessorId,
+      });
+      setEditingClass(null);
+      setSelectedSystems([]);
+      setNotes("");
+      fetchClasses();
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getTimeRemaining = (expiresAt: string) => {
@@ -3706,8 +3738,14 @@ function ClassesPanel({ users }: { users: UserData[] }) {
                     </Pressable>
                   )}
                   <Pressable
+                    style={{ backgroundColor: "#0a0a1a", borderRadius: 4, padding: 7 }}
+                    onPress={() => openEdit(cls)}
+                  >
+                    <Ionicons name="pencil" size={13} color="#4a6fa5" />
+                  </Pressable>
+                  <Pressable
                     style={{ backgroundColor: "#1a0a0a", borderRadius: 4, padding: 7 }}
-                    onPress={() => handleDelete(cls.id)}
+                    onPress={() => setDeleteConfirmId(cls.id)}
                   >
                     <Ionicons name="trash" size={13} color="#8f1a1a" />
                   </Pressable>
@@ -3752,6 +3790,118 @@ function ClassesPanel({ users }: { users: UserData[] }) {
             >
               <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>CERRAR</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={deleteConfirmId !== null} animationType="fade" transparent onRequestClose={() => setDeleteConfirmId(null)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 24, width: "100%", maxWidth: 300, borderTopWidth: 2, borderTopColor: "#8f1a1a" }}>
+            <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 13, marginBottom: 8 }}>Eliminar clase</Text>
+            <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginBottom: 20 }}>
+              ¿Estás seguro? Esta acción no se puede deshacer.
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#1a1a1a", borderRadius: 4, paddingVertical: 10, alignItems: "center", borderWidth: 1, borderColor: "#333" }}
+                onPress={() => setDeleteConfirmId(null)}
+              >
+                <Text style={{ color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>CANCELAR</Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#8f1a1a", borderRadius: 4, paddingVertical: 10, alignItems: "center", opacity: deleting ? 0.5 : 1 }}
+                onPress={handleDelete}
+                disabled={deleting}
+              >
+                <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>
+                  {deleting ? "..." : "ELIMINAR"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={editingClass !== null} animationType="fade" transparent onRequestClose={() => setEditingClass(null)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 20, width: "100%", maxWidth: 340, borderTopWidth: 2, borderTopColor: "#4a6fa5" }}>
+            <Text style={{ color: "#4a6fa5", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1.5, marginBottom: 12 }}>
+              EDITAR CLASE
+            </Text>
+
+            <Text style={cpStyles.label}>SISTEMAS DE ENTRENAMIENTO *</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+              {trainingSystems.map((sys) => {
+                const selected = selectedSystems.includes(sys.id);
+                return (
+                  <Pressable
+                    key={sys.id}
+                    style={{
+                      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+                      backgroundColor: selected ? "#4a6fa5" : "#1a1a1a",
+                      borderWidth: 1, borderColor: selected ? "#4a6fa5" : "#333",
+                    }}
+                    onPress={() => toggleSystem(sys.id)}
+                  >
+                    <Text style={{ color: selected ? "#FFF" : "#888", fontFamily: "NotoSansJP_500Medium", fontSize: 11 }}>
+                      {sys.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={cpStyles.label}>PROFESOR</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {professors.map((prof) => {
+                  const isSelected = selectedProfessorId === prof.id;
+                  return (
+                    <Pressable
+                      key={prof.id}
+                      style={{
+                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
+                        backgroundColor: isSelected ? "#4a6fa5" : "#1a1a1a",
+                        borderWidth: 1, borderColor: isSelected ? "#4a6fa5" : "#333",
+                      }}
+                      onPress={() => setSelectedProfessorId(prof.id)}
+                    >
+                      <Text style={{ color: isSelected ? "#FFF" : "#888", fontFamily: "NotoSansJP_500Medium", fontSize: 11 }}>
+                        {prof.displayName}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            <Text style={cpStyles.label}>NOTA (OPCIONAL)</Text>
+            <TextInput
+              style={cpStyles.input}
+              placeholder="Nota sobre la clase..."
+              placeholderTextColor="#444"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#1a1a1a", borderRadius: 4, paddingVertical: 10, alignItems: "center", borderWidth: 1, borderColor: "#333" }}
+                onPress={() => setEditingClass(null)}
+              >
+                <Text style={{ color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>CANCELAR</Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 1, backgroundColor: "#4a6fa5", borderRadius: 4, paddingVertical: 10, alignItems: "center", opacity: saving ? 0.5 : 1 }}
+                onPress={handleSaveEdit}
+                disabled={saving}
+              >
+                <Text style={{ color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 11 }}>
+                  {saving ? "GUARDANDO..." : "GUARDAR"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

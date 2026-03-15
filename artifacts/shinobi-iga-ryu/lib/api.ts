@@ -757,6 +757,9 @@ export const classesApi = {
   getAll: () =>
     apiFetch<{ classes: ClassData[] }>("/classes"),
 
+  update: (id: number, data: { trainingSystemIds?: number[]; notes?: string | null; professorId?: number | null }) =>
+    apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "PUT", body: data }),
+
   delete: (id: number) =>
     apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "DELETE" }),
 
