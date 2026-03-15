@@ -173,6 +173,9 @@ export default function ProfileScreen() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editSedes, setEditSedes] = useState<string[]>([]);
+  const [editCurrentPassword, setEditCurrentPassword] = useState("");
+  const [editNewPassword, setEditNewPassword] = useState("");
+  const [editConfirmPassword, setEditConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [togglingFighter, setTogglingFighter] = useState(false);
@@ -245,6 +248,9 @@ export default function ProfileScreen() {
     setEditName(profile?.displayName ?? user?.displayName ?? "");
     setEditPhone(profile?.phone ?? "");
     setEditSedes(profile?.sedes ?? []);
+    setEditCurrentPassword("");
+    setEditNewPassword("");
+    setEditConfirmPassword("");
     setEditing(true);
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: actionsSectionYRef.current, animated: true });
@@ -298,21 +304,40 @@ export default function ProfileScreen() {
       Alert.alert("Error", "Selecciona al menos una sede");
       return;
     }
+    if (editNewPassword) {
+      if (!editCurrentPassword) {
+        Alert.alert("Error", "Ingresa tu contraseña actual para cambiarla");
+        return;
+      }
+      if (editNewPassword.length < 6) {
+        Alert.alert("Error", "La nueva contraseña debe tener al menos 6 caracteres");
+        return;
+      }
+      if (editNewPassword !== editConfirmPassword) {
+        Alert.alert("Error", "Las contraseñas nuevas no coinciden");
+        return;
+      }
+    }
     setSaving(true);
     try {
-      await profileApi.updateProfile({
+      const payload: Parameters<typeof profileApi.updateProfile>[0] = {
         displayName: editName.trim(),
         phone: editPhone.trim() || null,
         sedes: editSedes,
-      });
+      };
+      if (editNewPassword) {
+        payload.currentPassword = editCurrentPassword;
+        payload.newPassword = editNewPassword;
+      }
+      await profileApi.updateProfile(payload);
       setProfile((prev) =>
         prev
           ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null, sedes: editSedes }
           : prev
       );
       setEditing(false);
-    } catch {
-      Alert.alert("Error", "No se pudo guardar el perfil");
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar el perfil");
     } finally {
       setSaving(false);
     }
@@ -573,6 +598,38 @@ export default function ProfileScreen() {
                   </Pressable>
                 ))}
               </View>
+
+              <Text style={[styles.editLabel, { marginTop: 12 }]}>Cambiar contraseña</Text>
+              <Text style={{ color: "#555", fontSize: 11, fontFamily: "NotoSansJP_400Regular", marginBottom: 6 }}>
+                Dejar vacío si no deseas cambiarla
+              </Text>
+              <TextInput
+                style={styles.editInput}
+                value={editCurrentPassword}
+                onChangeText={setEditCurrentPassword}
+                placeholder="Contraseña actual"
+                placeholderTextColor="#444"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={styles.editInput}
+                value={editNewPassword}
+                onChangeText={setEditNewPassword}
+                placeholder="Nueva contraseña (mín. 6 caracteres)"
+                placeholderTextColor="#444"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={styles.editInput}
+                value={editConfirmPassword}
+                onChangeText={setEditConfirmPassword}
+                placeholder="Confirmar nueva contraseña"
+                placeholderTextColor="#444"
+                secureTextEntry
+                autoCapitalize="none"
+              />
 
               <View style={styles.editActions}>
                 <Pressable

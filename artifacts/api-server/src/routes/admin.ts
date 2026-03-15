@@ -81,10 +81,11 @@ adminRouter.get("/admin/users", requireAdmin, async (_req, res) => {
 
 adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
   try {
-    const { email, password, displayName, phone, roles, subscriptionLevel, isFighter, sedes } = req.body;
+    const { email, displayName, phone, roles, subscriptionLevel, isFighter, sedes } = req.body;
+    const password = req.body.password || "Ninja123";
 
-    if (!email || !password || !displayName) {
-      res.status(400).json({ error: "Email, contraseña y nombre son obligatorios" });
+    if (!email || !displayName) {
+      res.status(400).json({ error: "Email y nombre son obligatorios" });
       return;
     }
     if (password.length < 6) {

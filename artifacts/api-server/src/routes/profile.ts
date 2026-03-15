@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import bcrypt from "bcryptjs";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const objectStorageService = new ObjectStorageService();
@@ -98,7 +99,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
 profileRouter.put("/profile/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { displayName, phone, sedes } = req.body;
+    const { displayName, phone, sedes, currentPassword, newPassword } = req.body;
 
     if (displayName !== undefined && typeof displayName !== "string") {
       res.status(400).json({ error: "Nombre inválido" });
@@ -121,12 +122,38 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
       return;
     }
 
-    const updates: { displayName?: string; phone?: string | null; sedes?: string[]; updatedAt: Date } = {
+    const updates: { displayName?: string; phone?: string | null; sedes?: string[]; passwordHash?: string; updatedAt: Date } = {
       updatedAt: new Date(),
     };
     if (trimmedName !== undefined) updates.displayName = trimmedName;
     if (phone !== undefined) updates.phone = phone?.trim() || null;
     if (sedes !== undefined) updates.sedes = sedes;
+
+    if (newPassword !== undefined) {
+      if (!currentPassword) {
+        res.status(400).json({ error: "Debes ingresar tu contraseña actual" });
+        return;
+      }
+      if (typeof newPassword !== "string" || newPassword.length < 6) {
+        res.status(400).json({ error: "La nueva contraseña debe tener al menos 6 caracteres" });
+        return;
+      }
+      const [userRow] = await db
+        .select({ passwordHash: usersTable.passwordHash })
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1);
+      if (!userRow) {
+        res.status(404).json({ error: "Usuario no encontrado" });
+        return;
+      }
+      const valid = await bcrypt.compare(currentPassword, userRow.passwordHash);
+      if (!valid) {
+        res.status(401).json({ error: "La contraseña actual no es correcta" });
+        return;
+      }
+      updates.passwordHash = await bcrypt.hash(newPassword, 12);
+    }
 
     const [updated] = await db
       .update(usersTable)

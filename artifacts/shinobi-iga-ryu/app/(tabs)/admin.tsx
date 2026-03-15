@@ -202,10 +202,6 @@ function UserFormModal({
       Alert.alert("Error", "El email es obligatorio");
       return;
     }
-    if (mode === "create" && !form.password) {
-      Alert.alert("Error", "La contraseña es obligatoria");
-      return;
-    }
     if (form.password && form.password.length < 6) {
       Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
       return;
@@ -287,13 +283,13 @@ function UserFormModal({
             />
 
             <Text style={userFormStyles.fieldLabel}>
-              {mode === "create" ? "CONTRASEÑA *" : "CONTRASEÑA (dejar vacío para no cambiar)"}
+              CONTRASEÑA (dejar vacío para usar Ninja123)
             </Text>
             <TextInput
               style={userFormStyles.input}
               value={form.password}
               onChangeText={(v) => setForm((p) => ({ ...p, password: v }))}
-              placeholder={mode === "create" ? "Mínimo 6 caracteres" : "Nueva contraseña (opcional)"}
+              placeholder={mode === "create" ? "Vacío = Ninja123" : "Nueva contraseña (opcional)"}
               placeholderTextColor="#444"
               secureTextEntry
               autoCapitalize="none"
@@ -526,6 +522,7 @@ function UsersPanel({
   const [beltDataLoading, setBeltDataLoading] = useState(false);
   const beltDataLoaded = useRef(false);
   const [discSectionOpen, setDiscSectionOpen] = useState<Record<string, boolean>>({});
+  const [resetPwd, setResetPwd] = useState<{ userId: number | null; value: string; saving: boolean }>({ userId: null, value: "", saving: false });
 
   useEffect(() => {
     AsyncStorage.getItem("adminBeltSectionOpen").then((data) => {
@@ -1422,6 +1419,13 @@ function UsersPanel({
                     <Text style={styles.editUserBtnText}>Editar</Text>
                   </Pressable>
                   <Pressable
+                    style={[styles.editUserBtn, resetPwd.userId === u.id && { borderColor: "#D4AF37", backgroundColor: "#1a1400" }]}
+                    onPress={() => setResetPwd(resetPwd.userId === u.id ? { userId: null, value: "", saving: false } : { userId: u.id, value: "", saving: false })}
+                  >
+                    <Ionicons name="key-outline" size={10} color={resetPwd.userId === u.id ? "#D4AF37" : "#666"} />
+                    <Text style={[styles.editUserBtnText, { color: resetPwd.userId === u.id ? "#D4AF37" : "#666" }]}>Clave</Text>
+                  </Pressable>
+                  <Pressable
                     style={[styles.editUserBtn, u.isFighter && { borderColor: "#D4AF37", backgroundColor: "#1a1400" }]}
                     onPress={async () => {
                       try {
@@ -1447,6 +1451,48 @@ function UsersPanel({
                     </Pressable>
                   )}
                 </View>
+
+                {resetPwd.userId === u.id && (
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8, alignItems: "center" }}>
+                    <TextInput
+                      style={[styles.searchInput, { flex: 1, borderWidth: 1, borderColor: "#222", paddingHorizontal: 10, paddingVertical: 6, color: "#FFF", fontSize: 12, fontFamily: "NotoSansJP_400Regular" }]}
+                      value={resetPwd.value}
+                      onChangeText={(v) => setResetPwd((p) => ({ ...p, value: v }))}
+                      placeholder="Nueva contraseña"
+                      placeholderTextColor="#444"
+                      secureTextEntry
+                      autoCapitalize="none"
+                      editable={!resetPwd.saving}
+                    />
+                    <Pressable
+                      style={[styles.editUserBtn, { paddingHorizontal: 10 }]}
+                      disabled={resetPwd.saving}
+                      onPress={async () => {
+                        if (!resetPwd.value || resetPwd.value.length < 6) {
+                          Alert.alert("Error", "Mínimo 6 caracteres");
+                          return;
+                        }
+                        setResetPwd((p) => ({ ...p, saving: true }));
+                        try {
+                          await adminApi.updateUser(u.id, { password: resetPwd.value });
+                          setResetPwd({ userId: null, value: "", saving: false });
+                          Alert.alert("Listo", "Contraseña actualizada");
+                        } catch {
+                          Alert.alert("Error", "No se pudo actualizar la contraseña");
+                          setResetPwd((p) => ({ ...p, saving: false }));
+                        }
+                      }}
+                    >
+                      {resetPwd.saving
+                        ? <ActivityIndicator size="small" color="#D4AF37" />
+                        : <Text style={styles.editUserBtnText}>Guardar</Text>
+                      }
+                    </Pressable>
+                    <Pressable onPress={() => setResetPwd({ userId: null, value: "", saving: false })} style={{ padding: 4 }}>
+                      <Ionicons name="close" size={14} color="#666" />
+                    </Pressable>
+                  </View>
+                )}
               </View>
             )}
           </View>
