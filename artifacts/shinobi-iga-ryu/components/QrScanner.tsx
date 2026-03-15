@@ -9,8 +9,11 @@ import {
   ActivityIndicator,
   Platform,
   TextInput,
+  Image,
 } from "react-native";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import ViewShot, { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import { classesApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -72,7 +75,30 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [webToken, setWebToken] = useState("");
+  const [sharing, setSharing] = useState(false);
   const processingRef = useRef(false);
+  const viewShotRef = useRef<ViewShot>(null);
+
+  const handleShare = async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Info", "Compartir no está disponible en web");
+      return;
+    }
+    setSharing(true);
+    try {
+      const uri = await captureRef(viewShotRef, { format: "png", quality: 1, result: "tmpfile" });
+      const available = await Sharing.isAvailableAsync();
+      if (available) {
+        await Sharing.shareAsync(uri, { mimeType: "image/png", dialogTitle: "Compartir Asistencia" });
+      } else {
+        Alert.alert("Error", "Compartir no está disponible en este dispositivo");
+      }
+    } catch {
+      Alert.alert("Error", "No se pudo capturar la pantalla");
+    } finally {
+      setSharing(false);
+    }
+  };
 
   if (!isAuthenticated) return null;
 
@@ -135,22 +161,29 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
         <View style={scannerStyles.container}>
           {result?.type === "success" ? (
             <View style={scannerStyles.resultContainer}>
-              <View style={scannerStyles.resultCard}>
-                <MaterialCommunityIcons name="check-circle" size={60} color="#D4AF37" />
-                <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
-                <Text style={scannerStyles.resultClass}>{result.className}</Text>
-                {result.createdByName && (
-                  <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 2 }}>
-                    Prof: {result.createdByName}
+              <ViewShot ref={viewShotRef} style={{ alignSelf: "stretch" }}>
+                <View style={[scannerStyles.resultCard, { backgroundColor: "#0a0a0a" }]}>
+                  <Image
+                    source={require("../assets/images/logo.png")}
+                    style={{ width: 72, height: 72, resizeMode: "contain", marginBottom: 6 }}
+                  />
+                  <MaterialCommunityIcons name="check-circle" size={52} color="#D4AF37" />
+                  <Text style={scannerStyles.resultTitle}>¡Asistencia Registrada!</Text>
+                  <Text style={scannerStyles.resultClass}>{result.className}</Text>
+                  {result.createdByName && (
+                    <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 2 }}>
+                      Prof: {result.createdByName}
+                    </Text>
+                  )}
+                  <Text style={scannerStyles.resultTime}>
+                    {new Date(result.attendedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+                    {"  "}
+                    {new Date(result.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                   </Text>
-                )}
-                <Text style={scannerStyles.resultTime}>
-                  {new Date(result.attendedAt).toLocaleTimeString("es-CO", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
+                </View>
+              </ViewShot>
 
+              <View style={[scannerStyles.resultCard, { marginTop: 8 }]}>
                 {!ratingSubmitted ? (
                   <View style={scannerStyles.ratingSection}>
                     <Text style={scannerStyles.ratingLabel}>¿Cómo estuvo la clase?</Text>
@@ -163,9 +196,22 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
                   </View>
                 )}
 
-                <Pressable style={scannerStyles.closeBtn} onPress={closeAll}>
-                  <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
-                </Pressable>
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+                  {sharing ? (
+                    <ActivityIndicator color="#D4AF37" style={{ flex: 1 }} />
+                  ) : (
+                    <Pressable
+                      style={[scannerStyles.closeBtn, { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#111", borderColor: "#D4AF37", borderWidth: 1 }]}
+                      onPress={handleShare}
+                    >
+                      <Ionicons name="share-social-outline" size={15} color="#D4AF37" />
+                      <Text style={[scannerStyles.closeBtnText, { color: "#D4AF37" }]}>COMPARTIR</Text>
+                    </Pressable>
+                  )}
+                  <Pressable style={[scannerStyles.closeBtn, { flex: 1 }]} onPress={closeAll}>
+                    <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           ) : result?.type === "duplicate" ? (
