@@ -29,6 +29,10 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         phone: usersTable.phone,
         isFighter: usersTable.isFighter,
         sedes: usersTable.sedes,
+        membershipStatus: usersTable.membershipStatus,
+        membershipExpiresAt: usersTable.membershipExpiresAt,
+        trialEndsAt: usersTable.trialEndsAt,
+        lastPaymentAt: usersTable.lastPaymentAt,
       })
       .from(usersTable)
       .where(eq(usersTable.id, userId))

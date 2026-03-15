@@ -85,6 +85,11 @@ export interface UserData {
   isFighter: boolean;
   sedes: string[];
   roles: string[];
+  membershipStatus: "activo" | "inactivo" | "pausado";
+  membershipExpiresAt: string | null;
+  trialEndsAt: string | null;
+  lastPaymentAt: string | null;
+  membershipNotes: string | null;
 }
 
 export interface AuthResponse {
@@ -140,10 +145,33 @@ export const adminApi = {
       `/admin/users/${userId}/subscription`,
       { method: "PUT", body: { subscriptionLevel } }
     ),
+
+  updateMembership: (userId: number, data: { status?: string; membershipExpiresAt?: string | null; notes?: string | null }) =>
+    apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string | null; membershipNotes: string | null }>(
+      `/admin/users/${userId}/membership`,
+      { method: "PUT", body: data }
+    ),
+
+  registerPayment: (userId: number, membershipExpiresAt: string) =>
+    apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string; lastPaymentAt: string }>(
+      `/admin/users/${userId}/payment`,
+      { method: "PUT", body: { membershipExpiresAt } }
+    ),
+
+  getSettings: () =>
+    apiFetch<{ settings: Record<string, string> }>("/admin/settings"),
+
+  updateSettings: (settings: Record<string, string>) =>
+    apiFetch<{ settings: Record<string, string> }>("/admin/settings", { method: "PUT", body: { settings } }),
 };
 
 export const profesorApi = {
   getAlumnos: () => apiFetch<{ students: UserData[] }>("/profesor/alumnos"),
+};
+
+export const settingsApi = {
+  getPublic: () =>
+    apiFetch<{ whatsappAdminNumber: string; paymentLinkUrl: string }>("/settings/public"),
 };
 
 export interface BeltDefinition {

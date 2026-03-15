@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, userRolesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 declare module "express-session" {
@@ -8,11 +8,39 @@ declare module "express-session" {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
     res.status(401).json({ error: "No autorizado" });
     return;
   }
+
+  const [user] = await db
+    .select({ membershipStatus: usersTable.membershipStatus })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.session.userId))
+    .limit(1);
+
+  if (!user) {
+    req.session.destroy(() => {});
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+
+  if (user.membershipStatus !== "activo") {
+    const roles = await db
+      .select({ role: userRolesTable.role })
+      .from(userRolesTable)
+      .where(eq(userRolesTable.userId, req.session.userId));
+
+    const roleNames = roles.map((r) => r.role);
+    const isPrivileged = roleNames.includes("admin") || roleNames.includes("profesor");
+
+    if (!isPrivileged) {
+      res.status(403).json({ error: "membership_inactive", membershipStatus: user.membershipStatus });
+      return;
+    }
+  }
+
   next();
 }
 

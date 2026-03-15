@@ -6,6 +6,30 @@ import { requireAuth } from "../middlewares/auth";
 
 const authRouter = Router();
 
+const MEMBERSHIP_FIELDS = {
+  id: usersTable.id,
+  email: usersTable.email,
+  displayName: usersTable.displayName,
+  avatarUrl: usersTable.avatarUrl,
+  subscriptionLevel: usersTable.subscriptionLevel,
+  phone: usersTable.phone,
+  isFighter: usersTable.isFighter,
+  sedes: usersTable.sedes,
+  membershipStatus: usersTable.membershipStatus,
+  membershipExpiresAt: usersTable.membershipExpiresAt,
+  trialEndsAt: usersTable.trialEndsAt,
+  lastPaymentAt: usersTable.lastPaymentAt,
+  membershipNotes: usersTable.membershipNotes,
+};
+
+function isMembershipExpired(user: { membershipStatus: string; trialEndsAt: Date | null; membershipExpiresAt: Date | null }): boolean {
+  if (user.membershipStatus !== "activo") return false;
+  const now = new Date();
+  if (user.membershipExpiresAt && user.membershipExpiresAt <= now) return true;
+  if (!user.membershipExpiresAt && user.trialEndsAt && user.trialEndsAt <= now) return true;
+  return false;
+}
+
 authRouter.post("/auth/register", async (req, res) => {
   try {
     const { email, password, displayName, phone, sedes } = req.body;
@@ -38,6 +62,9 @@ authRouter.post("/auth/register", async (req, res) => {
       ? sedes.filter((s: string) => validSedes.includes(s))
       : [];
 
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 3);
+
     const [user] = await db
       .insert(usersTable)
       .values({
@@ -46,17 +73,10 @@ authRouter.post("/auth/register", async (req, res) => {
         displayName: displayName.trim(),
         phone: phone?.trim() || null,
         sedes: sedesArray,
+        membershipStatus: "activo",
+        trialEndsAt,
       })
-      .returning({
-        id: usersTable.id,
-        email: usersTable.email,
-        displayName: usersTable.displayName,
-        avatarUrl: usersTable.avatarUrl,
-        subscriptionLevel: usersTable.subscriptionLevel,
-        phone: usersTable.phone,
-        isFighter: usersTable.isFighter,
-        sedes: usersTable.sedes,
-      });
+      .returning(MEMBERSHIP_FIELDS);
 
     await db.insert(userRolesTable).values({
       userId: user.id,
@@ -140,12 +160,23 @@ authRouter.post("/auth/login", async (req, res) => {
       return;
     }
 
-    req.session.userId = user.id;
-
     const roles = await db
       .select({ role: userRolesTable.role })
       .from(userRolesTable)
       .where(eq(userRolesTable.userId, user.id));
+
+    const roleNames = roles.map((r) => r.role);
+    const isPrivileged = roleNames.includes("admin") || roleNames.includes("profesor");
+
+    if (!isPrivileged && isMembershipExpired(user)) {
+      await db
+        .update(usersTable)
+        .set({ membershipStatus: "inactivo", updatedAt: new Date() })
+        .where(eq(usersTable.id, user.id));
+      user.membershipStatus = "inactivo";
+    }
+
+    req.session.userId = user.id;
 
     res.json({
       user: {
@@ -157,7 +188,12 @@ authRouter.post("/auth/login", async (req, res) => {
         phone: user.phone,
         isFighter: user.isFighter,
         sedes: user.sedes,
-        roles: roles.map((r) => r.role),
+        membershipStatus: user.membershipStatus,
+        membershipExpiresAt: user.membershipExpiresAt,
+        trialEndsAt: user.trialEndsAt,
+        lastPaymentAt: user.lastPaymentAt,
+        membershipNotes: user.membershipNotes,
+        roles: roleNames,
       },
     });
   } catch (error) {
@@ -169,16 +205,7 @@ authRouter.post("/auth/login", async (req, res) => {
 authRouter.get("/auth/me", requireAuth, async (req, res) => {
   try {
     const [user] = await db
-      .select({
-        id: usersTable.id,
-        email: usersTable.email,
-        displayName: usersTable.displayName,
-        avatarUrl: usersTable.avatarUrl,
-        subscriptionLevel: usersTable.subscriptionLevel,
-        phone: usersTable.phone,
-        isFighter: usersTable.isFighter,
-        sedes: usersTable.sedes,
-      })
+      .select(MEMBERSHIP_FIELDS)
       .from(usersTable)
       .where(eq(usersTable.id, req.session.userId!))
       .limit(1);
