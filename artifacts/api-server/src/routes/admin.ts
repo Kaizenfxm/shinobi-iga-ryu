@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable } from "@workspace/db";
 import { eq, and, or, desc, isNotNull, isNull, lte, notInArray, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -275,6 +275,7 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       await tx.delete(profesorStudentsTable).where(
         or(eq(profesorStudentsTable.profesorId, userId), eq(profesorStudentsTable.alumnoId, userId))
       );
+      await tx.delete(classAttendancesTable).where(eq(classAttendancesTable.userId, userId));
       await tx.delete(anthropometricEvaluationsTable).where(eq(anthropometricEvaluationsTable.userId, userId));
       await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
       await tx.delete(usersTable).where(eq(usersTable.id, userId));

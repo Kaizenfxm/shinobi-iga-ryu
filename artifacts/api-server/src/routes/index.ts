@@ -10,6 +10,7 @@ import storageRouter from "./storage";
 import notificationsRouter from "./notifications";
 import trainingRouter from "./training";
 import settingsRouter from "./settings";
+import classesRouter from "./classes";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(storageRouter);
 router.use(notificationsRouter);
 router.use(trainingRouter);
 router.use(settingsRouter);
+router.use(classesRouter);
 
 export default router;

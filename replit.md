@@ -149,6 +149,19 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Profile screen: weight progress display (initial/current/target with progress bar) + "Actualizar Peso" collapsible edit
 - Admin panel: "Antropometría" collapsible section per user card with 3 weight fields + save button
 
+### Features - QR Class Attendance (Task #18)
+- `classes` table: id, title, description, sede, classDate, startTime, endTime, profesorId, maxCapacity, status (programada/en_curso/finalizada/cancelada), qrToken (unique)
+- `class_training_systems` table: many-to-many link between classes and training_systems
+- `class_attendances` table: userId + classId unique, checkedInAt, rating (1-5)
+- Admin "Clases" tab: create classes (title, sede, date, time, profesor, capacity), view list, expand to see attendees, show QR modal, change status (iniciar/finalizar/cancelar), delete
+- QR code display: admin shows QR per class; students scan to check in
+- Floating QR scanner button (FAB): bottom-right gold button on all screens (native only), opens full-screen camera scanner
+- Check-in flow: scan QR → validate class exists & not cancelled/finished → check capacity → create attendance → show success with star rating
+- Student "Clases" sub-tab in Carrera: attendance stats (total + this month), upcoming classes list, attendance history with ratings
+- API endpoints: GET /classes, GET /classes/:id/attendees, POST /classes/checkin, PUT /classes/:id/rate, GET /classes/my-stats, POST /admin/classes, PUT /admin/classes/:id, DELETE /admin/classes/:id, POST /admin/classes/:id/regenerate-qr
+- Schema file: `lib/db/src/schema/classes.ts`; Migration: `005_classes.sql`
+- Packages: `react-native-qrcode-svg`, `expo-camera`
+
 ## Structure
 
 ```text
@@ -210,6 +223,7 @@ Database layer using Drizzle ORM with PostgreSQL.
 - `src/schema/users.ts` — users (with isFighter), user_roles, profesor_students, fights, anthropometric_evaluations tables with enums
 - `src/schema/belts.ts` — belt_definitions, student_belts, belt_history, belt_requirements, belt_exams, student_belt_unlocks tables
 - `src/schema/training.ts` — training_systems, exercise_categories, knowledge_categories, exercises, knowledge_items tables
+- `src/schema/classes.ts` — classes, class_training_systems, class_attendances tables
 - `src/seed-belts.ts` — Deterministic seed for belt catalog, requirements, and exams
 - Production migrations handled by Replit. Dev: `pnpm --filter @workspace/db run push`
 - After schema changes, rebuild declarations: `cd lib/db && npx tsc --build --force`
