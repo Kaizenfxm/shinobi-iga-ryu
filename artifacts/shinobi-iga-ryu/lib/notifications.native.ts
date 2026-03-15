@@ -3,6 +3,7 @@ import { type UserData } from "./api";
 
 export async function schedulePaymentNotifications(user: UserData): Promise<void> {
   if (!user.roles.includes("alumno")) return;
+  if (user.roles.includes("admin") || user.roles.includes("profesor")) return;
   if (user.membershipStatus !== "activo") return;
 
   try {
