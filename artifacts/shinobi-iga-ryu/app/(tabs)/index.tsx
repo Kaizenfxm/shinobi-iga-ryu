@@ -109,11 +109,13 @@ export default function MartialArtsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerLogoRow}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
+            <Pressable onPress={() => router.push("/conocenos")}>
+              <Image
+                source={require("@/assets/images/logo.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </Pressable>
             <View>
               <Text style={styles.headerSubtitle}>武道 · Artes Marciales</Text>
             </View>
