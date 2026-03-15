@@ -290,10 +290,6 @@ function ConocimientoTab({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   const uncategorized = useMemo(() => items.filter((i) => i.categoryId === null), [items]);
-  const categoriesWithItems = useMemo(
-    () => categories.filter((cat) => items.some((i) => i.categoryId === cat.id)),
-    [categories, items]
-  );
 
   const filteredItems = useMemo(() => {
     if (selectedCategoryId === null) return [];
@@ -301,7 +297,7 @@ function ConocimientoTab({
     return items.filter((i) => i.categoryId === selectedCategoryId);
   }, [items, selectedCategoryId, uncategorized]);
 
-  if (items.length === 0) {
+  if (categories.length === 0 && items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyKanji}>知</Text>
@@ -311,15 +307,15 @@ function ConocimientoTab({
     );
   }
 
-  if (categoriesWithItems.length === 0 || selectedCategoryId === null) {
-    if (categoriesWithItems.length === 0) {
+  if (categories.length === 0 || selectedCategoryId === null) {
+    if (categories.length === 0) {
       return <View style={styles.listContainer}><KnowledgeList items={items} /></View>;
     }
     return (
       <View style={{ gap: 10 }}>
         <Text style={styles.gridLabel}>CATEGORÍAS</Text>
         <View style={styles.catGrid}>
-          {categoriesWithItems.map((cat) => (
+          {categories.map((cat) => (
             <CategoryCard
               key={cat.id}
               category={cat}
@@ -369,10 +365,6 @@ function EjerciciosTab({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   const uncategorized = useMemo(() => items.filter((i) => i.categoryId === null), [items]);
-  const categoriesWithItems = useMemo(
-    () => categories.filter((cat) => items.some((i) => i.categoryId === cat.id)),
-    [categories, items]
-  );
 
   const filteredItems = useMemo(() => {
     if (selectedCategoryId === null) return [];
@@ -380,7 +372,7 @@ function EjerciciosTab({
     return items.filter((i) => i.categoryId === selectedCategoryId);
   }, [items, selectedCategoryId, uncategorized]);
 
-  if (items.length === 0) {
+  if (categories.length === 0 && items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyKanji}>練</Text>
@@ -390,15 +382,15 @@ function EjerciciosTab({
     );
   }
 
-  if (categoriesWithItems.length === 0 || selectedCategoryId === null) {
-    if (categoriesWithItems.length === 0) {
+  if (categories.length === 0 || selectedCategoryId === null) {
+    if (categories.length === 0) {
       return <View style={styles.listContainer}><ExerciseList items={items} /></View>;
     }
     return (
       <View style={{ gap: 10 }}>
         <Text style={styles.gridLabel}>CATEGORÍAS</Text>
         <View style={styles.catGrid}>
-          {categoriesWithItems.map((cat) => (
+          {categories.map((cat) => (
             <CategoryCard
               key={cat.id}
               category={cat}
