@@ -169,7 +169,7 @@ type KnowledgeItem = {
   videoUrl: string | null;
   imageUrl: string | null;
   orderIndex: number;
-  knowledgeCategoryId: number | null;
+  categoryId: number | null;
 };
 
 type ExerciseItem = {
@@ -181,7 +181,7 @@ type ExerciseItem = {
   durationMinutes: number | null;
   level: string | null;
   orderIndex: number;
-  exerciseCategoryId: number | null;
+  categoryId: number | null;
 };
 
 function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; categories: KnowledgeCategoryData[] }) {
@@ -189,10 +189,10 @@ function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; catego
     if (categories.length === 0) return [{ category: null, items }];
     const groups: { category: KnowledgeCategoryData | null; items: KnowledgeItem[] }[] = [];
     for (const cat of categories) {
-      const catItems = items.filter((i) => i.knowledgeCategoryId === cat.id);
+      const catItems = items.filter((i) => i.categoryId === cat.id);
       if (catItems.length > 0) groups.push({ category: cat, items: catItems });
     }
-    const uncategorized = items.filter((i) => !i.knowledgeCategoryId);
+    const uncategorized = items.filter((i) => !i.categoryId);
     if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
     return groups;
   }, [items, categories]);
@@ -250,10 +250,10 @@ function EjerciciosTab({ items, categories }: { items: ExerciseItem[]; categorie
     if (categories.length === 0) return [{ category: null, items }];
     const groups: { category: ExerciseCategoryData | null; items: ExerciseItem[] }[] = [];
     for (const cat of categories) {
-      const catItems = items.filter((i) => i.exerciseCategoryId === cat.id);
+      const catItems = items.filter((i) => i.categoryId === cat.id);
       if (catItems.length > 0) groups.push({ category: cat, items: catItems });
     }
-    const uncategorized = items.filter((i) => !i.exerciseCategoryId);
+    const uncategorized = items.filter((i) => !i.categoryId);
     if (uncategorized.length > 0) groups.push({ category: null, items: uncategorized });
     return groups;
   }, [items, categories]);

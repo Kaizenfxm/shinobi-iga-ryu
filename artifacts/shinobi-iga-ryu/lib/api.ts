@@ -494,6 +494,7 @@ export interface ExerciseData {
   id: number;
   trainingSystemId: number;
   exerciseCategoryId: number | null;
+  categoryId: number | null;
   title: string;
   description: string | null;
   videoUrl: string | null;
@@ -509,6 +510,7 @@ export interface KnowledgeItemData {
   id: number;
   trainingSystemId: number;
   knowledgeCategoryId: number | null;
+  categoryId: number | null;
   title: string;
   content: string | null;
   videoUrl: string | null;
@@ -542,7 +544,7 @@ export const trainingApi = {
     durationMinutes?: number;
     level?: string;
     orderIndex?: number;
-    exerciseCategoryId?: number;
+    categoryId?: number;
   }) => apiFetch<{ exercise: ExerciseData }>("/admin/training/exercises", { method: "POST", body: data }),
 
   updateExercise: (id: number, data: Partial<ExerciseData>) =>
@@ -558,7 +560,7 @@ export const trainingApi = {
     videoUrl?: string;
     imageUrl?: string;
     orderIndex?: number;
-    knowledgeCategoryId?: number;
+    categoryId?: number;
   }) => apiFetch<{ item: KnowledgeItemData }>("/admin/training/knowledge", { method: "POST", body: data }),
 
   updateKnowledge: (id: number, data: Partial<KnowledgeItemData>) =>
