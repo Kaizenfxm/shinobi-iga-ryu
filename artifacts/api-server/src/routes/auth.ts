@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, beltDefinitionsTable, studentBeltsTable, beltHistoryTable } from "@workspace/db";
+import { db, usersTable, userRolesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
@@ -88,38 +88,6 @@ authRouter.post("/auth/register", async (req, res) => {
     await db.insert(userRolesTable).values({
       userId: user.id,
       role: "alumno",
-    });
-
-    const disciplines = ["ninjutsu", "jiujitsu"] as const;
-    await db.transaction(async (tx) => {
-      for (const discipline of disciplines) {
-        const [whiteBelt] = await tx
-          .select()
-          .from(beltDefinitionsTable)
-          .where(
-            and(
-              eq(beltDefinitionsTable.discipline, discipline),
-              eq(beltDefinitionsTable.orderIndex, 0)
-            )
-          )
-          .limit(1);
-
-        if (whiteBelt) {
-          await tx.insert(studentBeltsTable).values({
-            userId: user.id,
-            discipline,
-            currentBeltId: whiteBelt.id,
-            nextUnlocked: false,
-          });
-
-          await tx.insert(beltHistoryTable).values({
-            userId: user.id,
-            discipline,
-            beltId: whiteBelt.id,
-            notes: "Cinturón inicial asignado al registro",
-          });
-        }
-      }
     });
 
     req.session.userId = user.id;

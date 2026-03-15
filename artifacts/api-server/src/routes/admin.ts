@@ -155,31 +155,6 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
       await db.insert(userRolesTable).values({ userId: newUser.id, role });
     }
 
-    const disciplines = ["ninjutsu", "jiujitsu"] as const;
-    for (const discipline of disciplines) {
-      const [whiteBelt] = await db
-        .select({ id: beltDefinitionsTable.id })
-        .from(beltDefinitionsTable)
-        .where(and(eq(beltDefinitionsTable.discipline, discipline), eq(beltDefinitionsTable.orderIndex, 0)))
-        .limit(1);
-
-      if (whiteBelt) {
-        await db.insert(studentBeltsTable).values({
-          userId: newUser.id,
-          discipline,
-          currentBeltId: whiteBelt.id,
-          nextUnlocked: false,
-        }).onConflictDoNothing();
-
-        await db.insert(beltHistoryTable).values({
-          userId: newUser.id,
-          discipline,
-          beltId: whiteBelt.id,
-          notes: "Cinturón inicial asignado por administrador",
-        });
-      }
-    }
-
     res.status(201).json({ user: { ...newUser, roles: userRoles } });
   } catch (error) {
     console.error("Admin create user error:", error);
