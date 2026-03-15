@@ -4,24 +4,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import BeltsScreen from "./belts";
 import FightsScreen from "./fights";
-import { classesApi, type ClassData, type ClassStats } from "@/lib/api";
+import { classesApi, type MyAttendanceItem, type MyAttendanceStats } from "@/lib/api";
 
 type SubTab = "cinturones" | "peleas" | "clases";
 
 function ClasesTab() {
-  const [classes, setClasses] = useState<ClassData[]>([]);
-  const [stats, setStats] = useState<ClassStats | null>(null);
+  const [data, setData] = useState<MyAttendanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [classesRes, statsRes] = await Promise.all([
-        classesApi.getAll(),
-        classesApi.getMyStats(),
-      ]);
-      setClasses(classesRes.classes);
-      setStats(statsRes);
+      const res = await classesApi.getMyAttendance();
+      setData(res);
     } catch {
     } finally {
       setLoading(false);
@@ -38,9 +33,6 @@ function ClasesTab() {
     setRefreshing(false);
   };
 
-  const attendedClasses = classes.filter((c) => c.myAttendance !== null);
-  const upcomingClasses = classes.filter((c) => c.status === "programada" || c.status === "en_curso");
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -55,30 +47,25 @@ function ClasesTab() {
       contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />}
     >
-      {stats && (
+      {data && (
         <View style={clStyles.statsRow}>
           <View style={clStyles.statCard}>
-            <Text style={clStyles.statNumber}>{stats.totalClasses}</Text>
+            <Text style={clStyles.statNumber}>{data.totalClasses}</Text>
             <Text style={clStyles.statLabel}>TOTAL</Text>
           </View>
           <View style={clStyles.statCard}>
-            <Text style={clStyles.statNumber}>{stats.monthClasses}</Text>
+            <Text style={clStyles.statNumber}>{data.monthClasses}</Text>
             <Text style={clStyles.statLabel}>ESTE MES</Text>
+          </View>
+          <View style={clStyles.statCard}>
+            <Text style={clStyles.statNumber}>{data.yearClasses}</Text>
+            <Text style={clStyles.statLabel}>ESTE AÑO</Text>
           </View>
         </View>
       )}
 
-      {upcomingClasses.length > 0 && (
-        <>
-          <Text style={clStyles.sectionTitle}>PRÓXIMAS CLASES</Text>
-          {upcomingClasses.map((cls) => (
-            <ClassCard key={cls.id} cls={cls} />
-          ))}
-        </>
-      )}
-
-      <Text style={clStyles.sectionTitle}>MI HISTORIAL ({attendedClasses.length})</Text>
-      {attendedClasses.length === 0 ? (
+      <Text style={clStyles.sectionTitle}>MI HISTORIAL ({data?.attendances.length || 0})</Text>
+      {!data || data.attendances.length === 0 ? (
         <View style={{ alignItems: "center", paddingVertical: 30 }}>
           <MaterialCommunityIcons name="calendar-blank" size={32} color="#333" />
           <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 12, marginTop: 8 }}>
@@ -89,76 +76,47 @@ function ClasesTab() {
           </Text>
         </View>
       ) : (
-        attendedClasses.map((cls) => (
-          <ClassCard key={cls.id} cls={cls} showAttendance />
+        data.attendances.map((att) => (
+          <AttendanceCard key={att.id} att={att} />
         ))
       )}
     </ScrollView>
   );
 }
 
-function ClassCard({ cls, showAttendance }: { cls: ClassData; showAttendance?: boolean }) {
-  const statusColors: Record<string, string> = {
-    programada: "#D4AF37",
-    en_curso: "#1a8f1a",
-    finalizada: "#666",
-    cancelada: "#8f1a1a",
-  };
-  const statusLabels: Record<string, string> = {
-    programada: "Programada",
-    en_curso: "En Curso",
-    finalizada: "Finalizada",
-    cancelada: "Cancelada",
-  };
-
+function AttendanceCard({ att }: { att: MyAttendanceItem }) {
   return (
     <View style={clStyles.classCard}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <Text style={clStyles.classTitle}>{cls.title}</Text>
-        <View style={{ backgroundColor: (statusColors[cls.status] || "#666") + "30", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
-          <Text style={{ color: statusColors[cls.status] || "#666", fontFamily: "NotoSansJP_500Medium", fontSize: 8 }}>
-            {statusLabels[cls.status] || cls.status}
-          </Text>
-        </View>
+        <MaterialCommunityIcons name="check-circle" size={14} color="#D4AF37" />
+        <Text style={clStyles.classTitle}>
+          {att.systemNames.length > 0 ? att.systemNames.join(", ") : "Clase"}
+        </Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 }}>
         <Text style={clStyles.classDate}>
-          {cls.classDate} · {cls.startTime?.slice(0, 5)}{cls.endTime ? `-${cls.endTime.slice(0, 5)}` : ""}
-        </Text>
-        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 9, textTransform: "uppercase" }}>
-          {cls.sede === "bogota" ? "Bogotá" : "Chía"}
+          {new Date(att.checkedInAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
+          {" · "}
+          {new Date(att.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
         </Text>
       </View>
-      {cls.profesorName && (
-        <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 1 }}>
-          Prof: {cls.profesorName}
-        </Text>
-      )}
-      {showAttendance && cls.myAttendance && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-          <MaterialCommunityIcons name="check-circle" size={12} color="#D4AF37" />
-          <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>
-            Asistencia: {new Date(cls.myAttendance.checkedInAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
-          </Text>
-          {cls.myAttendance.rating && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <MaterialCommunityIcons
-                  key={s}
-                  name={s <= (cls.myAttendance?.rating ?? 0) ? "star" : "star-outline"}
-                  size={10}
-                  color={s <= (cls.myAttendance?.rating ?? 0) ? "#D4AF37" : "#333"}
-                />
-              ))}
-            </View>
-          )}
+      {att.rating && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <MaterialCommunityIcons
+              key={s}
+              name={s <= (att.rating ?? 0) ? "star" : "star-outline"}
+              size={10}
+              color={s <= (att.rating ?? 0) ? "#D4AF37" : "#333"}
+            />
+          ))}
         </View>
       )}
-      {cls.trainingSystems.length > 0 && (
+      {att.systemNames.length > 0 && (
         <View style={{ flexDirection: "row", gap: 4, marginTop: 3 }}>
-          {cls.trainingSystems.map((ts) => (
-            <View key={ts.id} style={{ backgroundColor: "#1a1a1a", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
-              <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>{ts.name}</Text>
+          {att.systemNames.map((name, idx) => (
+            <View key={idx} style={{ backgroundColor: "#1a1a1a", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 2 }}>
+              <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>{name}</Text>
             </View>
           ))}
         </View>

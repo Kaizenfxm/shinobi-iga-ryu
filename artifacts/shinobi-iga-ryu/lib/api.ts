@@ -709,28 +709,16 @@ export interface ClassTrainingSystem {
   name: string;
 }
 
-export interface ClassAttendanceInfo {
-  checkedInAt: string;
-  rating: number | null;
-}
-
 export interface ClassData {
   id: number;
-  title: string;
-  description: string | null;
-  sede: string;
-  classDate: string;
-  startTime: string;
-  endTime: string | null;
-  profesorId: number | null;
-  profesorName: string | null;
-  maxCapacity: number | null;
-  status: "programada" | "en_curso" | "finalizada" | "cancelada";
+  createdByUserId: number;
+  createdByName: string | null;
+  notes: string | null;
   qrToken: string | null;
+  expiresAt: string;
   createdAt: string;
   trainingSystems: ClassTrainingSystem[];
   attendanceCount: number;
-  myAttendance: ClassAttendanceInfo | null;
 }
 
 export interface ClassAttendee {
@@ -742,61 +730,48 @@ export interface ClassAttendee {
   rating: number | null;
 }
 
-export interface ClassStats {
+export interface MyAttendanceItem {
+  id: number;
+  classId: number;
+  checkedInAt: string;
+  rating: number | null;
+  systemNames: string[];
+}
+
+export interface MyAttendanceStats {
   totalClasses: number;
   monthClasses: number;
+  yearClasses: number;
+  attendances: MyAttendanceItem[];
 }
 
 export const classesApi = {
-  getAll: (sede?: string) =>
-    apiFetch<{ classes: ClassData[] }>(`/classes${sede ? `?sede=${sede}` : ""}`),
+  create: (data: {
+    trainingSystemIds: number[];
+    notes?: string;
+  }) => apiFetch<{ class: ClassData }>("/classes", { method: "POST", body: data }),
 
-  getAttendees: (classId: number) =>
-    apiFetch<{ attendees: ClassAttendee[] }>(`/classes/${classId}/attendees`),
+  getAll: () =>
+    apiFetch<{ classes: ClassData[] }>("/classes"),
 
-  checkin: (qrToken: string) =>
-    apiFetch<{ success: boolean; className: string; classId: number; checkedInAt: string }>("/classes/checkin", {
+  delete: (id: number) =>
+    apiFetch<{ success: boolean }>(`/classes/${id}`, { method: "DELETE" }),
+
+  scan: (qrToken: string) =>
+    apiFetch<{ success: boolean; classId: number; className: string; checkedInAt: string }>("/classes/scan", {
       method: "POST",
       body: { qrToken },
     }),
 
   rate: (classId: number, rating: number) =>
-    apiFetch<{ success: boolean; rating: number }>(`/classes/${classId}/rate`, {
-      method: "PUT",
+    apiFetch<{ success: boolean; rating: number }>(`/classes/${classId}/rating`, {
+      method: "PATCH",
       body: { rating },
     }),
 
-  getMyStats: () =>
-    apiFetch<ClassStats>("/classes/my-stats"),
+  getMyAttendance: () =>
+    apiFetch<MyAttendanceStats>("/classes/my-attendance"),
 
-  adminCreate: (data: {
-    title: string;
-    description?: string;
-    sede: string;
-    classDate: string;
-    startTime: string;
-    endTime?: string;
-    profesorId?: number;
-    maxCapacity?: number;
-    trainingSystemIds?: number[];
-  }) => apiFetch<{ class: ClassData }>("/admin/classes", { method: "POST", body: data }),
-
-  adminUpdate: (id: number, data: {
-    title?: string;
-    description?: string;
-    sede?: string;
-    classDate?: string;
-    startTime?: string;
-    endTime?: string;
-    profesorId?: number | null;
-    maxCapacity?: number | null;
-    status?: string;
-    trainingSystemIds?: number[];
-  }) => apiFetch<{ class: ClassData }>(`/admin/classes/${id}`, { method: "PUT", body: data }),
-
-  adminDelete: (id: number) =>
-    apiFetch<{ success: boolean }>(`/admin/classes/${id}`, { method: "DELETE" }),
-
-  adminRegenerateQr: (id: number) =>
-    apiFetch<{ success: boolean; qrToken: string }>(`/admin/classes/${id}/regenerate-qr`, { method: "POST" }),
+  getAttendees: (classId: number) =>
+    apiFetch<{ attendees: ClassAttendee[] }>(`/classes/${classId}/attendees`),
 };

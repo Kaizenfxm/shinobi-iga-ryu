@@ -80,7 +80,7 @@ export default function QrScannerButton() {
     setChecking(true);
 
     try {
-      const res = await classesApi.checkin(data);
+      const res = await classesApi.scan(data);
       setResult(res);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al registrar asistencia";
