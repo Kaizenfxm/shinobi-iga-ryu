@@ -3,6 +3,16 @@ import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable, exercise
 import { eq, asc, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
+async function validateExerciseCategoryBelongsToSystem(categoryId: number, trainingSystemId: number): Promise<boolean> {
+  const [cat] = await db.select().from(exerciseCategoriesTable).where(eq(exerciseCategoriesTable.id, categoryId)).limit(1);
+  return !!cat && cat.trainingSystemId === trainingSystemId;
+}
+
+async function validateKnowledgeCategoryBelongsToSystem(categoryId: number, trainingSystemId: number): Promise<boolean> {
+  const [cat] = await db.select().from(knowledgeCategoriesTable).where(eq(knowledgeCategoriesTable.id, categoryId)).limit(1);
+  return !!cat && cat.trainingSystemId === trainingSystemId;
+}
+
 const trainingRouter = Router();
 
 trainingRouter.get("/training/systems", requireAuth, async (_req, res) => {
@@ -260,6 +270,14 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
       return;
     }
 
+    if (exerciseCategoryId) {
+      const valid = await validateExerciseCategoryBelongsToSystem(exerciseCategoryId, trainingSystemId);
+      if (!valid) {
+        res.status(400).json({ error: "La categoría no pertenece a este sistema" });
+        return;
+      }
+    }
+
     const [exercise] = await db
       .insert(exercisesTable)
       .values({
@@ -292,6 +310,17 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
     }
 
     const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive, exerciseCategoryId } = req.body;
+
+    if (exerciseCategoryId) {
+      const [existing] = await db.select({ trainingSystemId: exercisesTable.trainingSystemId }).from(exercisesTable).where(eq(exercisesTable.id, id)).limit(1);
+      if (existing) {
+        const valid = await validateExerciseCategoryBelongsToSystem(exerciseCategoryId, existing.trainingSystemId);
+        if (!valid) {
+          res.status(400).json({ error: "La categoría no pertenece a este sistema" });
+          return;
+        }
+      }
+    }
 
     const updates: Partial<typeof exercisesTable.$inferInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
@@ -366,6 +395,14 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
       return;
     }
 
+    if (knowledgeCategoryId) {
+      const valid = await validateKnowledgeCategoryBelongsToSystem(knowledgeCategoryId, trainingSystemId);
+      if (!valid) {
+        res.status(400).json({ error: "La categoría no pertenece a este sistema" });
+        return;
+      }
+    }
+
     const [item] = await db
       .insert(knowledgeItemsTable)
       .values({
@@ -396,6 +433,17 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
     }
 
     const { title, content, videoUrl, imageUrl, orderIndex, isActive, knowledgeCategoryId } = req.body;
+
+    if (knowledgeCategoryId) {
+      const [existing] = await db.select({ trainingSystemId: knowledgeItemsTable.trainingSystemId }).from(knowledgeItemsTable).where(eq(knowledgeItemsTable.id, id)).limit(1);
+      if (existing) {
+        const valid = await validateKnowledgeCategoryBelongsToSystem(knowledgeCategoryId, existing.trainingSystemId);
+        if (!valid) {
+          res.status(400).json({ error: "La categoría no pertenece a este sistema" });
+          return;
+        }
+      }
+    }
 
     const updates: Partial<typeof knowledgeItemsTable.$inferInsert> & { updatedAt: Date } = {
       updatedAt: new Date(),
