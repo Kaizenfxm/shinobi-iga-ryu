@@ -55,6 +55,16 @@ classesRouter.post("/classes", requireAuth, async (req, res) => {
       return;
     }
 
+    const validSystems = await db
+      .select({ id: trainingSystemsTable.id })
+      .from(trainingSystemsTable)
+      .where(inArray(trainingSystemsTable.id, trainingSystemIds));
+
+    if (validSystems.length !== trainingSystemIds.length) {
+      res.status(400).json({ error: "Uno o más sistemas de entrenamiento no existen" });
+      return;
+    }
+
     const qrToken = generateQrToken();
     const expiresAt = new Date(Date.now() + QR_VALIDITY_HOURS * 60 * 60 * 1000);
 
