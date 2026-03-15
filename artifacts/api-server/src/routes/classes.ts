@@ -396,19 +396,30 @@ classesRouter.patch("/classes/:id/rating", requireAuth, async (req, res) => {
       return;
     }
 
-    const [updated] = await db
-      .update(classAttendancesTable)
-      .set({ rating })
+    const [existing] = await db
+      .select({ id: classAttendancesTable.id, attendedAt: classAttendancesTable.attendedAt })
+      .from(classAttendancesTable)
       .where(and(
         eq(classAttendancesTable.classId, classId),
         eq(classAttendancesTable.userId, userId)
-      ))
-      .returning();
+      ));
 
-    if (!updated) {
+    if (!existing) {
       res.status(404).json({ error: "No tienes asistencia registrada en esta clase" });
       return;
     }
+
+    const hoursElapsed = (Date.now() - existing.attendedAt.getTime()) / 3600000;
+    if (hoursElapsed > 24) {
+      res.status(403).json({ error: "Solo puedes calificar dentro de las 24 horas después de la clase" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(classAttendancesTable)
+      .set({ rating })
+      .where(eq(classAttendancesTable.id, existing.id))
+      .returning();
 
     res.json({ success: true, rating: updated.rating });
   } catch (error) {

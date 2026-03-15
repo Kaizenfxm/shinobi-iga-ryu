@@ -91,8 +91,10 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
   const [localRating, setLocalRating] = useState<number | null>(att.rating);
   const [submitting, setSubmitting] = useState(false);
 
+  const canRate = (Date.now() - new Date(att.attendedAt).getTime()) < 24 * 60 * 60 * 1000;
+
   const handleRate = async (r: number) => {
-    if (submitting || localRating) return;
+    if (submitting || !canRate) return;
     setSubmitting(true);
     try {
       await classesApi.rate(att.classId, r);
@@ -105,44 +107,42 @@ function AttendanceCard({ att }: { att: MyAttendanceItem }) {
   };
 
   return (
-    <View style={clStyles.classCard}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <MaterialCommunityIcons name="check-circle" size={14} color="#D4AF37" />
-        <Text style={clStyles.classTitle}>
-          {att.systemNames.length > 0 ? att.systemNames.join(", ") : "Clase"}
-        </Text>
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 }}>
-        <Text style={clStyles.classDate}>
+    <View style={[clStyles.classCard, { flexDirection: "row", alignItems: "center" }]}>
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <MaterialCommunityIcons name="check-circle" size={14} color="#D4AF37" />
+          <Text style={clStyles.classTitle}>
+            {att.systemNames.length > 0 ? att.systemNames.join(", ") : "Clase"}
+          </Text>
+        </View>
+        <Text style={[clStyles.classDate, { marginTop: 3 }]}>
           {new Date(att.attendedAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
           {" · "}
           {new Date(att.attendedAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
         </Text>
+        {att.createdByName && (
+          <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 1 }}>
+            Prof: {att.createdByName}
+          </Text>
+        )}
+        {att.notes ? (
+          <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 2, fontStyle: "italic" }}>
+            {att.notes}
+          </Text>
+        ) : null}
       </View>
-      {att.createdByName && (
-        <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 9, marginTop: 1 }}>
-          Prof: {att.createdByName}
-        </Text>
-      )}
-      {att.notes ? (
-        <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 10, marginTop: 4, fontStyle: "italic" }}>
-          {att.notes}
-        </Text>
-      ) : null}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 2, marginTop: 4 }}>
+      <View style={{ alignItems: "center", justifyContent: "center", paddingLeft: 10 }}>
         {[1, 2, 3, 4, 5].map((s) => (
-          <Pressable key={s} onPress={() => handleRate(s)} disabled={!!localRating || submitting}>
+          <Pressable key={s} onPress={() => handleRate(s)} disabled={!canRate || submitting} style={{ paddingVertical: 1 }}>
             <MaterialCommunityIcons
               name={s <= (localRating ?? 0) ? "star" : "star-outline"}
-              size={localRating ? 10 : 14}
-              color={s <= (localRating ?? 0) ? "#D4AF37" : localRating ? "#333" : "#555"}
+              size={14}
+              color={s <= (localRating ?? 0) ? "#D4AF37" : canRate ? "#444" : "#2a2a2a"}
             />
           </Pressable>
         ))}
-        {!localRating && (
-          <Text style={{ color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 8, marginLeft: 4 }}>
-            {submitting ? "..." : "calificar"}
-          </Text>
+        {submitting && (
+          <ActivityIndicator size="small" color="#D4AF37" style={{ marginTop: 2 }} />
         )}
       </View>
     </View>
