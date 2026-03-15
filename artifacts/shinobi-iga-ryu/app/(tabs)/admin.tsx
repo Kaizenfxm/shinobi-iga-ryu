@@ -3234,85 +3234,85 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
+        <MaterialCommunityIcons name="shield-crown" size={24} color="#D4AF37" />
+        <Text style={styles.headerTitle}>Panel de Admin</Text>
+      </View>
+
+      <View style={styles.tabBar}>
+        <Pressable
+          style={[styles.tabButton, activeTab === "usuarios" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("usuarios")}
+        >
+          <Ionicons
+            name="people"
+            size={20}
+            color={activeTab === "usuarios" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "cinturones" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("cinturones")}
+        >
+          <MaterialCommunityIcons
+            name="medal"
+            size={20}
+            color={activeTab === "cinturones" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "peleas" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("peleas")}
+        >
+          <MaterialCommunityIcons
+            name="sword-cross"
+            size={20}
+            color={activeTab === "peleas" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("notificaciones")}
+        >
+          <Ionicons
+            name="notifications"
+            size={20}
+            color={activeTab === "notificaciones" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "entrenamiento" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("entrenamiento")}
+        >
+          <MaterialCommunityIcons
+            name="dumbbell"
+            size={20}
+            color={activeTab === "entrenamiento" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "configuracion" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("configuracion")}
+        >
+          <Ionicons
+            name="settings"
+            size={20}
+            color={activeTab === "configuracion" ? "#000" : "#666"}
+          />
+        </Pressable>
+      </View>
+
+      <View style={styles.divider} />
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
+          { paddingTop: 0, paddingBottom: 100 },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
         }
       >
-        <View style={styles.header}>
-          <MaterialCommunityIcons name="shield-crown" size={24} color="#D4AF37" />
-          <Text style={styles.headerTitle}>Panel de Admin</Text>
-        </View>
-
-        <View style={styles.tabBar}>
-          <Pressable
-            style={[styles.tabButton, activeTab === "usuarios" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("usuarios")}
-          >
-            <Ionicons
-              name="people"
-              size={20}
-              color={activeTab === "usuarios" ? "#000" : "#666"}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.tabButton, activeTab === "cinturones" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("cinturones")}
-          >
-            <MaterialCommunityIcons
-              name="medal"
-              size={20}
-              color={activeTab === "cinturones" ? "#000" : "#666"}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.tabButton, activeTab === "peleas" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("peleas")}
-          >
-            <MaterialCommunityIcons
-              name="sword-cross"
-              size={20}
-              color={activeTab === "peleas" ? "#000" : "#666"}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("notificaciones")}
-          >
-            <Ionicons
-              name="notifications"
-              size={20}
-              color={activeTab === "notificaciones" ? "#000" : "#666"}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.tabButton, activeTab === "entrenamiento" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("entrenamiento")}
-          >
-            <MaterialCommunityIcons
-              name="dumbbell"
-              size={20}
-              color={activeTab === "entrenamiento" ? "#000" : "#666"}
-            />
-          </Pressable>
-          <Pressable
-            style={[styles.tabButton, activeTab === "configuracion" && styles.tabButtonActive]}
-            onPress={() => setActiveTab("configuracion")}
-          >
-            <Ionicons
-              name="settings"
-              size={20}
-              color={activeTab === "configuracion" ? "#000" : "#666"}
-            />
-          </Pressable>
-        </View>
-
-        <View style={styles.divider} />
-
         {activeTab === "usuarios" ? (
           <UsersPanel
             users={users}
