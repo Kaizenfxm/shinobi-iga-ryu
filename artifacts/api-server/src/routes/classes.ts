@@ -435,9 +435,9 @@ classesRouter.get("/classes/my-attendance", requireAuth, async (req, res) => {
 classesRouter.get("/classes/:id/attendees", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const privileged = await isAdminOrProfesor(userId);
-    if (!privileged) {
-      res.status(403).json({ error: "Acceso no autorizado" });
+    const userIsAdmin = await isAdmin(userId);
+    if (!userIsAdmin) {
+      res.status(403).json({ error: "Solo admin puede ver los asistentes" });
       return;
     }
 
