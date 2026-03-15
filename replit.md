@@ -120,6 +120,9 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - Admin panel "Entrenamiento" tab: pick a training system → manage categories + exercises/knowledge items with inline CRUD
 - Entrenamiento student screen groups content by category with category headers; uncategorized items under "General" group
 - API endpoints: CRUD for exercise-categories and knowledge-categories, updated exercise/knowledge endpoints accept categoryId
+- YouTube video embed: exercises and knowledge items with videoUrl show an expandable YouTube player inline (no redirect to YouTube)
+- Web: plain iframe with embed URL + modestbranding; Native: react-native-youtube-iframe with WebView
+- Platform-specific files: YouTubePlayer.web.tsx (web iframe) and YouTubePlayer.tsx (native react-native-youtube-iframe)
 
 ## Structure
 
@@ -159,7 +162,7 @@ Every package extends `tsconfig.base.json` which sets `composite: true`.
 
 Expo mobile app with file-based routing (Expo Router). Dark theme, Japanese-minimalist design.
 
-- Components: `SplashAnimation.tsx`, `FlipCard.tsx`
+- Components: `SplashAnimation.tsx`, `FlipCard.tsx`, `YouTubePlayer.tsx` / `YouTubePlayer.web.tsx`
 - Screens: auth.tsx, (tabs)/index.tsx, (tabs)/belts.tsx, (tabs)/profile.tsx, (tabs)/admin.tsx, (tabs)/alumnos.tsx
 - Contexts: `AuthContext.tsx` - session state, login/register/logout, hasRole()
 - API client: `lib/api.ts` - fetch wrapper with cookie credentials

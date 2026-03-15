@@ -59,6 +59,8 @@
   },
   "dependencies": {
     "expo-sharing": "^55.0.11",
-    "react-native-view-shot": "^4.0.3"
+    "react-native-view-shot": "^4.0.3",
+    "react-native-webview": "^13.16.1",
+    "react-native-youtube-iframe": "^2.4.1"
   }
 }
