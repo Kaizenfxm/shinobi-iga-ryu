@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { trainingApi, type TrainingSystemDetail, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
+import YouTubePlayer from "@/components/YouTubePlayer";
 
 type SubTab = "conocimiento" | "ejercicios";
 
@@ -232,10 +233,7 @@ function ConocimientoTab({ items, categories }: { items: KnowledgeItem[]; catego
                 <Text style={styles.knowledgeContent}>{item.content}</Text>
               ) : null}
               {item.videoUrl ? (
-                <View style={styles.videoTag}>
-                  <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
-                  <Text style={styles.videoTagText}>Video disponible</Text>
-                </View>
+                <YouTubePlayer videoUrl={item.videoUrl} />
               ) : null}
             </View>
           ))}
@@ -319,10 +317,7 @@ function EjerciciosTab({ items, categories }: { items: ExerciseItem[]; categorie
                 <Text style={styles.exerciseDesc}>{item.description}</Text>
               ) : null}
               {item.videoUrl ? (
-                <View style={styles.videoTag}>
-                  <Ionicons name="play-circle-outline" size={12} color="#D4AF37" />
-                  <Text style={styles.videoTagText}>Video disponible</Text>
-                </View>
+                <YouTubePlayer videoUrl={item.videoUrl} />
               ) : null}
             </View>
           ))}
@@ -547,15 +542,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#777",
     lineHeight: 20,
-  },
-  videoTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  videoTagText: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 11,
-    color: "#D4AF37",
   },
 });
