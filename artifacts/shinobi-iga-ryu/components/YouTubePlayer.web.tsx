@@ -87,7 +87,6 @@ const playerStyles = StyleSheet.create({
     backgroundColor: "#111",
   },
   iframeContainer: {
-    width: "100%" as unknown as number,
     aspectRatio: 16 / 9,
   },
 });

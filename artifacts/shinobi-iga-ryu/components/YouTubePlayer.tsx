@@ -15,6 +15,18 @@ function extractYouTubeId(url: string): string | null {
   return null;
 }
 
+const ALLOWED_ORIGINS = [
+  "https://www.youtube.com",
+  "https://youtube.com",
+  "https://www.youtube-nocookie.com",
+  "about:blank",
+];
+
+function isAllowedUrl(url: string): boolean {
+  if (url === "about:blank" || url === "" || url === "about:srcdoc") return true;
+  return ALLOWED_ORIGINS.some((origin) => url.startsWith(origin + "/embed"));
+}
+
 export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -57,13 +69,16 @@ export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
             webViewProps={{
               allowsInlineMediaPlayback: true,
               mediaPlaybackRequiresUserAction: false,
-              injectedJavaScript: `
-                document.querySelectorAll('a[href]').forEach(a => {
-                  a.removeAttribute('href');
-                  a.style.pointerEvents = 'none';
-                });
-                true;
-              `,
+              allowsLinkPreview: false,
+              allowsBackForwardNavigationGestures: false,
+              onShouldStartLoadWithRequest: (request: { url: string }) => {
+                return isAllowedUrl(request.url);
+              },
+              onNavigationStateChange: (navState: { url: string }) => {
+                if (!isAllowedUrl(navState.url)) {
+                  return false;
+                }
+              },
             }}
             initialPlayerParams={{
               modestbranding: true,
