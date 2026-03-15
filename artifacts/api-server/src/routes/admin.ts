@@ -414,7 +414,7 @@ adminRouter.put("/admin/users/:id/payment", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { membershipExpiresAt } = req.body;
+    const { membershipExpiresAt, lastPaymentAt } = req.body;
     if (!membershipExpiresAt) {
       res.status(400).json({ error: "Se requiere la fecha de vencimiento" });
       return;
@@ -425,7 +425,7 @@ adminRouter.put("/admin/users/:id/payment", requireAdmin, async (req, res) => {
       .set({
         membershipStatus: "activo",
         membershipExpiresAt: new Date(membershipExpiresAt),
-        lastPaymentAt: new Date(),
+        lastPaymentAt: lastPaymentAt ? new Date(lastPaymentAt) : new Date(),
         updatedAt: new Date(),
       })
       .where(eq(usersTable.id, userId))

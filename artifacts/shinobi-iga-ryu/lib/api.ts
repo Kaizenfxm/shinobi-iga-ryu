@@ -152,10 +152,10 @@ export const adminApi = {
       { method: "PUT", body: data }
     ),
 
-  registerPayment: (userId: number, membershipExpiresAt: string) =>
+  registerPayment: (userId: number, membershipExpiresAt: string, lastPaymentAt?: string) =>
     apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string; lastPaymentAt: string }>(
       `/admin/users/${userId}/payment`,
-      { method: "PUT", body: { membershipExpiresAt } }
+      { method: "PUT", body: { membershipExpiresAt, ...(lastPaymentAt ? { lastPaymentAt } : {}) } }
     ),
 
   getSettings: () =>
