@@ -14,15 +14,17 @@ function extractYouTubeId(url: string): string | null {
   return null;
 }
 
-const ALLOWED_ORIGINS = [
-  "https://www.youtube.com",
-  "https://youtube.com",
-  "https://www.youtube-nocookie.com",
-];
-
-function isAllowedUrl(url: string): boolean {
-  if (url === "about:blank" || url === "" || url === "about:srcdoc") return true;
-  return ALLOWED_ORIGINS.some((origin) => url.startsWith(origin + "/embed"));
+function shouldBlockNavigation(url: string): boolean {
+  if (!url || url.startsWith("data:") || url.startsWith("about:") || url.startsWith("blob:")) {
+    return false;
+  }
+  if (url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
+    return true;
+  }
+  if (url.startsWith("http") && !url.includes("youtube") && !url.includes("ytimg.com") && !url.includes("googlevideo.com") && !url.includes("ggpht.com")) {
+    return true;
+  }
+  return false;
 }
 
 export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
@@ -41,7 +43,7 @@ export default function YouTubePlayer({ videoUrl }: { videoUrl: string }) {
           allowsLinkPreview: false,
           allowsBackForwardNavigationGestures: false,
           onShouldStartLoadWithRequest: (request: { url: string }) => {
-            return isAllowedUrl(request.url);
+            return !shouldBlockNavigation(request.url);
           },
         }}
         initialPlayerParams={{
