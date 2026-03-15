@@ -196,19 +196,18 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
                   </View>
                 )}
 
-                <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 14, alignItems: "center" }}>
                   {sharing ? (
-                    <ActivityIndicator color="#D4AF37" style={{ flex: 1 }} />
+                    <ActivityIndicator color="#D4AF37" size="small" style={{ width: 40 }} />
                   ) : (
                     <Pressable
-                      style={[scannerStyles.closeBtn, { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#111", borderColor: "#D4AF37", borderWidth: 1 }]}
+                      style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#111", alignItems: "center", justifyContent: "center" }}
                       onPress={handleShare}
                     >
-                      <Ionicons name="share-social-outline" size={15} color="#D4AF37" />
-                      <Text style={[scannerStyles.closeBtnText, { color: "#D4AF37" }]}>COMPARTIR</Text>
+                      <Ionicons name="share-social-outline" size={18} color="#D4AF37" />
                     </Pressable>
                   )}
-                  <Pressable style={[scannerStyles.closeBtn, { flex: 1 }]} onPress={closeAll}>
+                  <Pressable style={[scannerStyles.closeBtn, { flex: 1, marginTop: 0, alignItems: "center" }]} onPress={closeAll}>
                     <Text style={scannerStyles.closeBtnText}>CERRAR</Text>
                   </Pressable>
                 </View>
