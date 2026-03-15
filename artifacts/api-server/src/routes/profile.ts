@@ -279,7 +279,7 @@ profileRouter.patch("/profile/me/weight", requireAuth, async (req, res) => {
     } else {
       [result] = await db
         .insert(anthropometricEvaluationsTable)
-        .values({ userId, currentWeight: weight, initialWeight: weight })
+        .values({ userId, currentWeight: weight })
         .returning({
           initialWeight: anthropometricEvaluationsTable.initialWeight,
           currentWeight: anthropometricEvaluationsTable.currentWeight,
