@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS class_attendances (
   class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   attended_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  rating INTEGER,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
