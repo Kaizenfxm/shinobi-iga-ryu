@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -65,20 +65,20 @@ type ScanResult =
   | null;
 
 export default function QrScannerButton({ onAttendanceRecorded }: { onAttendanceRecorded?: () => void } = {}) {
-  const { isAuthenticated, hasRole } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [showScanner, setShowScanner] = useState(false);
-  const [scanned, setScanned] = useState(false);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState<ScanResult>(null);
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [webToken, setWebToken] = useState("");
+  const processingRef = useRef(false);
 
   if (!isAuthenticated) return null;
 
   const handleBarCodeScanned = async (data: string) => {
-    if (scanned || checking) return;
-    setScanned(true);
+    if (processingRef.current) return;
+    processingRef.current = true;
     setChecking(true);
 
     try {
@@ -91,7 +91,7 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
         setResult({ type: "duplicate", message: msg });
       } else {
         Alert.alert("Error", msg);
-        setScanned(false);
+        processingRef.current = false;
       }
     } finally {
       setChecking(false);
@@ -111,8 +111,8 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
   };
 
   const closeAll = () => {
+    processingRef.current = false;
     setShowScanner(false);
-    setScanned(false);
     setResult(null);
     setRating(0);
     setRatingSubmitted(false);
