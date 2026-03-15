@@ -203,10 +203,11 @@ export default function QrScannerButton({ onAttendanceRecorded }: { onAttendance
                     <ActivityIndicator color="#D4AF37" size="small" />
                   ) : (
                     <Pressable
-                      style={{ width: 40, height: 40, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#0a0a0a", alignItems: "center", justifyContent: "center" }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 4, borderWidth: 1, borderColor: "#D4AF37", backgroundColor: "#0a0a0a", paddingHorizontal: 20, paddingVertical: 10 }}
                       onPress={handleShare}
                     >
-                      <Ionicons name="share-social-outline" size={18} color="#D4AF37" />
+                      <Ionicons name="share-social-outline" size={15} color="#D4AF37" />
+                      <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 }}>COMPARTIR</Text>
                     </Pressable>
                   )}
                 </View>
