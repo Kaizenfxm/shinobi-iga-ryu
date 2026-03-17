@@ -137,6 +137,45 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
   }
 });
 
+eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    if (!(await canManageEvents(userId))) {
+      res.status(403).json({ error: "Sin permisos" });
+      return;
+    }
+    const eventId = parseInt(String(req.params.id), 10);
+    if (isNaN(eventId)) { res.status(400).json({ error: "ID inválido" }); return; }
+
+    const { title, coverImageUrl, eventDate, location } = req.body as {
+      title?: string; coverImageUrl?: string | null; eventDate?: string; location?: string;
+    };
+
+    const updates: Record<string, unknown> = {};
+    if (title?.trim()) updates.title = title.trim();
+    if (eventDate) updates.eventDate = new Date(eventDate);
+    if (location?.trim()) updates.location = location.trim();
+    if (coverImageUrl !== undefined) updates.coverImageUrl = coverImageUrl;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nada que actualizar" }); return;
+    }
+
+    const [existing] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Evento no encontrado" }); return; }
+
+    const [updated] = await db.update(eventsTable)
+      .set(updates as Partial<typeof eventsTable.$inferInsert>)
+      .where(eq(eventsTable.id, eventId))
+      .returning();
+
+    res.json({ event: { ...updated, eventDate: updated.eventDate.toISOString() } });
+  } catch (error) {
+    console.error("Update event error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 eventsRouter.delete("/events/:id", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

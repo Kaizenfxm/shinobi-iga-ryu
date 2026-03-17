@@ -251,6 +251,53 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
   }
 });
 
+challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const challengeId = Number(String(req.params.id));
+
+    const [challenge] = await db
+      .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+    if (challenge.challengerId !== userId) { res.status(403).json({ error: "Solo el retador puede modificar" }); return; }
+    if (challenge.status !== "pending") { res.status(400).json({ error: "Solo se pueden modificar retos pendientes" }); return; }
+
+    const { trainingSystemId, scheduledAt, notes } = req.body as {
+      trainingSystemId?: number; scheduledAt?: string; notes?: string | null;
+    };
+
+    const updates: Record<string, unknown> = {};
+    if (trainingSystemId) updates.trainingSystemId = trainingSystemId;
+    if (scheduledAt) updates.scheduledAt = new Date(scheduledAt);
+    if (notes !== undefined) updates.notes = notes?.trim() || null;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nada que actualizar" }); return;
+    }
+
+    const [updated] = await db.update(challengesTable)
+      .set(updates as Partial<typeof challengesTable.$inferInsert>)
+      .where(eq(challengesTable.id, challengeId))
+      .returning();
+
+    const [challenger] = await db
+      .select({ displayName: usersTable.displayName })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+    const notifTitle = "Reto modificado";
+    const notifBody = `${challenger?.displayName ?? "El retador"} modificó las condiciones del reto`;
+    await Promise.all([
+      notifyUser(challenge.challengedId, notifTitle, notifBody, { challengeId, type: "challenge_modified" }),
+      createInAppNotification(challenge.challengedId, notifTitle, notifBody, userId),
+    ]);
+
+    res.json({ challenge: updated });
+  } catch (error) {
+    console.error("Update challenge error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
 challengesRouter.post("/challenges/:id/respond", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

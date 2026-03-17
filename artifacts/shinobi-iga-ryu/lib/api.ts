@@ -849,6 +849,9 @@ export const challengesApi = {
   setResult: (id: number, winnerId: number) =>
     apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/result`, { method: "POST", body: { winnerId } }),
 
+  update: (id: number, data: { trainingSystemId?: number; scheduledAt?: string; notes?: string | null }) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}`, { method: "PATCH", body: data }),
+
   cancel: (id: number) =>
     apiFetch<{ success: boolean }>(`/challenges/${id}`, { method: "DELETE" }),
 
@@ -862,6 +865,9 @@ export const eventsApi = {
 
   create: (data: { title: string; coverImageUrl?: string | null; eventDate: string; location: string }) =>
     apiFetch<{ event: EventItem }>("/events", { method: "POST", body: data }),
+
+  update: (id: number, data: { title?: string; coverImageUrl?: string | null; eventDate?: string; location?: string }) =>
+    apiFetch<{ event: EventItem }>(`/events/${id}`, { method: "PATCH", body: data }),
 
   delete: (id: number) =>
     apiFetch<{ success: boolean }>(`/events/${id}`, { method: "DELETE" }),

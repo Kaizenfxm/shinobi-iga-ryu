@@ -122,11 +122,13 @@ function formatDateDisplay(d: Date) {
     "  " + d.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
 }
 
-function CreateEventModal({ visible, onClose, onCreated }: {
+function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
   visible: boolean;
   onClose: () => void;
   onCreated: (ev: EventItem) => void;
+  editEvent?: EventItem | null;
 }) {
+  const isEdit = !!editEvent;
   const [title, setTitle] = useState("");
   const [datetime, setDatetime] = useState<Date | null>(null);
   const [location, setLocation] = useState("");
@@ -137,6 +139,21 @@ function CreateEventModal({ visible, onClose, onCreated }: {
   const [formError, setFormError] = useState<string | null>(null);
   const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (visible && editEvent) {
+      setTitle(editEvent.title);
+      setDatetime(new Date(editEvent.eventDate));
+      setLocation(editEvent.location);
+      setCoverUri(editEvent.coverImageUrl ?? null);
+      setCoverPath(editEvent.coverImageUrl ?? null);
+      setFormError(null);
+    }
+    if (!visible) {
+      setTitle(""); setDatetime(null); setLocation("");
+      setCoverUri(null); setCoverPath(null); setFormError(null);
+    }
+  }, [visible, editEvent]);
 
   const reset = () => {
     setTitle(""); setDatetime(null); setLocation("");
@@ -191,17 +208,27 @@ function CreateEventModal({ visible, onClose, onCreated }: {
     if (!location.trim()) { setFormError("El lugar del evento es requerido"); return; }
     setSaving(true);
     try {
-      const res = await eventsApi.create({
-        title: title.trim(),
-        coverImageUrl: coverPath,
-        eventDate: datetime.toISOString(),
-        location: location.trim(),
-      });
+      let res: { event: EventItem };
+      if (isEdit && editEvent) {
+        res = await eventsApi.update(editEvent.id, {
+          title: title.trim(),
+          coverImageUrl: coverPath !== editEvent.coverImageUrl ? coverPath : undefined,
+          eventDate: datetime.toISOString(),
+          location: location.trim(),
+        });
+      } else {
+        res = await eventsApi.create({
+          title: title.trim(),
+          coverImageUrl: coverPath,
+          eventDate: datetime.toISOString(),
+          location: location.trim(),
+        });
+      }
       onCreated(res.event);
       reset();
       onClose();
     } catch {
-      setFormError("No se pudo crear el evento. Verifica tu conexión.");
+      setFormError(isEdit ? "No se pudo actualizar el evento." : "No se pudo crear el evento. Verifica tu conexión.");
     } finally {
       setSaving(false);
     }
@@ -214,7 +241,7 @@ function CreateEventModal({ visible, onClose, onCreated }: {
       <Pressable style={cStyles.backdrop} onPress={onClose}>
         <Pressable onPress={() => {}} style={cStyles.sheet}>
           <View style={aStyles.handle} />
-          <Text style={cStyles.heading}>NUEVO EVENTO</Text>
+          <Text style={cStyles.heading}>{isEdit ? "EDITAR EVENTO" : "NUEVO EVENTO"}</Text>
 
           <Pressable style={cStyles.imagePicker} onPress={pickImage} disabled={uploadingImg}>
             {coverUri ? (
@@ -350,7 +377,7 @@ function CreateEventModal({ visible, onClose, onCreated }: {
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? "CREANDO..." : "CREAR"}</Text>
+              <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? (isEdit ? "GUARDANDO..." : "CREANDO...") : (isEdit ? "GUARDAR" : "CREAR")}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -393,11 +420,12 @@ const cStyles = StyleSheet.create({
   pickerConfirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
 });
 
-function EventCard({ event, canManage, onAttendToggle, onDelete, onViewAttendees }: {
+function EventCard({ event, canManage, onAttendToggle, onDelete, onEdit, onViewAttendees }: {
   event: EventItem;
   canManage: boolean;
   onAttendToggle: (id: number, current: boolean | null) => void;
   onDelete: (id: number) => void;
+  onEdit: (ev: EventItem) => void;
   onViewAttendees: (ev: EventItem) => void;
 }) {
   const coverUrl = getAvatarServingUrl(event.coverImageUrl);
@@ -408,23 +436,24 @@ function EventCard({ event, canManage, onAttendToggle, onDelete, onViewAttendees
       {coverUrl ? (
         <ImageBackground source={{ uri: coverUrl }} style={eStyles.cardBg} resizeMode="cover">
           <View style={eStyles.overlay} />
-          <CardContent event={event} attending={attending} canManage={canManage} onAttendToggle={onAttendToggle} onDelete={onDelete} onViewAttendees={onViewAttendees} />
+          <CardContent event={event} attending={attending} canManage={canManage} onAttendToggle={onAttendToggle} onDelete={onDelete} onEdit={onEdit} onViewAttendees={onViewAttendees} />
         </ImageBackground>
       ) : (
         <View style={[eStyles.cardBg, { backgroundColor: "#0d0d0d" }]}>
-          <CardContent event={event} attending={attending} canManage={canManage} onAttendToggle={onAttendToggle} onDelete={onDelete} onViewAttendees={onViewAttendees} />
+          <CardContent event={event} attending={attending} canManage={canManage} onAttendToggle={onAttendToggle} onDelete={onDelete} onEdit={onEdit} onViewAttendees={onViewAttendees} />
         </View>
       )}
     </View>
   );
 }
 
-function CardContent({ event, attending, canManage, onAttendToggle, onDelete, onViewAttendees }: {
+function CardContent({ event, attending, canManage, onAttendToggle, onDelete, onEdit, onViewAttendees }: {
   event: EventItem;
   attending: boolean;
   canManage: boolean;
   onAttendToggle: (id: number, current: boolean | null) => void;
   onDelete: (id: number) => void;
+  onEdit: (ev: EventItem) => void;
   onViewAttendees: (ev: EventItem) => void;
 }) {
   return (
@@ -446,9 +475,14 @@ function CardContent({ event, attending, canManage, onAttendToggle, onDelete, on
 
       <View style={eStyles.actions}>
         {canManage && (
-          <Pressable style={eStyles.deleteBtn} onPress={() => onDelete(event.id)}>
-            <MaterialCommunityIcons name="trash-can-outline" size={14} color="#555" />
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable style={eStyles.deleteBtn} onPress={() => onEdit(event)}>
+              <Ionicons name="pencil-outline" size={14} color="#888" />
+            </Pressable>
+            <Pressable style={eStyles.deleteBtn} onPress={() => onDelete(event.id)}>
+              <MaterialCommunityIcons name="trash-can-outline" size={14} color="#555" />
+            </Pressable>
+          </View>
         )}
         <Pressable style={eStyles.attendeesBtn} onPress={() => onViewAttendees(event)}>
           <MaterialCommunityIcons name="account-group" size={14} color="#D4AF37" />
@@ -495,6 +529,8 @@ function EventosTab({ canManage, extraEvents }: {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [attendeesEvent, setAttendeesEvent] = useState<EventItem | null>(null);
+  const [editEvent, setEditEvent] = useState<EventItem | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (extraEvents && extraEvents.length > 0) {
@@ -531,20 +567,31 @@ function EventosTab({ canManage, extraEvents }: {
   };
 
   const handleDelete = (id: number) => {
-    Alert.alert("Eliminar evento", "¿Seguro que deseas eliminar este evento?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar", style: "destructive",
-        onPress: async () => {
-          try {
-            await eventsApi.delete(id);
-            setEvents((prev) => prev.filter((e) => e.id !== id));
-          } catch {
-            Alert.alert("Error", "No se pudo eliminar el evento");
-          }
-        },
-      },
-    ]);
+    const doDelete = async () => {
+      try {
+        await eventsApi.delete(id);
+        setEvents((prev) => prev.filter((e) => e.id !== id));
+      } catch {
+        Alert.alert("Error", "No se pudo eliminar el evento");
+      }
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm("¿Seguro que deseas eliminar este evento?")) { doDelete(); }
+    } else {
+      Alert.alert("Eliminar evento", "¿Seguro que deseas eliminar este evento?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: doDelete },
+      ]);
+    }
+  };
+
+  const handleEdit = (ev: EventItem) => {
+    setEditEvent(ev);
+    setShowEditModal(true);
+  };
+
+  const handleEventUpdated = (updated: EventItem) => {
+    setEvents((prev) => prev.map((e) => e.id === updated.id ? { ...e, ...updated } : e));
   };
 
   if (loading) {
@@ -571,6 +618,7 @@ function EventosTab({ canManage, extraEvents }: {
               canManage={canManage}
               onAttendToggle={handleAttendToggle}
               onDelete={handleDelete}
+              onEdit={handleEdit}
               onViewAttendees={setAttendeesEvent}
             />
           ))
@@ -585,6 +633,13 @@ function EventosTab({ canManage, extraEvents }: {
           onClose={() => setAttendeesEvent(null)}
         />
       )}
+
+      <CreateEventModal
+        visible={showEditModal}
+        editEvent={editEvent}
+        onClose={() => { setShowEditModal(false); setEditEvent(null); }}
+        onCreated={handleEventUpdated}
+      />
     </View>
   );
 }
@@ -687,12 +742,13 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
   );
 }
 
-function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel }: {
+function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, onEdit }: {
   item: ChallengeItem;
   currentUserId: number;
   canManage: boolean;
   onSetResult: (challenge: ChallengeItem) => void;
   onCancel?: (id: number) => void;
+  onEdit?: (challenge: ChallengeItem) => void;
 }) {
   const isPast = ["completed", "declined", "cancelled"].includes(item.status);
   const isCompleted = item.status === "completed";
@@ -708,27 +764,36 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel }:
 
   return (
     <View style={rStyles.challengeRow}>
-      <View style={rStyles.challengeRowMain}>
-        <Text style={[rStyles.challengePlayer, { color: p1Color }]} numberOfLines={1}>{item.challengerName}</Text>
-        <Text style={rStyles.challengeVs}>VS</Text>
-        <Text style={[rStyles.challengePlayer, { color: p2Color }]} numberOfLines={1}>{item.challengedName}</Text>
-        <Text style={rStyles.challengeSep}>|</Text>
-        <Text style={rStyles.challengeSystem} numberOfLines={1}>{item.trainingSystemName}</Text>
-        <Text style={rStyles.challengeSep}>|</Text>
-        <Text style={rStyles.challengeDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={[rStyles.challengeRowMain, { flex: 1 }]}>
+          <Text style={[rStyles.challengePlayer, { color: p1Color }]} numberOfLines={1}>{item.challengerName}</Text>
+          <Text style={rStyles.challengeVs}>VS</Text>
+          <Text style={[rStyles.challengePlayer, { color: p2Color }]} numberOfLines={1}>{item.challengedName}</Text>
+          <Text style={rStyles.challengeSep}>|</Text>
+          <Text style={rStyles.challengeSystem} numberOfLines={1}>{item.trainingSystemName}</Text>
+          <Text style={rStyles.challengeSep}>|</Text>
+          <Text style={rStyles.challengeDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 8 }}>
+          {item.status === "pending" && onEdit && (
+            <Pressable onPress={() => onEdit(item)} hitSlop={8}>
+              <Ionicons name="pencil-outline" size={14} color="#888" />
+            </Pressable>
+          )}
+          {item.status === "pending" && onCancel && (
+            <Pressable onPress={() => onCancel(item.id)} hitSlop={8}>
+              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+            </Pressable>
+          )}
+          {canManage && !isPast && item.status === "accepted" && (
+            <Pressable onPress={() => onSetResult(item)} hitSlop={8}>
+              <Ionicons name="time-outline" size={16} color="#D4AF37" />
+            </Pressable>
+          )}
+        </View>
       </View>
-      {item.status === "pending" && onCancel && (
-        <Pressable style={rStyles.cancelBtn} onPress={() => onCancel(item.id)}>
-          <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
-        </Pressable>
-      )}
       {item.status === "declined" && <Text style={rStyles.statusBadgeDec}>DECLINADO</Text>}
       {item.status === "cancelled" && <Text style={rStyles.statusBadgeCan}>CANCELADO</Text>}
-      {canManage && !isPast && item.status === "accepted" && (
-        <Pressable style={rStyles.resultBtn} onPress={() => onSetResult(item)}>
-          <Text style={rStyles.resultBtnText}>RESULTADO</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -770,13 +835,15 @@ function SetResultModal({ challenge, visible, onClose, onSet }: {
   );
 }
 
-function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated }: {
+function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated, editChallenge }: {
   visible: boolean;
   onClose: () => void;
   targetUser: ChallengeUser | null;
   systems: TrainingSystem[];
   onCreated: () => void;
+  editChallenge?: ChallengeItem | null;
 }) {
+  const isEditMode = !!editChallenge;
   const [selectedSystem, setSelectedSystem] = useState<TrainingSystem | null>(null);
   const [datetime, setDatetime] = useState<Date | null>(null);
   const [notes, setNotes] = useState("");
@@ -786,6 +853,19 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
   const [tempDate, setTempDate] = useState<Date>(new Date());
   const isWeb = Platform.OS === "web";
 
+  useEffect(() => {
+    if (visible && editChallenge) {
+      const sys = systems.find((s) => s.id === editChallenge.trainingSystemId) ?? null;
+      setSelectedSystem(sys);
+      setDatetime(new Date(editChallenge.scheduledAt));
+      setNotes(editChallenge.notes ?? "");
+      setFormError(null);
+    }
+    if (!visible) {
+      setSelectedSystem(null); setDatetime(null); setNotes(""); setFormError(null);
+    }
+  }, [visible, editChallenge, systems]);
+
   const reset = () => {
     setSelectedSystem(null); setDatetime(null); setNotes(""); setFormError(null);
   };
@@ -794,15 +874,23 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
     setFormError(null);
     if (!selectedSystem) { setFormError("Selecciona un sistema de entrenamiento"); return; }
     if (!datetime) { setFormError("Selecciona fecha y hora"); return; }
-    if (!targetUser) return;
     setSaving(true);
     try {
-      await challengesApi.create({
-        challengedId: targetUser.id,
-        trainingSystemId: selectedSystem.id,
-        scheduledAt: datetime.toISOString(),
-        notes: notes.trim() || undefined,
-      });
+      if (isEditMode && editChallenge) {
+        await challengesApi.update(editChallenge.id, {
+          trainingSystemId: selectedSystem.id,
+          scheduledAt: datetime.toISOString(),
+          notes: notes.trim() || null,
+        });
+      } else {
+        if (!targetUser) return;
+        await challengesApi.create({
+          challengedId: targetUser.id,
+          trainingSystemId: selectedSystem.id,
+          scheduledAt: datetime.toISOString(),
+          notes: notes.trim() || undefined,
+        });
+      }
       onCreated();
       reset();
       onClose();
@@ -818,7 +906,7 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
       <Pressable style={cStyles.backdrop} onPress={onClose}>
         <Pressable onPress={() => {}} style={cStyles.sheet}>
           <View style={aStyles.handle} />
-          <Text style={cStyles.heading}>RETAR A {(targetUser?.displayName ?? "").toUpperCase()}</Text>
+          <Text style={cStyles.heading}>{isEditMode ? "MODIFICAR RETO" : `RETAR A ${(targetUser?.displayName ?? "").toUpperCase()}`}</Text>
 
           <Text style={rStyles.sectionLabel}>SISTEMA</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
@@ -918,7 +1006,7 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
               style={[cStyles.btn, { flex: 1, backgroundColor: "#D4AF37", opacity: saving ? 0.6 : 1 }]}
               onPress={handleSend} disabled={saving}
             >
-              <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? "ENVIANDO..." : "RETAR"}</Text>
+              <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? (isEditMode ? "GUARDANDO..." : "ENVIANDO...") : (isEditMode ? "GUARDAR" : "RETAR")}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -946,6 +1034,8 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   const [targetUser, setTargetUser] = useState<ChallengeUser | null>(null);
   const [createVisible, setCreateVisible] = useState(false);
   const [resultChallenge, setResultChallenge] = useState<ChallengeItem | null>(null);
+  const [editChallengeItem, setEditChallengeItem] = useState<ChallengeItem | null>(null);
+  const [editChallengeVisible, setEditChallengeVisible] = useState(false);
   const [sentExpanded, setSentExpanded] = useState(true);
   const [activeExpanded, setActiveExpanded] = useState(true);
   const [pastExpanded, setPastExpanded] = useState(false);
@@ -996,6 +1086,11 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   const handleCancel = useCallback(async (id: number) => {
     try { await challengesApi.cancel(id); await load(); } catch {}
   }, [load]);
+
+  const handleEditChallenge = useCallback((ch: ChallengeItem) => {
+    setEditChallengeItem(ch);
+    setEditChallengeVisible(true);
+  }, []);
 
   const handleSetResult = useCallback(async (challengeId: number, winnerId: number) => {
     try { await challengesApi.setResult(challengeId, winnerId); await load(); } catch {}
@@ -1055,7 +1150,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
               <Ionicons name={sentExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
             </Pressable>
             {sentExpanded && challenges.sent.map((ch) => (
-              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} />
+              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} onEdit={handleEditChallenge} />
             ))}
           </View>
         )}
@@ -1116,6 +1211,15 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         onClose={() => { setCreateVisible(false); setTargetUser(null); }}
         targetUser={targetUser}
         systems={systems}
+        onCreated={load}
+      />
+
+      <CreateChallengeModal
+        visible={editChallengeVisible}
+        onClose={() => { setEditChallengeVisible(false); setEditChallengeItem(null); }}
+        targetUser={null}
+        systems={systems}
+        editChallenge={editChallengeItem}
         onCreated={load}
       />
 
