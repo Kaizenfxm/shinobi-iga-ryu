@@ -622,15 +622,15 @@ function UndoTimer({ respondedAt, onUndo, onExpire }: { respondedAt: string; onU
   );
 }
 
-function PendingChallengeCard({ item, onRespond, currentUserId, canManage }: {
+function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
   item: ChallengeItem;
   onRespond: (id: number, decision: "accepted" | "declined") => void;
-  currentUserId: number;
-  canManage: boolean;
+  onUndo: (id: number) => void;
+  onExpire: (id: number) => void;
 }) {
-  void canManage;
-  const [decided, setDecided] = useState<"accepted" | "declined" | null>(null);
-  const [respondedAt, setRespondedAt] = useState<string | null>(null);
+  const alreadyResponded = item.status === "accepted" || item.status === "declined";
+  const [decided, setDecided] = useState<"accepted" | "declined" | null>(alreadyResponded ? (item.status as "accepted" | "declined") : null);
+  const [respondedAt, setRespondedAt] = useState<string | null>(alreadyResponded && item.respondedAt ? item.respondedAt : null);
 
   const handleDecision = (decision: "accepted" | "declined") => {
     setDecided(decision);
@@ -641,10 +641,8 @@ function PendingChallengeCard({ item, onRespond, currentUserId, canManage }: {
   const handleUndo = () => {
     setDecided(null);
     setRespondedAt(null);
-    onRespond(item.id, "pending" as "accepted");
+    onUndo(item.id);
   };
-
-  void currentUserId;
 
   return (
     <View style={rStyles.pendingCard}>
@@ -671,7 +669,7 @@ function PendingChallengeCard({ item, onRespond, currentUserId, canManage }: {
             <UndoTimer
               respondedAt={respondedAt}
               onUndo={handleUndo}
-              onExpire={() => {}}
+              onExpire={() => onExpire(item.id)}
             />
           )}
         </View>
@@ -963,15 +961,22 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 
   useEffect(() => { load(); }, [load]);
 
-  const handleRespond = useCallback(async (id: number, decision: "accepted" | "declined" | "pending") => {
-    if (decision === "pending") {
-      try { await challengesApi.undoResponse(id); await load(); } catch {}
-      return;
-    }
+  const handleRespond = useCallback(async (id: number, decision: "accepted" | "declined") => {
     try {
-      await challengesApi.respond(id, decision as "accepted" | "declined");
+      await challengesApi.respond(id, decision);
+      await refreshBadge();
+    } catch {}
+  }, [refreshBadge]);
+
+  const handleUndo = useCallback(async (id: number) => {
+    try {
+      await challengesApi.undoResponse(id);
       await load();
     } catch {}
+  }, [load]);
+
+  const handleExpire = useCallback(async (_id: number) => {
+    await load();
   }, [load]);
 
   const handleSetResult = useCallback(async (challengeId: number, winnerId: number) => {
@@ -1017,8 +1022,8 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
                 key={ch.id}
                 item={ch}
                 onRespond={handleRespond}
-                currentUserId={currentUserId}
-                canManage={canManage}
+                onUndo={handleUndo}
+                onExpire={handleExpire}
               />
             ))}
           </View>
