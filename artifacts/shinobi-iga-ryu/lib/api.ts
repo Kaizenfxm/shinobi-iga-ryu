@@ -868,6 +868,9 @@ export const challengesApi = {
 
   registerPushToken: (token: string, platform: string) =>
     apiFetch<{ success: boolean }>("/push-token", { method: "POST", body: { token, platform } }),
+
+  getCommunityPending: () =>
+    apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-pending"),
 };
 
 export const eventsApi = {

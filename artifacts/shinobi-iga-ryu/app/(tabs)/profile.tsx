@@ -45,6 +45,22 @@ function getDanNumber(name: string): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
+function getNinjutsuRankTitle(beltName: string): string | null {
+  const lower = beltName.toLowerCase();
+  const danMatch = lower.match(/^(\d+)\s*dan/);
+  if (!danMatch) {
+    if (lower.includes("negro")) return "Sensei";
+    return null;
+  }
+  const dan = parseInt(danMatch[1], 10);
+  if (dan <= 2) return "Sensei";
+  if (dan <= 6) return "Shidoshi";
+  if (dan === 7) return "Shidoshi-Ho";
+  if (dan === 8) return "Shihan";
+  if (dan === 9) return "Menkyo";
+  return "Soke";
+}
+
 function BeltCard({ belt }: { belt: ProfileBelt }) {
   const nameLower = belt.beltName.toLowerCase();
   const colorLower = belt.beltColor.toLowerCase();
@@ -56,7 +72,7 @@ function BeltCard({ belt }: { belt: ProfileBelt }) {
   const isDan = danNum > 0;
 
   const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : belt.beltColor;
-  const displayColor = isWhite ? "#AAA" : isDan ? "#D4AF37" : belt.beltColor;
+  const displayColor = isWhite ? "#AAA" : isDan ? "#D4AF37" : isVeryDark ? "#FFFFFF" : belt.beltColor;
   const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
   const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
 
@@ -587,6 +603,13 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               ))}
+              {ninjutsuBelt && getNinjutsuRankTitle(ninjutsuBelt.beltName) && (
+                <View style={[styles.rolePill, { borderColor: "#D4AF37", borderWidth: 1 }]}>
+                  <Text style={[styles.rolePillText, { color: "#D4AF37", letterSpacing: 1 }]}>
+                    {getNinjutsuRankTitle(ninjutsuBelt.beltName)}
+                  </Text>
+                </View>
+              )}
               <Pressable
                 style={[styles.fighterPill, !data.isFighter && styles.fighterPillInactive]}
                 onPress={handleToggleFighter}
