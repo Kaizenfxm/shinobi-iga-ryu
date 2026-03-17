@@ -14,6 +14,7 @@ import {
   ImageBackground,
   Image,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -115,33 +116,41 @@ const aStyles = StyleSheet.create({
   closeBtnText: { color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
 });
 
+function formatDateDisplay(d: Date) {
+  return d.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" }) +
+    "  " + d.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+}
+
 function CreateEventModal({ visible, onClose, onCreated }: {
   visible: boolean;
   onClose: () => void;
   onCreated: (ev: EventItem) => void;
 }) {
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [datetime, setDatetime] = useState<Date | null>(null);
   const [location, setLocation] = useState("");
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const [coverPath, setCoverPath] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | null>(null);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
 
   const reset = () => {
-    setTitle(""); setDate(""); setTime(""); setLocation("");
-    setCoverUri(null); setCoverPath(null);
+    setTitle(""); setDatetime(null); setLocation("");
+    setCoverUri(null); setCoverPath(null); setFormError(null);
   };
 
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Permiso", "Se necesita acceso a la galería"); return; }
+    if (!perm.granted) { setFormError("Se necesita acceso a la galería"); return; }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.85 });
     if (res.canceled || !res.assets?.[0]) return;
     const asset = res.assets[0];
     const mimeType = asset.mimeType ?? "image/jpeg";
     setUploadingImg(true);
+    setFormError(null);
     try {
       const { uploadURL, objectPath } = await eventsApi.getCoverUploadUrl(mimeType);
       const blob = await fetch(asset.uri).then((r) => r.blob());
@@ -150,32 +159,36 @@ function CreateEventModal({ visible, onClose, onCreated }: {
       setCoverUri(asset.uri);
       setCoverPath(objectPath);
     } catch {
-      Alert.alert("Error", "No se pudo subir la imagen");
+      setFormError("No se pudo subir la imagen — intenta de nuevo");
     } finally {
       setUploadingImg(false);
     }
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !date.trim() || !time.trim() || !location.trim()) {
-      Alert.alert("Error", "Completa todos los campos"); return;
-    }
-    const isoDate = `${date.trim()}T${time.trim()}:00`;
-    if (isNaN(new Date(isoDate).getTime())) {
-      Alert.alert("Error", "Formato de fecha inválido (AAAA-MM-DD) y hora (HH:MM)"); return;
-    }
+    setFormError(null);
+    if (!title.trim()) { setFormError("El nombre del evento es requerido"); return; }
+    if (!datetime) { setFormError("Selecciona la fecha y hora del evento"); return; }
+    if (!location.trim()) { setFormError("El lugar del evento es requerido"); return; }
     setSaving(true);
     try {
-      const res = await eventsApi.create({ title: title.trim(), coverImageUrl: coverPath, eventDate: isoDate, location: location.trim() });
+      const res = await eventsApi.create({
+        title: title.trim(),
+        coverImageUrl: coverPath,
+        eventDate: datetime.toISOString(),
+        location: location.trim(),
+      });
       onCreated(res.event);
       reset();
       onClose();
     } catch {
-      Alert.alert("Error", "No se pudo crear el evento");
+      setFormError("No se pudo crear el evento. Verifica tu conexión.");
     } finally {
       setSaving(false);
     }
   };
+
+  const isWeb = Platform.OS === "web";
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -192,35 +205,108 @@ function CreateEventModal({ visible, onClose, onCreated }: {
             ) : (
               <>
                 <MaterialCommunityIcons name="image-plus" size={28} color="#555" />
-                <Text style={cStyles.imagePickerText}>Imagen de portada</Text>
+                <Text style={cStyles.imagePickerText}>Imagen de portada (opcional)</Text>
               </>
             )}
           </Pressable>
 
           <TextInput
             style={cStyles.input} placeholder="Nombre del evento" placeholderTextColor="#444"
-            value={title} onChangeText={setTitle}
-          />
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TextInput
-              style={[cStyles.input, { flex: 1 }]} placeholder="Fecha (AAAA-MM-DD)" placeholderTextColor="#444"
-              value={date} onChangeText={setDate} keyboardType="numbers-and-punctuation"
-            />
-            <TextInput
-              style={[cStyles.input, { width: 90 }]} placeholder="HH:MM" placeholderTextColor="#444"
-              value={time} onChangeText={setTime} keyboardType="numbers-and-punctuation"
-            />
-          </View>
-          <TextInput
-            style={cStyles.input} placeholder="Lugar" placeholderTextColor="#444"
-            value={location} onChangeText={setLocation}
+            value={title} onChangeText={(t) => { setTitle(t); setFormError(null); }}
           />
 
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+          {isWeb ? (
+            <View style={cStyles.webDateWrapper}>
+              <Ionicons name="calendar-outline" size={14} color="#D4AF37" style={{ marginRight: 6 }} />
+              <Text style={datetime ? cStyles.webDateText : cStyles.webDatePlaceholder}>
+                {datetime ? formatDateDisplay(datetime) : "Seleccionar fecha y hora..."}
+              </Text>
+              {React.createElement("input", {
+                type: "datetime-local",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onChange: (e: any) => {
+                  if (e.target?.value) {
+                    setDatetime(new Date(e.target.value));
+                    setFormError(null);
+                  }
+                },
+                style: {
+                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                  opacity: 0, width: "100%", height: "100%", cursor: "pointer",
+                  zIndex: 10,
+                },
+              })}
+            </View>
+          ) : (
+            <>
+              <Pressable
+                style={cStyles.dateBtn}
+                onPress={() => { setTempDate(datetime ?? new Date()); setShowNativePicker("date"); }}
+              >
+                <Ionicons name="calendar-outline" size={14} color="#D4AF37" />
+                <Text style={datetime ? cStyles.dateBtnText : cStyles.dateBtnPlaceholder}>
+                  {datetime
+                    ? datetime.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+                    : "Seleccionar fecha..."}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[cStyles.dateBtn, { marginTop: 8 }]}
+                onPress={() => { setTempDate(datetime ?? new Date()); setShowNativePicker("time"); }}
+              >
+                <Ionicons name="time-outline" size={14} color="#D4AF37" />
+                <Text style={datetime ? cStyles.dateBtnText : cStyles.dateBtnPlaceholder}>
+                  {datetime
+                    ? datetime.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+                    : "Seleccionar hora..."}
+                </Text>
+              </Pressable>
+              {showNativePicker && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode={showNativePicker}
+                  display="default"
+                  onChange={(_, selected) => {
+                    setShowNativePicker(null);
+                    if (!selected) return;
+                    setDatetime((prev) => {
+                      const base = prev ?? new Date();
+                      if (showNativePicker === "date") {
+                        return new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(),
+                          base.getHours(), base.getMinutes());
+                      } else {
+                        return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+                          selected.getHours(), selected.getMinutes());
+                      }
+                    });
+                    setFormError(null);
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          <TextInput
+            style={[cStyles.input, { marginTop: 10 }]} placeholder="Lugar" placeholderTextColor="#444"
+            value={location} onChangeText={(t) => { setLocation(t); setFormError(null); }}
+          />
+
+          {formError && (
+            <View style={cStyles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={13} color="#ff4444" />
+              <Text style={cStyles.errorText}>{formError}</Text>
+            </View>
+          )}
+
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
             <Pressable style={[cStyles.btn, { flex: 1, backgroundColor: "#1a1a1a" }]} onPress={() => { reset(); onClose(); }}>
               <Text style={[cStyles.btnText, { color: "#555" }]}>CANCELAR</Text>
             </Pressable>
-            <Pressable style={[cStyles.btn, { flex: 1, backgroundColor: "#D4AF37", opacity: saving ? 0.6 : 1 }]} onPress={handleSave} disabled={saving}>
+            <Pressable
+              style={[cStyles.btn, { flex: 1, backgroundColor: "#D4AF37", opacity: saving ? 0.6 : 1 }]}
+              onPress={handleSave}
+              disabled={saving}
+            >
               <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? "CREANDO..." : "CREAR"}</Text>
             </Pressable>
           </View>
@@ -234,10 +320,26 @@ const cStyles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" },
   sheet: { backgroundColor: "#111", borderTopLeftRadius: 12, borderTopRightRadius: 12, padding: 24, paddingBottom: 40, borderTopWidth: 2, borderTopColor: "#D4AF37" },
   heading: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 13, letterSpacing: 2, textAlign: "center", marginBottom: 16 },
-  imagePicker: { height: 120, backgroundColor: "#0a0a0a", borderRadius: 4, borderWidth: 1, borderColor: "#2a2a2a", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginBottom: 12, overflow: "hidden" },
+  imagePicker: { height: 110, backgroundColor: "#0a0a0a", borderRadius: 4, borderWidth: 1, borderColor: "#2a2a2a", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginBottom: 12, overflow: "hidden" },
   imagePreview: { width: "100%", height: "100%" },
   imagePickerText: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 11, marginTop: 6 },
-  input: { backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 4, color: "#FFF", fontFamily: "NotoSansJP_400Regular", fontSize: 13, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10 },
+  input: { backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 4, color: "#FFF", fontFamily: "NotoSansJP_400Regular", fontSize: 13, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 0 },
+  webDateWrapper: {
+    position: "relative", flexDirection: "row", alignItems: "center",
+    backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 4,
+    paddingHorizontal: 12, paddingVertical: 11, overflow: "hidden",
+  },
+  webDateText: { color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 13, flex: 1 },
+  webDatePlaceholder: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 13, flex: 1 },
+  dateBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 4,
+    paddingHorizontal: 12, paddingVertical: 11,
+  },
+  dateBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+  dateBtnPlaceholder: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+  errorBox: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, padding: 10, backgroundColor: "rgba(255,68,68,0.08)", borderRadius: 4, borderWidth: 1, borderColor: "rgba(255,68,68,0.2)" },
+  errorText: { color: "#ff4444", fontFamily: "NotoSansJP_400Regular", fontSize: 11, flex: 1 },
   btn: { borderRadius: 4, paddingVertical: 12, alignItems: "center" },
   btnText: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
 });
