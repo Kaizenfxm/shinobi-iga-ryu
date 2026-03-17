@@ -58,6 +58,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@react-native-community/datetimepicker": "8.4.4",
     "expo-camera": "^55.0.9",
     "expo-notifications": "^0.32.16",
     "expo-sharing": "^55.0.11",
