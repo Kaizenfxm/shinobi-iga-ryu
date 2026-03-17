@@ -835,7 +835,7 @@ export const challengesApi = {
     apiFetch<{ count: number }>("/challenges/pending-count"),
 
   getAll: () =>
-    apiFetch<{ pending: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>("/challenges"),
+    apiFetch<{ pending: ChallengeItem[]; sent: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>("/challenges"),
 
   create: (data: { challengedId: number; trainingSystemId: number; scheduledAt: string; notes?: string }) =>
     apiFetch<{ challenge: ChallengeItem }>("/challenges", { method: "POST", body: data }),
