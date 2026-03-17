@@ -44,6 +44,22 @@ function getStripeCount(name: string): number {
   return match ? parseInt(match[1], 10) : 0;
 }
 
+function getNinjutsuRankTitle(beltName: string): string | null {
+  const lower = beltName.toLowerCase();
+  const danMatch = lower.match(/^(\d+)\s*dan/);
+  if (!danMatch) {
+    if (lower.includes("negro")) return "Sensei";
+    return null;
+  }
+  const dan = parseInt(danMatch[1], 10);
+  if (dan <= 2) return "Sensei";
+  if (dan <= 6) return "Shidoshi";
+  if (dan === 7) return "Shidoshi-Ho";
+  if (dan === 8) return "Shihan";
+  if (dan === 9) return "Menkyo";
+  return "Soke";
+}
+
 function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?: string; size?: number }) {
   const stripes = getStripeCount(name);
   const nameLower = name.toLowerCase();
@@ -346,12 +362,14 @@ function LadderRow({
   onToggleReq,
   applying,
   togglingReqs,
+  isNinjutsu = false,
 }: {
   belt: LadderBelt;
   onApply: () => void;
   onToggleReq: (id: number) => void;
   applying: boolean;
   togglingReqs: Set<number>;
+  isNinjutsu?: boolean;
 }) {
   const status = belt.status as BeltStatus;
   const [reqsOpen, setReqsOpen] = useState(false);
@@ -408,9 +426,16 @@ function LadderRow({
         )}
 
         <View style={rowStyles.nameArea}>
-          <Text style={[rowStyles.name, status === "current" && rowStyles.nameCurrent]}>
-            {belt.name.toUpperCase()}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <Text style={[rowStyles.name, status === "current" && rowStyles.nameCurrent]}>
+              {belt.name.toUpperCase()}
+            </Text>
+            {isNinjutsu && getNinjutsuRankTitle(belt.name) && (
+              <Text style={{ fontFamily: "NotoSerifJP_700Bold", fontSize: 9, color: "#D4AF37", letterSpacing: 1, opacity: 0.85 }}>
+                {getNinjutsuRankTitle(belt.name)}
+              </Text>
+            )}
+          </View>
           {showInfo && belt.description && (
             <Text style={rowStyles.desc} numberOfLines={2}>{belt.description}</Text>
           )}
@@ -666,6 +691,7 @@ function DisciplineSection({
                 onToggleReq={(reqId) => onToggleReq(belt.discipline, reqId)}
                 applying={applyingDiscs.has(belt.discipline)}
                 togglingReqs={togglingReqs}
+                isNinjutsu={belt.discipline === "ninjutsu"}
               />
             ))}
           </View>

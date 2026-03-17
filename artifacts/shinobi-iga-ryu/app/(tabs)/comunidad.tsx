@@ -1142,6 +1142,8 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   const [search, setSearch] = useState("");
   const [systems, setSystems] = useState<TrainingSystem[]>([]);
   const [challenges, setChallenges] = useState<{ pending: ChallengeItem[]; sent: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>({ pending: [], sent: [], active: [], past: [] });
+  const [communityPending, setCommunityPending] = useState<ChallengeItem[]>([]);
+  const [communityExpanded, setCommunityExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [targetUser, setTargetUser] = useState<ChallengeUser | null>(null);
@@ -1155,10 +1157,11 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 
   const load = useCallback(async () => {
     try {
-      const [usersRes, systemsRes, challengesRes] = await Promise.all([
+      const [usersRes, systemsRes, challengesRes, communityRes] = await Promise.all([
         challengesApi.getUsers(),
         trainingApi.getSystems(),
         challengesApi.getAll(),
+        challengesApi.getCommunityPending(),
       ]);
       setUsers(usersRes.users);
       setSystems(systemsRes.systems);
@@ -1168,6 +1171,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         active: challengesRes.active ?? [],
         past: challengesRes.past ?? [],
       });
+      setCommunityPending(communityRes.challenges ?? []);
       await refreshBadge();
     } catch {
     } finally {
@@ -1230,6 +1234,9 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   }
 
   const hasPending = challenges.pending.length > 0;
+  const otherCommunityPending = communityPending.filter(
+    (ch) => ch.challengerId !== currentUserId && ch.challengedId !== currentUserId
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -1262,6 +1269,65 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
                 onUndo={handleUndo}
                 onExpire={handleExpire}
               />
+            ))}
+          </View>
+        )}
+
+        {otherCommunityPending.length > 0 && (
+          <View style={rStyles.section}>
+            <Pressable style={rStyles.sectionHeader} onPress={() => setCommunityExpanded((p) => !p)}>
+              <View style={[rStyles.sectionDot, { backgroundColor: "#5a3a00" }]} />
+              <Text style={[rStyles.sectionTitle, { color: "#D4AF37" }]}>⚔ DESAFÍOS EN LA COMUNIDAD</Text>
+              <View style={[rStyles.sectionBadge, { borderColor: "#D4AF37" }]}>
+                <Text style={[rStyles.sectionBadgeText, { color: "#D4AF37" }]}>{otherCommunityPending.length}</Text>
+              </View>
+              <Ionicons name={communityExpanded ? "chevron-up" : "chevron-down"} size={12} color="#D4AF37" style={{ marginLeft: "auto" }} />
+            </Pressable>
+            {communityExpanded && otherCommunityPending.map((ch) => (
+              <View
+                key={ch.id}
+                style={{
+                  backgroundColor: "#0a0800",
+                  borderWidth: 1,
+                  borderColor: "#2a2000",
+                  borderRadius: 2,
+                  marginBottom: 8,
+                  overflow: "hidden",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12, gap: 10 }}>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    {ch.challengerAvatar ? (
+                      <Image source={{ uri: getAvatarServingUrl(ch.challengerAvatar) ?? undefined }} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "#C41E3A" }} />
+                    ) : (
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#1a0808", borderWidth: 1, borderColor: "#C41E3A", alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 14 }}>{(ch.challengerName[0] ?? "?").toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <Text style={{ color: "#ddd", fontFamily: "NotoSansJP_700Bold", fontSize: 9, marginTop: 4, textAlign: "center" }} numberOfLines={2}>{ch.challengerName.toUpperCase()}</Text>
+                  </View>
+                  <View style={{ alignItems: "center", gap: 4 }}>
+                    <Text style={{ color: "#D4AF37", fontFamily: "NotoSerifJP_700Bold", fontSize: 16, letterSpacing: 2 }}>VS</Text>
+                    <View style={{ backgroundColor: "#1a1000", borderWidth: 1, borderColor: "#2a2000", borderRadius: 2, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 8, letterSpacing: 1 }} numberOfLines={1}>{ch.trainingSystemName}</Text>
+                    </View>
+                    <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 8 }}>{formatChallengeDate(ch.scheduledAt)}</Text>
+                  </View>
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    {ch.challengedAvatar ? (
+                      <Image source={{ uri: getAvatarServingUrl(ch.challengedAvatar) ?? undefined }} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: "#D4AF37" }} />
+                    ) : (
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#0d0a00", borderWidth: 1, borderColor: "#D4AF37", alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 14 }}>{(ch.challengedName[0] ?? "?").toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <Text style={{ color: "#ddd", fontFamily: "NotoSansJP_700Bold", fontSize: 9, marginTop: 4, textAlign: "center" }} numberOfLines={2}>{ch.challengedName.toUpperCase()}</Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: "#120e00", paddingVertical: 4, paddingHorizontal: 12, alignItems: "center" }}>
+                  <Text style={{ color: "#7a6010", fontFamily: "NotoSansJP_400Regular", fontSize: 9, letterSpacing: 2 }}>ESPERANDO RESPUESTA</Text>
+                </View>
+              </View>
             ))}
           </View>
         )}
