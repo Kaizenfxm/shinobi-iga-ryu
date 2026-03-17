@@ -871,6 +871,9 @@ export const challengesApi = {
 
   getCommunityPending: () =>
     apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-pending"),
+
+  getCommunityActive: () =>
+    apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-active"),
 };
 
 export const eventsApi = {

@@ -220,6 +220,53 @@ challengesRouter.get("/challenges/community-pending", requireAuth, async (req, r
   }
 });
 
+challengesRouter.get("/challenges/community-active", requireAuth, async (req, res) => {
+  try {
+    const UNDO_WINDOW_MS = 120_000;
+    const now = new Date();
+    const undoCutoff = new Date(now.getTime() - UNDO_WINDOW_MS);
+
+    const rows = await db
+      .select({
+        id: challengesTable.id,
+        challengerId: challengesTable.challengerId,
+        challengedId: challengesTable.challengedId,
+        trainingSystemId: challengesTable.trainingSystemId,
+        scheduledAt: challengesTable.scheduledAt,
+        notes: challengesTable.notes,
+        status: challengesTable.status,
+        winnerId: challengesTable.winnerId,
+        cancelRequestedBy: challengesTable.cancelRequestedBy,
+        respondedAt: challengesTable.respondedAt,
+        createdAt: challengesTable.createdAt,
+        trainingSystemName: trainingSystemsTable.name,
+        challengerName: challengerUsers.displayName,
+        challengerAvatar: challengerUsers.avatarUrl,
+        challengedName: challengedUsers.displayName,
+        challengedAvatar: challengedUsers.avatarUrl,
+      })
+      .from(challengesTable)
+      .innerJoin(trainingSystemsTable, eq(challengesTable.trainingSystemId, trainingSystemsTable.id))
+      .innerJoin(challengerUsers, eq(challengesTable.challengerId, challengerUsers.id))
+      .innerJoin(challengedUsers, eq(challengesTable.challengedId, challengedUsers.id))
+      .where(
+        and(
+          eq(challengesTable.status, "accepted"),
+          or(
+            sql`${challengesTable.respondedAt} IS NULL`,
+            sql`${challengesTable.respondedAt} <= ${undoCutoff.toISOString()}`
+          )
+        )
+      )
+      .orderBy(desc(challengesTable.scheduledAt));
+
+    res.json({ challenges: rows });
+  } catch (error) {
+    console.error("Community active error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
 challengesRouter.post("/challenges", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
