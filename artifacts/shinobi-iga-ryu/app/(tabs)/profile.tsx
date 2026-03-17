@@ -58,8 +58,7 @@ function BeltCard({ belt }: { belt: ProfileBelt }) {
     <View style={beltCardStyles.outerWrap}>
       {isRecentPromotion && (
         <View style={beltCardStyles.promoBanner}>
-          <Text style={beltCardStyles.promoBannerLine1}>Felicitaciones por tu ascenso a</Text>
-          <Text style={beltCardStyles.promoBannerBelt}>{belt.beltName.toUpperCase()}</Text>
+          <Text style={beltCardStyles.promoBannerLine1}>Felicitaciones por tu ascenso</Text>
         </View>
       )}
       <View style={beltCardStyles.container}>
