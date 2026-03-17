@@ -803,6 +803,59 @@ export interface EventAttendee {
   avatarUrl: string | null;
 }
 
+export interface ChallengeUser {
+  id: number;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export interface ChallengeItem {
+  id: number;
+  challengerId: number;
+  challengedId: number;
+  trainingSystemId: number;
+  scheduledAt: string;
+  notes: string | null;
+  status: "pending" | "accepted" | "declined" | "completed" | "cancelled";
+  winnerId: number | null;
+  respondedAt: string | null;
+  createdAt: string;
+  trainingSystemName: string;
+  challengerName: string;
+  challengerAvatar: string | null;
+  challengedName: string;
+  challengedAvatar: string | null;
+}
+
+export const challengesApi = {
+  getUsers: () =>
+    apiFetch<{ users: ChallengeUser[] }>("/challenges/users"),
+
+  getPendingCount: () =>
+    apiFetch<{ count: number }>("/challenges/pending-count"),
+
+  getAll: () =>
+    apiFetch<{ pending: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>("/challenges"),
+
+  create: (data: { challengedId: number; trainingSystemId: number; scheduledAt: string; notes?: string }) =>
+    apiFetch<{ challenge: ChallengeItem }>("/challenges", { method: "POST", body: data }),
+
+  respond: (id: number, decision: "accepted" | "declined") =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/respond`, { method: "POST", body: { decision } }),
+
+  undoResponse: (id: number) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/undo-response`, { method: "POST" }),
+
+  setResult: (id: number, winnerId: number) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/result`, { method: "POST", body: { winnerId } }),
+
+  cancel: (id: number) =>
+    apiFetch<{ success: boolean }>(`/challenges/${id}`, { method: "DELETE" }),
+
+  registerPushToken: (token: string, platform: string) =>
+    apiFetch<{ success: boolean }>("/push-token", { method: "POST", body: { token, platform } }),
+};
+
 export const eventsApi = {
   getAll: () =>
     apiFetch<{ events: EventItem[] }>("/events"),

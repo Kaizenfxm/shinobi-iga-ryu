@@ -12,6 +12,7 @@ import trainingRouter from "./training";
 import settingsRouter from "./settings";
 import classesRouter from "./classes";
 import eventsRouter from "./events";
+import challengesRouter from "./challenges";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(trainingRouter);
 router.use(settingsRouter);
 router.use(classesRouter);
 router.use(eventsRouter);
+router.use(challengesRouter);
 
 export default router;
