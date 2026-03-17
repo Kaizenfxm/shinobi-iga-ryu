@@ -785,3 +785,46 @@ export const classesApi = {
   getAttendees: (classId: number) =>
     apiFetch<{ attendees: ClassAttendee[] }>(`/classes/${classId}/attendees`),
 };
+
+export interface EventItem {
+  id: number;
+  title: string;
+  coverImageUrl: string | null;
+  eventDate: string;
+  location: string;
+  createdByUserId: number;
+  attendeeCount: number;
+  userWillAttend: boolean | null;
+}
+
+export interface EventAttendee {
+  id: number;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export const eventsApi = {
+  getAll: () =>
+    apiFetch<{ events: EventItem[] }>("/events"),
+
+  create: (data: { title: string; coverImageUrl?: string | null; eventDate: string; location: string }) =>
+    apiFetch<{ event: EventItem }>("/events", { method: "POST", body: data }),
+
+  delete: (id: number) =>
+    apiFetch<{ success: boolean }>(`/events/${id}`, { method: "DELETE" }),
+
+  attend: (id: number, willAttend: boolean) =>
+    apiFetch<{ success: boolean; willAttend: boolean; attendeeCount: number }>(`/events/${id}/attend`, {
+      method: "POST",
+      body: { willAttend },
+    }),
+
+  getAttendees: (id: number) =>
+    apiFetch<{ attendees: EventAttendee[] }>(`/events/${id}/attendees`),
+
+  getCoverUploadUrl: (contentType: string) =>
+    apiFetch<{ uploadURL: string; objectPath: string }>("/events/cover-upload-url", {
+      method: "POST",
+      body: { contentType },
+    }),
+};
