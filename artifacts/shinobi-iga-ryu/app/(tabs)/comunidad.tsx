@@ -709,8 +709,12 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
 
       <View style={rStyles.pendingFightLayout}>
         <View style={rStyles.pendingFighterBlock}>
-          <View style={rStyles.pendingAvatarCircle}>
-            <Text style={rStyles.pendingAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+          <View style={[rStyles.pendingAvatarCircle, { borderColor: "#C41E3A" }]}>
+            {item.challengerAvatar ? (
+              <Image source={{ uri: getAvatarServingUrl(item.challengerAvatar) ?? undefined }} style={rStyles.pendingAvatarImg} />
+            ) : (
+              <Text style={rStyles.pendingAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+            )}
           </View>
           <Text style={rStyles.pendingFighterName} numberOfLines={2}>{item.challengerName.toUpperCase()}</Text>
           <Text style={rStyles.pendingFighterLabel}>RETADOR</Text>
@@ -725,7 +729,11 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
 
         <View style={rStyles.pendingFighterBlock}>
           <View style={[rStyles.pendingAvatarCircle, { borderColor: "#D4AF37" }]}>
-            <Text style={[rStyles.pendingAvatarLetter, { color: "#D4AF37" }]}>TÚ</Text>
+            {item.challengedAvatar ? (
+              <Image source={{ uri: getAvatarServingUrl(item.challengedAvatar) ?? undefined }} style={rStyles.pendingAvatarImg} />
+            ) : (
+              <Text style={[rStyles.pendingAvatarLetter, { color: "#D4AF37" }]}>TÚ</Text>
+            )}
           </View>
           <Text style={rStyles.pendingFighterName} numberOfLines={2}>TÚ</Text>
           <Text style={rStyles.pendingFighterLabel}>RETADO</Text>
@@ -804,17 +812,37 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
     <View style={[rStyles.fightCard, { borderLeftColor: borderColor }]}>
       <View style={rStyles.fightCardInner}>
         <View style={rStyles.fightCardFighters}>
-          <Text style={[rStyles.fightCardName, { color: p1Color, textAlign: "left" }]} numberOfLines={2}>
-            {item.challengerName.toUpperCase()}
-          </Text>
+          <View style={rStyles.fightCardFighterCol}>
+            <View style={rStyles.fightCardAvatarWrap}>
+              {item.challengerAvatar ? (
+                <Image source={{ uri: getAvatarServingUrl(item.challengerAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
+              ) : (
+                <Text style={rStyles.fightCardAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+              )}
+            </View>
+            <Text style={[rStyles.fightCardName, { color: p1Color, textAlign: "left" }]} numberOfLines={2}>
+              {item.challengerName.toUpperCase()}
+            </Text>
+          </View>
+
           <View style={rStyles.fightCardVsBlock}>
             <Text style={rStyles.fightCardVs}>VS</Text>
             <Text style={rStyles.fightCardSystem} numberOfLines={1}>{item.trainingSystemName}</Text>
             <Text style={rStyles.fightCardDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
           </View>
-          <Text style={[rStyles.fightCardName, { color: p2Color, textAlign: "right" }]} numberOfLines={2}>
-            {item.challengedName.toUpperCase()}
-          </Text>
+
+          <View style={[rStyles.fightCardFighterCol, { alignItems: "flex-end" }]}>
+            <View style={rStyles.fightCardAvatarWrap}>
+              {item.challengedAvatar ? (
+                <Image source={{ uri: getAvatarServingUrl(item.challengedAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
+              ) : (
+                <Text style={rStyles.fightCardAvatarLetter}>{(item.challengedName[0] ?? "?").toUpperCase()}</Text>
+              )}
+            </View>
+            <Text style={[rStyles.fightCardName, { color: p2Color, textAlign: "right" }]} numberOfLines={2}>
+              {item.challengedName.toUpperCase()}
+            </Text>
+          </View>
         </View>
 
         <View style={rStyles.fightCardActions}>
@@ -1382,12 +1410,14 @@ const rStyles = StyleSheet.create({
     flex: 1, alignItems: "center", gap: 4,
   },
   pendingAvatarCircle: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 54, height: 54, borderRadius: 27,
     borderWidth: 2, borderColor: "#C41E3A",
     backgroundColor: "#0d0000", alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
   },
+  pendingAvatarImg: { width: 54, height: 54, borderRadius: 27 },
   pendingAvatarLetter: {
-    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 16,
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 18,
   },
   pendingFighterName: {
     color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 11,
@@ -1413,7 +1443,7 @@ const rStyles = StyleSheet.create({
   pendingMetaRow: {
     flexDirection: "row", alignItems: "center", gap: 5, justifyContent: "center", marginBottom: 4,
   },
-  pendingDate: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 11 },
+  pendingDate: { color: "#999", fontFamily: "NotoSansJP_400Regular", fontSize: 11 },
   pendingNotes: {
     color: "#3a3a3a", fontFamily: "NotoSansJP_400Regular", fontSize: 11,
     fontStyle: "italic", textAlign: "center", marginBottom: 4,
@@ -1486,12 +1516,24 @@ const rStyles = StyleSheet.create({
     color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 14,
     letterSpacing: 2, lineHeight: 18,
   },
+  fightCardFighterCol: {
+    flex: 1, alignItems: "flex-start", gap: 5,
+  },
+  fightCardAvatarWrap: {
+    width: 38, height: 38, borderRadius: 19, overflow: "hidden",
+    backgroundColor: "#0d0d0d", borderWidth: 1, borderColor: "#2a2a2a",
+    alignItems: "center", justifyContent: "center",
+  },
+  fightCardAvatarImg: { width: 38, height: 38, borderRadius: 19 },
+  fightCardAvatarLetter: {
+    color: "#444", fontFamily: "NotoSansJP_700Bold", fontSize: 14,
+  },
   fightCardSystem: {
     color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
     letterSpacing: 0.5, textAlign: "center", maxWidth: 72,
   },
   fightCardDate: {
-    color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
+    color: "#777", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
     textAlign: "center",
   },
   fightCardActions: {
