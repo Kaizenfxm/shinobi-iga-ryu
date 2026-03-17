@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { BeltStrip } from "@/components/BeltStrip";
 import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
@@ -1468,12 +1469,6 @@ function UsersPanel({
                         const isDark = cLower === "#000000" || cLower === "#1c1c1c";
                         const isWh = cLower === "#ffffff";
                         const barColor = userBelt ? (isDark ? "#3a3a3a" : isWh ? "#ccc" : userBelt.currentBelt.color) : "#222";
-                        const pCLower = pendingApp ? pendingApp.targetBeltColor.toLowerCase() : "";
-                        const pIsDark = pCLower === "#000000" || pCLower === "#1c1c1c";
-                        const pIsWh = pCLower === "#ffffff";
-                        const pBarColor = pendingApp ? (pIsDark ? "#3a3a3a" : pIsWh ? "#ccc" : pendingApp.targetBeltColor) : "#222";
-                        const pIsPunta = pendingApp ? pendingApp.targetBeltName.toLowerCase().includes("punta negra") : false;
-                        const pIsFranja = pendingApp ? pendingApp.targetBeltName.toLowerCase().includes("franja roja") : false;
                         const isActing = pendingApp ? actingOnApp.has(pendingApp.id) : false;
                         return (
                           <View key={discipline} style={styles.discMiniRow}>
@@ -1492,10 +1487,7 @@ function UsersPanel({
                             </View>
                             {pendingApp && (
                               <View style={styles.discMiniPendingRow}>
-                                <View style={[styles.discMiniPendingBar, { backgroundColor: pBarColor, overflow: "hidden" }]}>
-                                  {pIsFranja && <View style={styles.pendingFranjaRoja} />}
-                                  {pIsPunta && <View style={styles.pendingPuntaNegra} />}
-                                </View>
+                                <BeltStrip color={pendingApp.targetBeltColor} name={pendingApp.targetBeltName} width={18} height={8} />
                                 <Text style={styles.discMiniPendingTxt} numberOfLines={1}>
                                   → {pendingApp.targetBeltName}
                                 </Text>
@@ -1656,35 +1648,15 @@ function UsersPanel({
                   const currentBelt = userBeltMap[assignModal.userId]?.belts.find((b) => b.discipline === assignModal.discipline)?.currentBelt;
                   const currentOrder = currentBelt?.orderIndex ?? -1;
                   return belts.map((belt) => {
-                    const cLower = belt.color.toLowerCase();
-                    const isDark = cLower === "#000000" || cLower === "#1c1c1c";
-                    const isWh = cLower === "#ffffff";
-                    const barBg = isDark ? "#3a3a3a" : isWh ? "#ccc" : belt.color;
-                    const isPunta = belt.name.toLowerCase().includes("punta negra");
-                    const isFranja = belt.name.toLowerCase().includes("franja roja");
                     const isCurrent = currentBelt?.id === belt.id;
                     const isDemote = currentOrder > belt.orderIndex;
-                    const danMatch = belt.name.match(/^(\d+)\s*[Dd]an/);
-                    const danNum = danMatch ? parseInt(danMatch[1], 10) : 0;
-                    const danStripePositions = danNum > 0
-                      ? Array.from({ length: danNum }, (_, i) => 4 + i * 6)
-                      : [];
                     return (
                       <Pressable
                         key={belt.id}
                         style={[styles.assignBeltOption, isCurrent && { borderColor: "#D4AF37", borderWidth: 1 }]}
                         onPress={() => handleAssignBelt(belt.id, belt.name)}
                       >
-                        <View style={[styles.assignBeltBarLg, { backgroundColor: barBg, overflow: "hidden" }]}>
-                          {isFranja && <View style={styles.pendingFranjaRoja} />}
-                          {isPunta && <View style={styles.pendingPuntaNegra} />}
-                          {danStripePositions.map((pos) => (
-                            <View
-                              key={pos}
-                              style={{ position: "absolute", top: 1, bottom: 1, width: 3, borderRadius: 1, backgroundColor: "#D4AF37", right: pos }}
-                            />
-                          ))}
-                        </View>
+                        <BeltStrip color={belt.color} name={belt.name} width={44} height={18} />
                         <Text style={[styles.assignBeltOptionName, isCurrent && { color: "#D4AF37" }]}>
                           {belt.name}{isCurrent ? " ★" : ""}
                         </Text>
@@ -4260,22 +4232,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     position: "relative",
   },
-  pendingFranjaRoja: {
-    position: "absolute",
-    left: "38%",
-    width: "20%",
-    top: 0,
-    bottom: 0,
-    backgroundColor: "#CC0000",
-  },
-  pendingPuntaNegra: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: "30%",
-    backgroundColor: "#000000",
-  },
   pendingAppInfo: {
     flex: 1,
   },
@@ -4392,12 +4348,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#111",
-  },
-  assignBeltBarLg: {
-    width: 44,
-    height: 18,
-    borderRadius: 2,
-    position: "relative",
   },
   assignBeltOptionName: {
     flex: 1,
@@ -4863,11 +4813,6 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 4,
     paddingLeft: 16,
-  },
-  discMiniPendingBar: {
-    width: 28,
-    height: 8,
-    borderRadius: 1,
   },
   discMiniPendingTxt: {
     flex: 1,

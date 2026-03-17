@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
 import { scheduleWeightReminder } from "@/lib/notifications";
 import FightRecord from "@/components/FightRecord";
+import { BeltStrip, getDanNumber, getNinjutsuRankTitle } from "@/components/BeltStrip";
 import { useMembership } from "@/hooks/useMembership";
 import * as ImagePicker from "expo-image-picker";
 import ViewShot, { captureRef } from "react-native-view-shot";
@@ -40,41 +41,14 @@ const DISCIPLINE_KANJI: Record<string, string> = {
   jiujitsu: "柔術",
 };
 
-function getDanNumber(name: string): number {
-  const m = name.match(/^(\d+)\s+[Dd]an$/);
-  return m ? parseInt(m[1], 10) : 0;
-}
-
-function getNinjutsuRankTitle(beltName: string): string | null {
-  const lower = beltName.toLowerCase();
-  const danMatch = lower.match(/^(\d+)\s*dan/);
-  if (!danMatch) {
-    if (lower.includes("negro")) return "Sensei";
-    return null;
-  }
-  const dan = parseInt(danMatch[1], 10);
-  if (dan <= 2) return "Sensei";
-  if (dan <= 6) return "Shidoshi";
-  if (dan === 7) return "Shidoshi-Ho";
-  if (dan === 8) return "Shihan";
-  if (dan === 9) return "Menkyo";
-  return "Soke";
-}
-
 function BeltCard({ belt }: { belt: ProfileBelt }) {
-  const nameLower = belt.beltName.toLowerCase();
   const colorLower = belt.beltColor.toLowerCase();
   const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
   const isWhite = colorLower === "#ffffff";
-  const isPuntaNegra = nameLower.includes("punta negra");
-  const isFranjaRoja = nameLower.includes("franja roja");
   const danNum = getDanNumber(belt.beltName);
   const isDan = danNum > 0;
 
-  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : belt.beltColor;
   const displayColor = isWhite ? "#AAA" : isDan ? "#D4AF37" : isVeryDark ? "#FFFFFF" : belt.beltColor;
-  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
-  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
 
   const isRecentPromotion = belt.updatedAt
     ? (Date.now() - new Date(belt.updatedAt).getTime()) < 24 * 60 * 60 * 1000
@@ -96,30 +70,11 @@ function BeltCard({ belt }: { belt: ProfileBelt }) {
           {DISCIPLINE_LABELS[belt.discipline] || belt.discipline}
         </Text>
         <View style={beltCardStyles.beltVisual}>
-          <View
-            style={[
-              beltCardStyles.beltStrip,
-              { backgroundColor: belt.beltColor, borderColor, borderWidth: 1 },
-            ]}
-          >
-            {showKnot && (
-              <View style={[beltCardStyles.knot, { backgroundColor: borderColor }]} />
-            )}
-            {showEnd && (
-              <View style={[beltCardStyles.end, { backgroundColor: borderColor + "40" }]} />
-            )}
-            {isFranjaRoja && <View style={beltCardStyles.franjaRoja} />}
-            {isPuntaNegra && <View style={beltCardStyles.puntaNegra} />}
-            {isDan && Array.from({ length: danNum }).map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  beltCardStyles.danStripe,
-                  { right: 4 + i * 5 },
-                ]}
-              />
-            ))}
-          </View>
+          <BeltStrip
+            color={belt.beltColor}
+            name={belt.beltName}
+            style={{ flex: 1 }}
+          />
         </View>
         <Text style={[beltCardStyles.beltName, { color: displayColor }]}>
           {belt.beltName}
@@ -188,52 +143,6 @@ const beltCardStyles = StyleSheet.create({
     width: 70,
     height: 14,
     marginBottom: 4,
-  },
-  beltStrip: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 2,
-    overflow: "hidden",
-    position: "relative",
-  },
-  knot: {
-    position: "absolute",
-    left: "44%",
-    top: "15%",
-    bottom: "15%",
-    width: 2,
-    borderRadius: 1,
-  },
-  end: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: "20%",
-  },
-  franjaRoja: {
-    position: "absolute",
-    left: "38%",
-    width: "20%",
-    top: 0,
-    bottom: 0,
-    backgroundColor: "#CC0000",
-  },
-  puntaNegra: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: "30%",
-    backgroundColor: "#000000",
-  },
-  danStripe: {
-    position: "absolute",
-    top: 1,
-    bottom: 1,
-    width: 3,
-    borderRadius: 1,
-    backgroundColor: "#D4AF37",
   },
   beltName: {
     fontFamily: "NotoSansJP_700Bold",

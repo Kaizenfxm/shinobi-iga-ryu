@@ -23,6 +23,7 @@ import {
   type LadderBeltRequirement,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { BeltStrip, getNinjutsuRankTitle } from "@/components/BeltStrip";
 
 const DISCIPLINE_LABELS: Record<string, string> = {
   ninjutsu: "NINJUTSU",
@@ -39,133 +40,6 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-function getStripeCount(name: string): number {
-  const match = name.match(/(\d+)\s+franja/i);
-  return match ? parseInt(match[1], 10) : 0;
-}
-
-function getNinjutsuRankTitle(beltName: string): string | null {
-  const lower = beltName.toLowerCase();
-  const danMatch = lower.match(/^(\d+)\s*dan/);
-  if (!danMatch) {
-    if (lower.includes("negro")) return "Sensei";
-    return null;
-  }
-  const dan = parseInt(danMatch[1], 10);
-  if (dan <= 2) return "Sensei";
-  if (dan <= 6) return "Shidoshi";
-  if (dan === 7) return "Shidoshi-Ho";
-  if (dan === 8) return "Shihan";
-  if (dan === 9) return "Menkyo";
-  return "Soke";
-}
-
-function BeltColorStrip({ color, name = "", size = 40 }: { color: string; name?: string; size?: number }) {
-  const stripes = getStripeCount(name);
-  const nameLower = name.toLowerCase();
-  const isPuntaNegra = nameLower.includes("punta negra");
-  const isFranjaRoja = nameLower.includes("franja roja");
-  const colorLower = color.toLowerCase();
-  const isVeryDark = colorLower === "#000000" || colorLower === "#1c1c1c" || colorLower === "#212121";
-  const isWhite = colorLower === "#ffffff";
-  const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : color;
-  const stripeColor = isVeryDark ? "#D4AF37" : "#000000";
-  const height = Math.round(size * 0.45);
-
-  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
-  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
-
-  const stripePositions = stripes > 0
-    ? Array.from({ length: stripes }, (_, i) => {
-        const zoneStart = Math.round(size * 0.56);
-        const zoneWidth = Math.round(size * 0.36);
-        const step = zoneWidth / stripes;
-        return Math.round(zoneStart + step * i + step * 0.35);
-      })
-    : [];
-
-  return (
-    <View
-      style={[
-        beltStripStyles.strip,
-        {
-          width: size,
-          height,
-          backgroundColor: color,
-          borderColor,
-        },
-      ]}
-    >
-      {showKnot && (
-        <View style={[beltStripStyles.knot, { backgroundColor: borderColor }]} />
-      )}
-      {showEnd && (
-        <View style={[beltStripStyles.end, { backgroundColor: borderColor + "40" }]} />
-      )}
-      {isFranjaRoja && (
-        <View style={beltStripStyles.franjaRoja} />
-      )}
-      {isPuntaNegra && (
-        <View style={beltStripStyles.puntaNegra} />
-      )}
-      {stripePositions.map((leftPx, i) => (
-        <View
-          key={i}
-          style={{
-            position: "absolute",
-            left: leftPx,
-            top: Math.round(height * 0.12),
-            bottom: Math.round(height * 0.12),
-            width: 2,
-            backgroundColor: stripeColor,
-            borderRadius: 1,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-const beltStripStyles = StyleSheet.create({
-  strip: {
-    borderRadius: 2,
-    borderWidth: 1,
-    position: "relative",
-    overflow: "hidden",
-    justifyContent: "center",
-  },
-  knot: {
-    position: "absolute",
-    left: "44%",
-    top: "15%",
-    bottom: "15%",
-    width: 2,
-    borderRadius: 1,
-  },
-  end: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: "20%",
-  },
-  franjaRoja: {
-    position: "absolute",
-    left: "38%",
-    width: "20%",
-    top: 0,
-    bottom: 0,
-    backgroundColor: "#CC0000",
-  },
-  puntaNegra: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: "30%",
-    backgroundColor: "#000000",
-  },
-});
 
 function GoldRule() {
   return (
@@ -406,7 +280,7 @@ function LadderRow({
   return (
     <View style={[rowStyles.container, { borderColor, opacity: rowOpacity }]}>
       <View style={rowStyles.header}>
-        <BeltColorStrip color={belt.color} name={belt.name} size={56} />
+        <BeltStrip color={belt.color} name={belt.name} width={56} height={25} />
 
         {status === "available" && (
           <Pressable
