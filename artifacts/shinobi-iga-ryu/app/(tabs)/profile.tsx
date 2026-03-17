@@ -211,6 +211,14 @@ const beltCardStyles = StyleSheet.create({
     width: "30%",
     backgroundColor: "#000000",
   },
+  danStripe: {
+    position: "absolute",
+    top: 1,
+    bottom: 1,
+    width: 3,
+    borderRadius: 1,
+    backgroundColor: "#D4AF37",
+  },
   beltName: {
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 9,

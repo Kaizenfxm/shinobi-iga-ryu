@@ -11,11 +11,32 @@ import {
   studentBeltUnlocksTable,
   beltApplicationsTable,
   studentRequirementChecksTable,
+  pushTokensTable,
+  notificationsTable,
 } from "@workspace/db";
 import { eq, and, asc, inArray, desc, lte } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const beltsRouter = Router();
+
+async function sendExpoPush(token: string, title: string, body: string, data?: Record<string, unknown>) {
+  try {
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ to: token, title, body, data: data ?? {}, sound: "default" }),
+    });
+  } catch {}
+}
+
+async function notifyUser(targetUserId: number, title: string, body: string, data?: Record<string, unknown>) {
+  const tokens = await db.select({ token: pushTokensTable.token }).from(pushTokensTable).where(eq(pushTokensTable.userId, targetUserId));
+  await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
+}
+
+async function createInAppNotification(targetUserId: number, title: string, body: string, createdByUserId: number) {
+  await db.insert(notificationsTable).values({ title, body, target: "personal", targetUserId, createdByUserId });
+}
 
 beltsRouter.get("/belts/definitions", requireAuth, async (_req, res) => {
   try {
@@ -1225,6 +1246,23 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
       .limit(1);
     if (!targetBelt) { res.status(404).json({ error: "Cinturón no encontrado" }); return; }
 
+    const [currentStudentBelt] = await db
+      .select({ currentBeltId: studentBeltsTable.currentBeltId })
+      .from(studentBeltsTable)
+      .where(and(eq(studentBeltsTable.userId, userId), eq(studentBeltsTable.discipline, discipline)))
+      .limit(1);
+    let isDemotion = false;
+    if (currentStudentBelt?.currentBeltId) {
+      const [currentBeltDef] = await db
+        .select({ orderIndex: beltDefinitionsTable.orderIndex })
+        .from(beltDefinitionsTable)
+        .where(eq(beltDefinitionsTable.id, currentStudentBelt.currentBeltId))
+        .limit(1);
+      if (currentBeltDef && currentBeltDef.orderIndex > targetBelt.orderIndex) {
+        isDemotion = true;
+      }
+    }
+
     const allBelowOrEqual = await db
       .select()
       .from(beltDefinitionsTable)
@@ -1283,7 +1321,22 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
         });
       }
     });
-    res.json({ success: true });
+
+    const disciplineLabel = discipline === "ninjutsu" ? "Ninjutsu" : "Jiu-Jitsu";
+    const beltLabel = targetBelt.name;
+    const notifTitle = isDemotion
+      ? `Actualización de cinturón — ${disciplineLabel}`
+      : `🥋 ¡Ascenso a ${beltLabel}!`;
+    const notifBody = isDemotion
+      ? `Tu grado ha sido actualizado a ${beltLabel} en ${disciplineLabel}.`
+      : `Felicitaciones por tu ascenso a ${beltLabel} en ${disciplineLabel}. ¡Sigue adelante!`;
+
+    await Promise.all([
+      notifyUser(userId, notifTitle, notifBody, { type: "belt_grant", beltId: beltDefinitionId, isDemotion }),
+      createInAppNotification(userId, notifTitle, notifBody, adminId),
+    ]);
+
+    res.json({ success: true, isDemotion });
   } catch (error) {
     console.error("Belt assign error:", error);
     res.status(500).json({ error: "Error interno del servidor" });

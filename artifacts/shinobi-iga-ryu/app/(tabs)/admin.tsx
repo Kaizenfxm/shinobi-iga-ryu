@@ -1626,11 +1626,15 @@ function UsersPanel({
           <View style={styles.assignModalSheet}>
             <View style={styles.assignModalHeader}>
               <Text style={styles.assignModalTitle}>
-                Asignar cinturón
+                Asignar / Degradar cinturón
               </Text>
               {assignModal && (
                 <Text style={styles.assignModalSubtitle}>
                   {DISCIPLINE_LABELS[assignModal.discipline] || assignModal.discipline}
+                  {"  ·  "}
+                  <Text style={{ color: "#888", fontSize: 11 }}>
+                    Si eliges un grado inferior al actual, se aplicará una degradación
+                  </Text>
                 </Text>
               )}
               <Pressable
@@ -1649,6 +1653,8 @@ function UsersPanel({
                   if (beltDataLoading || belts.length === 0) {
                     return <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 32 }} />;
                   }
+                  const currentBelt = userBeltMap[assignModal.userId]?.belts.find((b) => b.discipline === assignModal.discipline)?.currentBelt;
+                  const currentOrder = currentBelt?.orderIndex ?? -1;
                   return belts.map((belt) => {
                     const cLower = belt.color.toLowerCase();
                     const isDark = cLower === "#000000" || cLower === "#1c1c1c";
@@ -1656,18 +1662,39 @@ function UsersPanel({
                     const barBg = isDark ? "#3a3a3a" : isWh ? "#ccc" : belt.color;
                     const isPunta = belt.name.toLowerCase().includes("punta negra");
                     const isFranja = belt.name.toLowerCase().includes("franja roja");
+                    const isCurrent = currentBelt?.id === belt.id;
+                    const isDemote = currentOrder > belt.orderIndex;
+                    const danMatch = belt.name.match(/^(\d+)\s*[Dd]an/);
+                    const danNum = danMatch ? parseInt(danMatch[1], 10) : 0;
+                    const danStripePositions = danNum > 0
+                      ? Array.from({ length: danNum }, (_, i) => 4 + i * 6)
+                      : [];
                     return (
                       <Pressable
                         key={belt.id}
-                        style={styles.assignBeltOption}
+                        style={[styles.assignBeltOption, isCurrent && { borderColor: "#D4AF37", borderWidth: 1 }]}
                         onPress={() => handleAssignBelt(belt.id, belt.name)}
                       >
                         <View style={[styles.assignBeltBarLg, { backgroundColor: barBg, overflow: "hidden" }]}>
                           {isFranja && <View style={styles.pendingFranjaRoja} />}
                           {isPunta && <View style={styles.pendingPuntaNegra} />}
+                          {danStripePositions.map((pos) => (
+                            <View
+                              key={pos}
+                              style={{ position: "absolute", top: 1, bottom: 1, width: 3, borderRadius: 1, backgroundColor: "#D4AF37", right: pos }}
+                            />
+                          ))}
                         </View>
-                        <Text style={styles.assignBeltOptionName}>{belt.name}</Text>
-                        <Ionicons name="chevron-forward" size={14} color="#444" />
+                        <Text style={[styles.assignBeltOptionName, isCurrent && { color: "#D4AF37" }]}>
+                          {belt.name}{isCurrent ? " ★" : ""}
+                        </Text>
+                        {isCurrent ? (
+                          <Text style={{ fontSize: 10, color: "#D4AF37", fontWeight: "700" }}>ACTUAL</Text>
+                        ) : isDemote ? (
+                          <Text style={{ fontSize: 10, color: "#CC4444", fontWeight: "700" }}>DEGRADAR ↓</Text>
+                        ) : (
+                          <Ionicons name="chevron-forward" size={14} color="#444" />
+                        )}
                       </Pressable>
                     );
                   });
