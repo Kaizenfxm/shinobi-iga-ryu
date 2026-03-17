@@ -6,6 +6,7 @@ export const notificationsTable = pgTable("notifications", {
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body").notNull(),
   target: varchar("target", { length: 20 }).notNull().default("todas"),
+  targetUserId: integer("target_user_id").references(() => usersTable.id),
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

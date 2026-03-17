@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, challengesTable, pushTokensTable, trainingSystemsTable, usersTable, userRolesTable } from "@workspace/db";
+import { db, challengesTable, pushTokensTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
 import { eq, and, ne, or, desc, sql, aliasedTable } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
@@ -36,6 +36,16 @@ async function notifyUser(targetUserId: number, title: string, body: string, dat
     .from(pushTokensTable)
     .where(eq(pushTokensTable.userId, targetUserId));
   await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
+}
+
+async function createInAppNotification(targetUserId: number, title: string, body: string, createdByUserId: number) {
+  await db.insert(notificationsTable).values({
+    title,
+    body,
+    target: "personal",
+    targetUserId,
+    createdByUserId,
+  });
 }
 
 challengesRouter.post("/push-token", requireAuth, async (req, res) => {
@@ -106,6 +116,7 @@ challengesRouter.get("/challenges/pending-count", requireAuth, async (req, res) 
 challengesRouter.get("/challenges", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
+    const UNDO_WINDOW_MS = 120_000;
 
     const rows = await db
       .select({
@@ -135,8 +146,25 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
       ))
       .orderBy(desc(challengesTable.createdAt));
 
-    const pending = rows.filter((r) => r.status === "pending" && r.challengedId === userId);
-    const active = rows.filter((r) => r.status === "accepted");
+    const now = Date.now();
+
+    const pending = rows.filter((r) => {
+      if (r.challengedId !== userId) return false;
+      if (r.status === "pending") return true;
+      if (
+        (r.status === "accepted" || r.status === "declined") &&
+        r.respondedAt &&
+        now - new Date(r.respondedAt).getTime() < UNDO_WINDOW_MS
+      ) return true;
+      return false;
+    });
+
+    const active = rows.filter((r) => {
+      if (r.status !== "accepted") return false;
+      if (r.challengedId === userId && r.respondedAt && now - new Date(r.respondedAt).getTime() < UNDO_WINDOW_MS) return false;
+      return true;
+    });
+
     const past = rows.filter((r) => ["completed", "declined", "cancelled"].includes(r.status));
 
     res.json({ pending, active, past });
@@ -165,19 +193,27 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
       return;
     }
 
+    const [challenger] = await db
+      .select({ displayName: usersTable.displayName, membershipStatus: usersTable.membershipStatus })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!challenger || challenger.membershipStatus !== "activo") {
+      res.status(403).json({ error: "Solo miembros activos pueden enviar retos" });
+      return;
+    }
+
     const [challenged] = await db
-      .select({ id: usersTable.id, displayName: usersTable.displayName })
+      .select({ id: usersTable.id, displayName: usersTable.displayName, membershipStatus: usersTable.membershipStatus })
       .from(usersTable).where(eq(usersTable.id, challengedId)).limit(1);
     if (!challenged) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
+    if (challenged.membershipStatus !== "activo") {
+      res.status(400).json({ error: "El usuario retado no es un miembro activo" });
+      return;
+    }
 
     const [system] = await db
       .select({ id: trainingSystemsTable.id, name: trainingSystemsTable.name })
       .from(trainingSystemsTable).where(eq(trainingSystemsTable.id, trainingSystemId)).limit(1);
     if (!system) { res.status(404).json({ error: "Sistema de entrenamiento no encontrado" }); return; }
-
-    const [challenger] = await db
-      .select({ displayName: usersTable.displayName })
-      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
     const [created] = await db.insert(challengesTable).values({
       challengerId: userId,
@@ -187,12 +223,13 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
       notes: notes?.trim() || null,
     }).returning();
 
-    await notifyUser(
-      challengedId,
-      "¡Te han retado!",
-      `${challenger?.displayName ?? "Alguien"} te reta en ${system.name}`,
-      { challengeId: created.id, type: "challenge_received" }
-    );
+    const notifTitle = "¡Te han retado!";
+    const notifBody = `${challenger.displayName} te reta en ${system.name}`;
+
+    await Promise.all([
+      notifyUser(challengedId, notifTitle, notifBody, { challengeId: created.id, type: "challenge_received" }),
+      createInAppNotification(challengedId, notifTitle, notifBody, userId),
+    ]);
 
     res.status(201).json({ challenge: created });
   } catch (error) {
@@ -226,15 +263,15 @@ challengesRouter.post("/challenges/:id/respond", requireAuth, async (req, res) =
     const [responder] = await db
       .select({ displayName: usersTable.displayName })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    const notifTitle = "Respuesta a tu reto";
     const notifBody = decision === "accepted"
       ? `${responder?.displayName ?? "El retado"} aceptó tu reto`
       : `${responder?.displayName ?? "El retado"} declinó tu reto`;
-    await notifyUser(
-      challenge.challengerId,
-      "Respuesta a tu reto",
-      notifBody,
-      { challengeId, type: "challenge_responded", decision }
-    );
+
+    await Promise.all([
+      notifyUser(challenge.challengerId, notifTitle, notifBody, { challengeId, type: "challenge_responded", decision }),
+      createInAppNotification(challenge.challengerId, notifTitle, notifBody, userId),
+    ]);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -306,8 +343,18 @@ challengesRouter.post("/challenges/:id/result", requireAuth, async (req, res) =>
     const [winner] = await db
       .select({ displayName: usersTable.displayName })
       .from(usersTable).where(eq(usersTable.id, winnerId)).limit(1);
-    await notifyUser(winnerId, "¡Ganaste el reto!", "Felicidades, fuiste declarado ganador", { challengeId, type: "challenge_result" });
-    await notifyUser(loserId, "Resultado del reto", `${winner?.displayName ?? "Tu rival"} fue declarado ganador`, { challengeId, type: "challenge_result" });
+
+    const winnerTitle = "¡Ganaste el reto!";
+    const winnerBody = "Felicidades, fuiste declarado ganador";
+    const loserTitle = "Resultado del reto";
+    const loserBody = `${winner?.displayName ?? "Tu rival"} fue declarado ganador`;
+
+    await Promise.all([
+      notifyUser(winnerId, winnerTitle, winnerBody, { challengeId, type: "challenge_result" }),
+      createInAppNotification(winnerId, winnerTitle, winnerBody, userId),
+      notifyUser(loserId, loserTitle, loserBody, { challengeId, type: "challenge_result" }),
+      createInAppNotification(loserId, loserTitle, loserBody, userId),
+    ]);
 
     res.json({ challenge: updated });
   } catch (error) {

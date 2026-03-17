@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, notificationsTable, notificationReadsTable, usersTable } from "@workspace/db";
-import { eq, desc, and, inArray, gte } from "drizzle-orm";
+import { eq, desc, and, or, inArray, gte, isNull } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const notificationsRouter = Router();
@@ -14,19 +14,22 @@ async function getUserTargetInfo(userId: number) {
   return user ?? { isFighter: false, sedes: [] as string[], createdAt: new Date(0) };
 }
 
-function buildTargetCondition(isFighter: boolean, sedes: string[]) {
+function buildTargetCondition(isFighter: boolean, sedes: string[], userId: number) {
   const allowedTargets = ["todas"];
   if (isFighter) allowedTargets.push("peleadores");
   if (sedes.includes("bogota")) allowedTargets.push("bogota");
   if (sedes.includes("chia")) allowedTargets.push("chia");
-  return inArray(notificationsTable.target, allowedTargets);
+  return or(
+    and(inArray(notificationsTable.target, allowedTargets), isNull(notificationsTable.targetUserId)),
+    eq(notificationsTable.targetUserId, userId)
+  );
 }
 
 notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
     const { isFighter, sedes, createdAt: userCreatedAt } = await getUserTargetInfo(userId);
-    const targetCond = buildTargetCondition(isFighter, sedes as string[]);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[], userId);
 
     const notifications = await db
       .select({
@@ -47,7 +50,7 @@ notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
           eq(notificationReadsTable.userId, userId)
         )
       )
-      .where(and(targetCond, gte(notificationsTable.createdAt, userCreatedAt)))
+      .where(and(targetCond!, gte(notificationsTable.createdAt, userCreatedAt)))
       .orderBy(desc(notificationsTable.createdAt));
 
     const unreadCount = notifications.filter((n) => !n.readAt).length;
@@ -93,12 +96,12 @@ notificationsRouter.post("/notifications/read-all", requireAuth, async (req, res
   try {
     const userId = req.session.userId!;
     const { isFighter, sedes, createdAt: userCreatedAt } = await getUserTargetInfo(userId);
-    const targetCond = buildTargetCondition(isFighter, sedes as string[]);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[], userId);
 
     const relevantNotifs = await db
       .select({ id: notificationsTable.id })
       .from(notificationsTable)
-      .where(and(targetCond, gte(notificationsTable.createdAt, userCreatedAt)));
+      .where(and(targetCond!, gte(notificationsTable.createdAt, userCreatedAt)));
 
     if (relevantNotifs.length === 0) {
       res.json({ ok: true });
