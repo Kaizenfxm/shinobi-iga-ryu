@@ -901,3 +901,37 @@ export const eventsApi = {
       body: { contentType },
     }),
 };
+
+export interface RankingFighterEntry {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+export interface RankingAttendanceEntry {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  attendances: number;
+}
+
+export interface RankingChallengeEntry {
+  userId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  wins: number;
+}
+
+export const rankingApi = {
+  getFighters: () =>
+    apiFetch<{ ranking: RankingFighterEntry[] }>("/ranking/fighters"),
+
+  getAttendance: () =>
+    apiFetch<{ ranking: RankingAttendanceEntry[]; month: string }>("/ranking/attendance"),
+
+  getChallenges: () =>
+    apiFetch<{ ranking: RankingChallengeEntry[] }>("/ranking/challenges"),
+};

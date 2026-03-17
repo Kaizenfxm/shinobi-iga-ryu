@@ -18,7 +18,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { eventsApi, challengesApi, trainingApi, getAvatarServingUrl, EventItem, EventAttendee, ChallengeItem, ChallengeUser, TrainingSystem } from "@/lib/api";
+import { eventsApi, challengesApi, trainingApi, rankingApi, getAvatarServingUrl, EventItem, EventAttendee, ChallengeItem, ChallengeUser, TrainingSystem, RankingFighterEntry, RankingAttendanceEntry, RankingChallengeEntry } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChallenges } from "@/contexts/ChallengesContext";
 
@@ -1666,6 +1666,185 @@ const rStyles = StyleSheet.create({
   systemChipTextActive: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold" },
 });
 
+const MEDAL_COLORS = ["#D4AF37", "#B0B0B0", "#CD7F32"];
+
+function RankingRow({
+  rank,
+  displayName,
+  avatarUrl,
+  stat,
+  statLabel,
+}: {
+  rank: number;
+  displayName: string;
+  avatarUrl: string | null;
+  stat: string;
+  statLabel: string;
+}) {
+  const medalColor = rank <= 3 ? MEDAL_COLORS[rank - 1] : "#2a2a2a";
+  const isTopThree = rank <= 3;
+  return (
+    <View style={rkStyles.row}>
+      <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }]}>
+        <Text style={[rkStyles.rankNum, { color: medalColor }]}>{rank}</Text>
+      </View>
+      <View style={rkStyles.avatar}>
+        {avatarUrl ? (
+          <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
+        ) : (
+          <View style={[rkStyles.avatarImg, rkStyles.avatarFallback]}>
+            <Text style={rkStyles.avatarLetter}>{(displayName[0] ?? "?").toUpperCase()}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
+      <View style={rkStyles.statPill}>
+        <Text style={[rkStyles.statNum, isTopThree && { color: medalColor }]}>{stat}</Text>
+        <Text style={rkStyles.statLabel}>{statLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
+function RankingSection({
+  title,
+  color,
+  loading,
+  empty,
+  children,
+}: {
+  title: string;
+  color: string;
+  loading: boolean;
+  empty: boolean;
+  children: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <View style={rkStyles.section}>
+      <Pressable style={rkStyles.sectionHeader} onPress={() => setExpanded((p) => !p)}>
+        <View style={[rkStyles.sectionDot, { backgroundColor: color }]} />
+        <Text style={[rkStyles.sectionTitle, { color }]}>{title}</Text>
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color="#333" style={{ marginLeft: "auto" }} />
+      </Pressable>
+      {expanded && (
+        <View style={rkStyles.sectionBody}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 18 }} />
+          ) : empty ? (
+            <Text style={rkStyles.emptyText}>Sin datos aún</Text>
+          ) : children}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function RankingTab() {
+  const [fighters, setFighters] = useState<RankingFighterEntry[]>([]);
+  const [attendance, setAttendance] = useState<RankingAttendanceEntry[]>([]);
+  const [challenges, setChallenges] = useState<RankingChallengeEntry[]>([]);
+  const [attendanceMonth, setAttendanceMonth] = useState("");
+  const [loadingF, setLoadingF] = useState(true);
+  const [loadingA, setLoadingA] = useState(true);
+  const [loadingC, setLoadingC] = useState(true);
+
+  useEffect(() => {
+    rankingApi.getFighters().then((r) => { setFighters(r.ranking); setLoadingF(false); }).catch(() => setLoadingF(false));
+    rankingApi.getAttendance().then((r) => { setAttendance(r.ranking); setAttendanceMonth(r.month); setLoadingA(false); }).catch(() => setLoadingA(false));
+    rankingApi.getChallenges().then((r) => { setChallenges(r.ranking); setLoadingC(false); }).catch(() => setLoadingC(false));
+  }, []);
+
+  return (
+    <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}>
+      <RankingSection title="⚔ PELEADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0}>
+        {fighters.map((u, i) => (
+          <RankingRow
+            key={u.userId}
+            rank={i + 1}
+            displayName={u.displayName}
+            avatarUrl={u.avatarUrl}
+            stat={`${u.wins}V ${u.losses}D${u.draws > 0 ? ` ${u.draws}E` : ""}`}
+            statLabel="récord"
+          />
+        ))}
+      </RankingSection>
+
+      <RankingSection
+        title={`🏯 ASISTENCIA${attendanceMonth ? ` · ${attendanceMonth.toUpperCase()}` : ""}`}
+        color="#D4AF37"
+        loading={loadingA}
+        empty={attendance.length === 0}
+      >
+        {attendance.map((u, i) => (
+          <RankingRow
+            key={u.userId}
+            rank={i + 1}
+            displayName={u.displayName}
+            avatarUrl={u.avatarUrl}
+            stat={String(u.attendances)}
+            statLabel="clases"
+          />
+        ))}
+      </RankingSection>
+
+      <RankingSection title="忍 RETOS" color="#6A5ACD" loading={loadingC} empty={challenges.length === 0}>
+        {challenges.map((u, i) => (
+          <RankingRow
+            key={u.userId}
+            rank={i + 1}
+            displayName={u.displayName}
+            avatarUrl={u.avatarUrl}
+            stat={String(u.wins)}
+            statLabel="victorias"
+          />
+        ))}
+      </RankingSection>
+    </ScrollView>
+  );
+}
+
+const rkStyles = StyleSheet.create({
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 40 },
+  section: { marginBottom: 2 },
+  sectionHeader: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: "#050505",
+    borderTopWidth: 1, borderTopColor: "#111",
+    borderBottomWidth: 1, borderBottomColor: "#111",
+  },
+  sectionDot: { width: 4, height: 14, borderRadius: 1 },
+  sectionTitle: { fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 3 },
+  sectionBody: { backgroundColor: "#000" },
+  emptyText: {
+    color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 12,
+    textAlign: "center", paddingVertical: 20,
+  },
+  row: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: "#0d0d0d",
+  },
+  rankBadge: {
+    width: 26, height: 26, borderRadius: 2, borderWidth: 1,
+    alignItems: "center", justifyContent: "center",
+  },
+  rankNum: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, color: "#333" },
+  avatar: { width: 32, height: 32 },
+  avatarImg: { width: 32, height: 32, borderRadius: 16 },
+  avatarFallback: { backgroundColor: "#111", alignItems: "center", justifyContent: "center" },
+  avatarLetter: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 13 },
+  name: {
+    flex: 1, color: "#CCC", fontFamily: "NotoSansJP_500Medium",
+    fontSize: 13, letterSpacing: 0.3,
+  },
+  statPill: { alignItems: "flex-end" },
+  statNum: { color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 14 },
+  statLabel: { color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 9, letterSpacing: 1 },
+});
+
 export default function ComunidadScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -1680,6 +1859,7 @@ export default function ComunidadScreen() {
   const renderTab = () => {
     if (activeTab === "eventos") return <EventosTab canManage={canManage} extraEvents={createdEvents} />;
     if (activeTab === "retos") return <RetosTab canManage={canManage} currentUserId={user?.id ?? 0} />;
+    if (activeTab === "ranking") return <RankingTab />;
     return <ComingSoon />;
   };
 
