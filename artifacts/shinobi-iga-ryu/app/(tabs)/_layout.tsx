@@ -143,6 +143,16 @@ export default function TabLayout() {
             options={{ href: null }}
           />
           <Tabs.Screen
+            name="comunidad"
+            options={{
+              title: "Comunidad",
+              tabBarIcon: ({ color }) => (
+                <MaterialCommunityIcons name="account-group-outline" size={22} color={color} />
+              ),
+            }}
+            listeners={{ tabPress: requireAuth }}
+          />
+          <Tabs.Screen
             name="profile"
             options={{
               title: "Perfil",
