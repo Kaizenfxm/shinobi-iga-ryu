@@ -687,11 +687,12 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
   );
 }
 
-function ChallengeRow({ item, currentUserId, canManage, onSetResult }: {
+function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel }: {
   item: ChallengeItem;
   currentUserId: number;
   canManage: boolean;
   onSetResult: (challenge: ChallengeItem) => void;
+  onCancel?: (id: number) => void;
 }) {
   const isPast = ["completed", "declined", "cancelled"].includes(item.status);
   const isCompleted = item.status === "completed";
@@ -702,6 +703,8 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult }: {
   const p2Color = isCompleted
     ? item.winnerId === item.challengedId ? "#22C55E" : "#EF4444"
     : "#CCC";
+
+  void currentUserId;
 
   return (
     <View style={rStyles.challengeRow}>
@@ -714,6 +717,11 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult }: {
         <Text style={rStyles.challengeSep}>|</Text>
         <Text style={rStyles.challengeDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
       </View>
+      {item.status === "pending" && onCancel && (
+        <Pressable style={rStyles.cancelBtn} onPress={() => onCancel(item.id)}>
+          <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+        </Pressable>
+      )}
       {item.status === "declined" && <Text style={rStyles.statusBadgeDec}>DECLINADO</Text>}
       {item.status === "cancelled" && <Text style={rStyles.statusBadgeCan}>CANCELADO</Text>}
       {canManage && !isPast && item.status === "accepted" && (
@@ -932,12 +940,13 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   const [users, setUsers] = useState<ChallengeUser[]>([]);
   const [search, setSearch] = useState("");
   const [systems, setSystems] = useState<TrainingSystem[]>([]);
-  const [challenges, setChallenges] = useState<{ pending: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>({ pending: [], active: [], past: [] });
+  const [challenges, setChallenges] = useState<{ pending: ChallengeItem[]; sent: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>({ pending: [], sent: [], active: [], past: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [targetUser, setTargetUser] = useState<ChallengeUser | null>(null);
   const [createVisible, setCreateVisible] = useState(false);
   const [resultChallenge, setResultChallenge] = useState<ChallengeItem | null>(null);
+  const [sentExpanded, setSentExpanded] = useState(true);
   const [activeExpanded, setActiveExpanded] = useState(true);
   const [pastExpanded, setPastExpanded] = useState(false);
 
@@ -950,7 +959,12 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
       ]);
       setUsers(usersRes.users);
       setSystems(systemsRes.systems);
-      setChallenges(challengesRes);
+      setChallenges({
+        pending: challengesRes.pending ?? [],
+        sent: challengesRes.sent ?? [],
+        active: challengesRes.active ?? [],
+        past: challengesRes.past ?? [],
+      });
       await refreshBadge();
     } catch {
     } finally {
@@ -977,6 +991,10 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 
   const handleExpire = useCallback(async (_id: number) => {
     await load();
+  }, [load]);
+
+  const handleCancel = useCallback(async (id: number) => {
+    try { await challengesApi.cancel(id); await load(); } catch {}
   }, [load]);
 
   const handleSetResult = useCallback(async (challengeId: number, winnerId: number) => {
@@ -1025,6 +1043,19 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
                 onUndo={handleUndo}
                 onExpire={handleExpire}
               />
+            ))}
+          </View>
+        )}
+
+        {challenges.sent.length > 0 && (
+          <View style={rStyles.section}>
+            <Pressable style={rStyles.sectionHeader} onPress={() => setSentExpanded((p) => !p)}>
+              <Text style={rStyles.sectionTitle}>RETOS ENVIADOS</Text>
+              <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{challenges.sent.length}</Text></View>
+              <Ionicons name={sentExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
+            </Pressable>
+            {sentExpanded && challenges.sent.map((ch) => (
+              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} />
             ))}
           </View>
         )}
@@ -1139,6 +1170,7 @@ const rStyles = StyleSheet.create({
   challengeDate: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 11 },
   statusBadgeDec: { color: "#EF4444", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1, marginTop: 2 },
   statusBadgeCan: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1, marginTop: 2 },
+  cancelBtn: { padding: 4 },
   resultBtn: { marginTop: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#D4AF37" },
   resultBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 },
   userListSection: { marginTop: 8 },

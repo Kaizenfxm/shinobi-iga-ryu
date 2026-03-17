@@ -159,6 +159,10 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
       return false;
     });
 
+    const sent = rows.filter((r) =>
+      r.challengerId === userId && r.status === "pending"
+    );
+
     const active = rows.filter((r) => {
       if (r.status !== "accepted") return false;
       if (r.challengedId === userId && r.respondedAt && now - new Date(r.respondedAt).getTime() < UNDO_WINDOW_MS) return false;
@@ -176,7 +180,7 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
       return true;
     });
 
-    res.json({ pending, active, past });
+    res.json({ pending, sent, active, past });
   } catch (error) {
     console.error("Get challenges error:", error);
     res.status(500).json({ error: "Error interno" });
