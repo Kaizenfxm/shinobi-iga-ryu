@@ -12,7 +12,7 @@ import {
   beltApplicationsTable,
   studentRequirementChecksTable,
 } from "@workspace/db";
-import { eq, and, asc, inArray, desc } from "drizzle-orm";
+import { eq, and, asc, inArray, desc, lte } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
 
 const beltsRouter = Router();
@@ -1225,6 +1225,15 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
       .limit(1);
     if (!targetBelt) { res.status(404).json({ error: "Cinturón no encontrado" }); return; }
 
+    const allBelowOrEqual = await db
+      .select()
+      .from(beltDefinitionsTable)
+      .where(and(
+        eq(beltDefinitionsTable.discipline, discipline),
+        lte(beltDefinitionsTable.orderIndex, targetBelt.orderIndex)
+      ))
+      .orderBy(asc(beltDefinitionsTable.orderIndex));
+
     await db.transaction(async (tx) => {
       const [existing] = await tx
         .select()
@@ -1243,13 +1252,36 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
           nextUnlocked: false,
         });
       }
-      await tx.insert(beltHistoryTable).values({
-        userId,
-        discipline,
-        beltId: beltDefinitionId,
-        promotedBy: adminId,
-        notes: notes?.trim() || "Asignado por administrador",
-      });
+
+      const existingHistory = await tx
+        .select({ beltId: beltHistoryTable.beltId })
+        .from(beltHistoryTable)
+        .where(and(eq(beltHistoryTable.userId, userId), eq(beltHistoryTable.discipline, discipline)));
+      const existingBeltIds = new Set(existingHistory.map((h) => h.beltId));
+
+      const missingBelts = allBelowOrEqual.filter((b) => !existingBeltIds.has(b.id) && b.id !== beltDefinitionId);
+      if (missingBelts.length > 0) {
+        await tx.insert(beltHistoryTable).values(
+          missingBelts.map((b) => ({
+            userId,
+            discipline,
+            beltId: b.id,
+            promotedBy: adminId,
+            achievedAt: new Date(),
+            notes: "Desbloqueado automáticamente por ascenso superior",
+          }))
+        );
+      }
+
+      if (!existingBeltIds.has(beltDefinitionId)) {
+        await tx.insert(beltHistoryTable).values({
+          userId,
+          discipline,
+          beltId: beltDefinitionId,
+          promotedBy: adminId,
+          notes: notes?.trim() || "Asignado por administrador",
+        });
+      }
     });
     res.json({ success: true });
   } catch (error) {

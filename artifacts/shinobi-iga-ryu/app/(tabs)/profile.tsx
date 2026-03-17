@@ -40,6 +40,11 @@ const DISCIPLINE_KANJI: Record<string, string> = {
   jiujitsu: "柔術",
 };
 
+function getDanNumber(name: string): number {
+  const m = name.match(/^(\d+)\s+[Dd]an$/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
 function BeltCard({ belt }: { belt: ProfileBelt }) {
   const nameLower = belt.beltName.toLowerCase();
   const colorLower = belt.beltColor.toLowerCase();
@@ -47,45 +52,97 @@ function BeltCard({ belt }: { belt: ProfileBelt }) {
   const isWhite = colorLower === "#ffffff";
   const isPuntaNegra = nameLower.includes("punta negra");
   const isFranjaRoja = nameLower.includes("franja roja");
+  const danNum = getDanNumber(belt.beltName);
+  const isDan = danNum > 0;
 
   const borderColor = isVeryDark ? "#3a3a3a" : isWhite ? "#bbb" : belt.beltColor;
-  const displayColor = isWhite ? "#AAA" : belt.beltColor;
-  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
-  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja;
+  const displayColor = isWhite ? "#AAA" : isDan ? "#D4AF37" : belt.beltColor;
+  const showKnot = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
+  const showEnd = !isWhite && !isVeryDark && !isPuntaNegra && !isFranjaRoja && !isDan;
+
+  const isRecentPromotion = belt.updatedAt
+    ? (Date.now() - new Date(belt.updatedAt).getTime()) < 24 * 60 * 60 * 1000
+    : false;
 
   return (
-    <View style={beltCardStyles.container}>
-      <Text style={beltCardStyles.kanji}>
-        {DISCIPLINE_KANJI[belt.discipline] || belt.discipline}
-      </Text>
-      <Text style={beltCardStyles.disciplineName}>
-        {DISCIPLINE_LABELS[belt.discipline] || belt.discipline}
-      </Text>
-      <View style={beltCardStyles.beltVisual}>
-        <View
-          style={[
-            beltCardStyles.beltStrip,
-            { backgroundColor: belt.beltColor, borderColor, borderWidth: 1 },
-          ]}
-        >
-          {showKnot && (
-            <View style={[beltCardStyles.knot, { backgroundColor: borderColor }]} />
-          )}
-          {showEnd && (
-            <View style={[beltCardStyles.end, { backgroundColor: borderColor + "40" }]} />
-          )}
-          {isFranjaRoja && <View style={beltCardStyles.franjaRoja} />}
-          {isPuntaNegra && <View style={beltCardStyles.puntaNegra} />}
+    <View style={beltCardStyles.outerWrap}>
+      {isRecentPromotion && (
+        <View style={beltCardStyles.promoBanner}>
+          <Text style={beltCardStyles.promoBannerLine1}>Felicitaciones por tu ascenso a</Text>
+          <Text style={beltCardStyles.promoBannerBelt}>{belt.beltName.toUpperCase()}</Text>
         </View>
+      )}
+      <View style={beltCardStyles.container}>
+        <Text style={beltCardStyles.kanji}>
+          {DISCIPLINE_KANJI[belt.discipline] || belt.discipline}
+        </Text>
+        <Text style={beltCardStyles.disciplineName}>
+          {DISCIPLINE_LABELS[belt.discipline] || belt.discipline}
+        </Text>
+        <View style={beltCardStyles.beltVisual}>
+          <View
+            style={[
+              beltCardStyles.beltStrip,
+              { backgroundColor: belt.beltColor, borderColor, borderWidth: 1 },
+            ]}
+          >
+            {showKnot && (
+              <View style={[beltCardStyles.knot, { backgroundColor: borderColor }]} />
+            )}
+            {showEnd && (
+              <View style={[beltCardStyles.end, { backgroundColor: borderColor + "40" }]} />
+            )}
+            {isFranjaRoja && <View style={beltCardStyles.franjaRoja} />}
+            {isPuntaNegra && <View style={beltCardStyles.puntaNegra} />}
+            {isDan && Array.from({ length: danNum }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  beltCardStyles.danStripe,
+                  { right: 4 + i * 5 },
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+        <Text style={[beltCardStyles.beltName, { color: displayColor }]}>
+          {belt.beltName}
+        </Text>
       </View>
-      <Text style={[beltCardStyles.beltName, { color: displayColor }]}>
-        {belt.beltName}
-      </Text>
     </View>
   );
 }
 
 const beltCardStyles = StyleSheet.create({
+  outerWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  promoBanner: {
+    backgroundColor: "#0d0900",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  promoBannerLine1: {
+    color: "#aaa",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  promoBannerBelt: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    letterSpacing: 2,
+    textAlign: "center",
+    marginTop: 3,
+  },
   container: {
     flex: 1,
     alignItems: "center",

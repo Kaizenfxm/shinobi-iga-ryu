@@ -471,6 +471,7 @@ export interface ProfileBelt {
   beltName: string;
   beltColor: string;
   beltOrder: number;
+  updatedAt: string | null;
 }
 
 export interface WeightData {
