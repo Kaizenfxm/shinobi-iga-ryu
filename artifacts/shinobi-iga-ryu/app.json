@@ -14,9 +14,14 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sir.app",
+      "buildNumber": "1"
     },
-    "android": {},
+    "android": {
+      "package": "com.sir.app",
+      "versionCode": 1
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
