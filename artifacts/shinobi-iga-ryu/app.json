@@ -24,7 +24,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://shinobi-iga-ryu-production.up.railway.app/"
         }
       ],
       "expo-font",
@@ -34,6 +34,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_DOMAIN": "shinobi-iga-ryu-production.up.railway.app"
     }
   }
 }
