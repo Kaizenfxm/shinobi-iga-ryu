@@ -236,9 +236,6 @@ function CreateEventModal({ visible, onClose, onCreated }: {
           {isWeb ? (
             <View style={cStyles.webDateWrapper}>
               <Ionicons name="calendar-outline" size={14} color="#D4AF37" style={{ marginRight: 6 }} />
-              <Text style={datetime ? cStyles.webDateText : cStyles.webDatePlaceholder}>
-                {datetime ? formatDateDisplay(datetime) : "Seleccionar fecha y hora..."}
-              </Text>
               {React.createElement("input", {
                 type: "datetime-local",
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,9 +246,16 @@ function CreateEventModal({ visible, onClose, onCreated }: {
                   }
                 },
                 style: {
-                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                  opacity: 0, width: "100%", height: "100%", cursor: "pointer",
-                  zIndex: 10,
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#D4AF37",
+                  fontSize: "13px",
+                  colorScheme: "dark",
+                  cursor: "pointer",
+                  width: "100%",
+                  padding: 0,
                 },
               })}
             </View>
@@ -279,27 +283,47 @@ function CreateEventModal({ visible, onClose, onCreated }: {
                     : "Seleccionar hora..."}
                 </Text>
               </Pressable>
-              {showNativePicker && (
-                <DateTimePicker
-                  value={tempDate}
-                  mode={showNativePicker}
-                  display="default"
-                  onChange={(_, selected) => {
-                    setShowNativePicker(null);
-                    if (!selected) return;
-                    setDatetime((prev) => {
-                      const base = prev ?? new Date();
-                      if (showNativePicker === "date") {
-                        return new Date(selected.getFullYear(), selected.getMonth(), selected.getDate(),
-                          base.getHours(), base.getMinutes());
-                      } else {
-                        return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
-                          selected.getHours(), selected.getMinutes());
-                      }
-                    });
-                    setFormError(null);
-                  }}
-                />
+              {showNativePicker !== null && (
+                <Modal visible transparent animationType="slide">
+                  <Pressable style={cStyles.pickerBackdrop} onPress={() => setShowNativePicker(null)}>
+                    <Pressable onPress={() => {}} style={cStyles.pickerSheet}>
+                      <View style={cStyles.pickerHeader}>
+                        <Pressable onPress={() => setShowNativePicker(null)}>
+                          <Text style={cStyles.pickerCancel}>CANCELAR</Text>
+                        </Pressable>
+                        <Text style={cStyles.pickerTitle}>
+                          {showNativePicker === "date" ? "SELECCIONAR FECHA" : "SELECCIONAR HORA"}
+                        </Text>
+                        <Pressable onPress={() => {
+                          const mode = showNativePicker;
+                          setDatetime((prev) => {
+                            const base = prev ?? new Date();
+                            if (mode === "date") {
+                              return new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate(),
+                                base.getHours(), base.getMinutes());
+                            } else {
+                              return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+                                tempDate.getHours(), tempDate.getMinutes());
+                            }
+                          });
+                          setFormError(null);
+                          setShowNativePicker(null);
+                        }}>
+                          <Text style={cStyles.pickerConfirm}>CONFIRMAR</Text>
+                        </Pressable>
+                      </View>
+                      <DateTimePicker
+                        value={tempDate}
+                        mode={showNativePicker}
+                        display="spinner"
+                        onChange={(_, selected) => { if (selected) setTempDate(selected); }}
+                        textColor="#FFFFFF"
+                        themeVariant="dark"
+                        style={{ width: "100%" }}
+                      />
+                    </Pressable>
+                  </Pressable>
+                </Modal>
               )}
             </>
           )}
@@ -360,6 +384,12 @@ const cStyles = StyleSheet.create({
   errorText: { color: "#ff4444", fontFamily: "NotoSansJP_400Regular", fontSize: 11, flex: 1 },
   btn: { borderRadius: 4, paddingVertical: 12, alignItems: "center" },
   btnText: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  pickerBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  pickerSheet: { backgroundColor: "#111", borderTopWidth: 2, borderTopColor: "#D4AF37", paddingBottom: 40 },
+  pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#1a1a1a" },
+  pickerTitle: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, letterSpacing: 1 },
+  pickerCancel: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  pickerConfirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
 });
 
 function EventCard({ event, canManage, onAttendToggle, onDelete, onViewAttendees }: {
