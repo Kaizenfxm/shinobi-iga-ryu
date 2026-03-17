@@ -151,15 +151,33 @@ function CreateEventModal({ visible, onClose, onCreated }: {
     const mimeType = asset.mimeType ?? "image/jpeg";
     setUploadingImg(true);
     setFormError(null);
+    let uploadURL = "";
+    let objectPath = "";
     try {
-      const { uploadURL, objectPath } = await eventsApi.getCoverUploadUrl(mimeType);
+      const urlRes = await eventsApi.getCoverUploadUrl(mimeType);
+      uploadURL = urlRes.uploadURL;
+      objectPath = urlRes.objectPath;
+    } catch {
+      setFormError("Error obteniendo URL de subida. Verifica tu sesión.");
+      setUploadingImg(false);
+      return;
+    }
+    try {
       const blob = await fetch(asset.uri).then((r) => r.blob());
-      const uploadRes = await fetch(uploadURL, { method: "PUT", body: blob, headers: { "Content-Type": mimeType } });
-      if (!uploadRes.ok) throw new Error("Upload failed");
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": mimeType },
+      });
+      if (!uploadRes.ok) {
+        setFormError(`Error subiendo imagen al storage (${uploadRes.status}). Intenta de nuevo.`);
+        setUploadingImg(false);
+        return;
+      }
       setCoverUri(asset.uri);
       setCoverPath(objectPath);
     } catch {
-      setFormError("No se pudo subir la imagen — intenta de nuevo");
+      setFormError("Error de red al subir la imagen. Verifica tu conexión.");
     } finally {
       setUploadingImg(false);
     }

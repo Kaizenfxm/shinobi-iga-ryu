@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { eventsTable, eventAttendeesTable, usersTable } from "@workspace/db/schema";
+import { eventsTable, eventAttendeesTable, usersTable, userRolesTable } from "@workspace/db/schema";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -8,15 +8,18 @@ import { ObjectStorageService } from "../lib/objectStorage";
 const objectStorageService = new ObjectStorageService();
 const eventsRouter = Router();
 
-async function hasRole(userId: number, role: string): Promise<boolean> {
-  const rows = await db.execute(
-    sql`SELECT 1 FROM user_roles WHERE user_id = ${userId} AND role = ${role} LIMIT 1`
-  );
-  return (rows as unknown as unknown[]).length > 0;
-}
-
 async function canManageEvents(userId: number): Promise<boolean> {
-  return (await hasRole(userId, "admin")) || (await hasRole(userId, "profesor"));
+  const rows = await db
+    .select({ role: userRolesTable.role })
+    .from(userRolesTable)
+    .where(
+      and(
+        eq(userRolesTable.userId, userId),
+        sql`${userRolesTable.role} IN ('admin', 'profesor')`
+      )
+    )
+    .limit(1);
+  return rows.length > 0;
 }
 
 eventsRouter.post("/events/cover-upload-url", requireAuth, async (req, res) => {
