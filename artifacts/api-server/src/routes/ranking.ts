@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, userRolesTable, fightsTable, classAttendancesTable, challengesTable } from "@workspace/db";
+import { db, usersTable, fightsTable, classAttendancesTable, challengesTable } from "@workspace/db";
 import { eq, and, sql, count, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
@@ -7,16 +7,10 @@ const rankingRouter = Router();
 
 async function getActiveAlumnoIds(): Promise<number[]> {
   const rows = await db
-    .select({ userId: userRolesTable.userId })
-    .from(userRolesTable)
-    .innerJoin(usersTable, eq(usersTable.id, userRolesTable.userId))
-    .where(
-      and(
-        eq(userRolesTable.role, "alumno"),
-        eq(usersTable.membershipStatus, "activo")
-      )
-    );
-  return rows.map((r) => r.userId);
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.membershipStatus, "activo"));
+  return rows.map((r) => r.id);
 }
 
 rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
