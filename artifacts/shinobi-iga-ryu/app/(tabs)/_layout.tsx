@@ -6,6 +6,7 @@ import { Platform, StyleSheet, View, Text, Pressable } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { MembershipGate } from "@/components/MembershipGate";
 import { useMembership } from "@/hooks/useMembership";
+import { useChallenges } from "@/contexts/ChallengesContext";
 import QrScannerButton from "@/components/QrScanner";
 
 function CountdownBadge() {
@@ -49,6 +50,7 @@ const countdownStyles = StyleSheet.create({
 
 export default function TabLayout() {
   const { hasRole, isAuthenticated, user } = useAuth();
+  const { pendingCount } = useChallenges();
   const router = useRouter();
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
@@ -146,6 +148,8 @@ export default function TabLayout() {
             name="comunidad"
             options={{
               title: "Comunidad",
+              tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+              tabBarBadgeStyle: { backgroundColor: "#D4AF37", color: "#000", fontSize: 10, fontFamily: "NotoSansJP_700Bold" },
               tabBarIcon: ({ color }) => (
                 <MaterialCommunityIcons name="account-group-outline" size={22} color={color} />
               ),

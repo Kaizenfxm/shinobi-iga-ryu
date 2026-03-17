@@ -32,6 +32,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SplashAnimation from "@/components/SplashAnimation";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ChallengesProvider } from "@/contexts/ChallengesContext";
 import NotificationBell from "@/components/NotificationBell";
 import QrScannerButton from "@/components/QrScanner";
 import { setupNotificationHandler } from "@/lib/notifications-setup";
@@ -126,11 +127,13 @@ export default function RootLayout() {
             <KeyboardProvider>
               <AuthProvider>
                 <NotificationProvider>
-                  <StatusBar style="light" />
-                  <View style={{ flex: 1 }}>
-                    <RootLayoutNav />
-                    <NotificationBell />
-                  </View>
+                  <ChallengesProvider>
+                    <StatusBar style="light" />
+                    <View style={{ flex: 1 }}>
+                      <RootLayoutNav />
+                      <NotificationBell />
+                    </View>
+                  </ChallengesProvider>
                 </NotificationProvider>
               </AuthProvider>
             </KeyboardProvider>
