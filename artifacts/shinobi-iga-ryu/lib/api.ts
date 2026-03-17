@@ -857,7 +857,7 @@ export const challengesApi = {
     apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/request-cancel`, { method: "POST" }),
 
   confirmCancel: (id: number) =>
-    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/confirm-cancel`, { method: "POST" }),
+    apiFetch<{ deleted: boolean; challengeId: number }>(`/challenges/${id}/confirm-cancel`, { method: "POST" }),
 
   declineCancel: (id: number) =>
     apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/decline-cancel`, { method: "POST" }),

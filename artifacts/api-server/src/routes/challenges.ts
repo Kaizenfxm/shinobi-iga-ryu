@@ -371,23 +371,20 @@ challengesRouter.post("/challenges/:id/confirm-cancel", requireAuth, async (req,
       res.status(403).json({ error: "Sin permiso" }); return;
     }
 
-    const [updated] = await db.update(challengesTable)
-      .set({ status: "cancelled", cancelRequestedBy: null } as Partial<typeof challengesTable.$inferInsert>)
-      .where(eq(challengesTable.id, challengeId))
-      .returning();
-
     const [confirmer] = await db
       .select({ displayName: usersTable.displayName })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
-    const notifTitle = "Reto cancelado";
-    const notifBody = `${confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto`;
+    await db.delete(challengesTable).where(eq(challengesTable.id, challengeId));
+
+    const notifTitle = "Reto eliminado";
+    const notifBody = `${confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto — el reto fue eliminado`;
     await Promise.all([
       notifyUser(challenge.cancelRequestedBy!, notifTitle, notifBody, { challengeId, type: "cancel_confirmed" }),
       createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId),
     ]);
 
-    res.json({ challenge: updated });
+    res.json({ deleted: true, challengeId });
   } catch (error) {
     console.error("Confirm cancel error:", error);
     res.status(500).json({ error: "Error interno" });
