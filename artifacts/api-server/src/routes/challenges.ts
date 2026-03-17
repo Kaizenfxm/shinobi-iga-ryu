@@ -128,6 +128,7 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
         notes: challengesTable.notes,
         status: challengesTable.status,
         winnerId: challengesTable.winnerId,
+        cancelRequestedBy: challengesTable.cancelRequestedBy,
         respondedAt: challengesTable.respondedAt,
         createdAt: challengesTable.createdAt,
         trainingSystemName: trainingSystemsTable.name,
@@ -260,7 +261,9 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
       .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
     if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
     if (challenge.challengerId !== userId) { res.status(403).json({ error: "Solo el retador puede modificar" }); return; }
-    if (challenge.status !== "pending") { res.status(400).json({ error: "Solo se pueden modificar retos pendientes" }); return; }
+    if (!["pending", "accepted"].includes(challenge.status)) {
+      res.status(400).json({ error: "Solo se pueden modificar retos pendientes o activos" }); return;
+    }
 
     const { trainingSystemId, scheduledAt, notes } = req.body as {
       trainingSystemId?: number; scheduledAt?: string; notes?: string | null;
@@ -275,6 +278,14 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Nada que actualizar" }); return;
     }
 
+    // If the challenge was accepted, reset to pending so challenged must re-accept
+    const wasAccepted = challenge.status === "accepted";
+    if (wasAccepted) {
+      updates.status = "pending";
+      updates.respondedAt = null;
+      updates.cancelRequestedBy = null;
+    }
+
     const [updated] = await db.update(challengesTable)
       .set(updates as Partial<typeof challengesTable.$inferInsert>)
       .where(eq(challengesTable.id, challengeId))
@@ -284,8 +295,10 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
       .select({ displayName: usersTable.displayName })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
-    const notifTitle = "Reto modificado";
-    const notifBody = `${challenger?.displayName ?? "El retador"} modificó las condiciones del reto`;
+    const notifTitle = wasAccepted ? "Reto activo modificado" : "Reto modificado";
+    const notifBody = wasAccepted
+      ? `${challenger?.displayName ?? "El retador"} modificó las condiciones. Debes aceptar de nuevo.`
+      : `${challenger?.displayName ?? "El retador"} modificó las condiciones del reto`;
     await Promise.all([
       notifyUser(challenge.challengedId, notifTitle, notifBody, { challengeId, type: "challenge_modified" }),
       createInAppNotification(challenge.challengedId, notifTitle, notifBody, userId),
@@ -294,6 +307,130 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
     res.json({ challenge: updated });
   } catch (error) {
     console.error("Update challenge error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+challengesRouter.post("/challenges/:id/request-cancel", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const challengeId = Number(String(req.params.id));
+
+    const [challenge] = await db
+      .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+    if (challenge.challengerId !== userId && challenge.challengedId !== userId) {
+      res.status(403).json({ error: "Sin permiso" }); return;
+    }
+    if (challenge.status !== "accepted") {
+      res.status(400).json({ error: "Solo se puede solicitar cancelación en retos activos" }); return;
+    }
+    if (challenge.cancelRequestedBy !== null) {
+      res.status(400).json({ error: "Ya existe una solicitud de cancelación pendiente" }); return;
+    }
+
+    const [updated] = await db.update(challengesTable)
+      .set({ cancelRequestedBy: userId } as Partial<typeof challengesTable.$inferInsert>)
+      .where(eq(challengesTable.id, challengeId))
+      .returning();
+
+    const [requester] = await db
+      .select({ displayName: usersTable.displayName })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+    const otherId = challenge.challengerId === userId ? challenge.challengedId : challenge.challengerId;
+    const notifTitle = "Solicitud de cancelación";
+    const notifBody = `${requester?.displayName ?? "Tu oponente"} quiere cancelar el reto. Confirma o rechaza.`;
+    await Promise.all([
+      notifyUser(otherId, notifTitle, notifBody, { challengeId, type: "cancel_requested" }),
+      createInAppNotification(otherId, notifTitle, notifBody, userId),
+    ]);
+
+    res.json({ challenge: updated });
+  } catch (error) {
+    console.error("Request cancel error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+challengesRouter.post("/challenges/:id/confirm-cancel", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const challengeId = Number(String(req.params.id));
+
+    const [challenge] = await db
+      .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+    if (challenge.cancelRequestedBy === null) {
+      res.status(400).json({ error: "No hay solicitud de cancelación pendiente" }); return;
+    }
+    if (challenge.cancelRequestedBy === userId) {
+      res.status(400).json({ error: "No puedes confirmar tu propia solicitud" }); return;
+    }
+    if (challenge.challengerId !== userId && challenge.challengedId !== userId) {
+      res.status(403).json({ error: "Sin permiso" }); return;
+    }
+
+    const [updated] = await db.update(challengesTable)
+      .set({ status: "cancelled", cancelRequestedBy: null } as Partial<typeof challengesTable.$inferInsert>)
+      .where(eq(challengesTable.id, challengeId))
+      .returning();
+
+    const [confirmer] = await db
+      .select({ displayName: usersTable.displayName })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+    const notifTitle = "Reto cancelado";
+    const notifBody = `${confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto`;
+    await Promise.all([
+      notifyUser(challenge.cancelRequestedBy!, notifTitle, notifBody, { challengeId, type: "cancel_confirmed" }),
+      createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId),
+    ]);
+
+    res.json({ challenge: updated });
+  } catch (error) {
+    console.error("Confirm cancel error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+challengesRouter.post("/challenges/:id/decline-cancel", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const challengeId = Number(String(req.params.id));
+
+    const [challenge] = await db
+      .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+    if (challenge.cancelRequestedBy === null) {
+      res.status(400).json({ error: "No hay solicitud de cancelación pendiente" }); return;
+    }
+    if (challenge.cancelRequestedBy === userId) {
+      res.status(400).json({ error: "No puedes rechazar tu propia solicitud" }); return;
+    }
+    if (challenge.challengerId !== userId && challenge.challengedId !== userId) {
+      res.status(403).json({ error: "Sin permiso" }); return;
+    }
+
+    const [updated] = await db.update(challengesTable)
+      .set({ cancelRequestedBy: null } as Partial<typeof challengesTable.$inferInsert>)
+      .where(eq(challengesTable.id, challengeId))
+      .returning();
+
+    const [decliner] = await db
+      .select({ displayName: usersTable.displayName })
+      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+    const notifTitle = "Cancelación rechazada";
+    const notifBody = `${decliner?.displayName ?? "Tu oponente"} rechazó cancelar el reto. El reto continúa.`;
+    await Promise.all([
+      notifyUser(challenge.cancelRequestedBy!, notifTitle, notifBody, { challengeId, type: "cancel_declined" }),
+      createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId),
+    ]);
+
+    res.json({ challenge: updated });
+  } catch (error) {
+    console.error("Decline cancel error:", error);
     res.status(500).json({ error: "Error interno" });
   }
 });

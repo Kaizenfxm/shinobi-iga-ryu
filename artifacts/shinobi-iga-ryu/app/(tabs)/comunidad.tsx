@@ -742,16 +742,21 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
   );
 }
 
-function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, onEdit }: {
+function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, onEdit, onRequestCancel, onConfirmCancel, onDeclineCancel }: {
   item: ChallengeItem;
   currentUserId: number;
   canManage: boolean;
   onSetResult: (challenge: ChallengeItem) => void;
   onCancel?: (id: number) => void;
   onEdit?: (challenge: ChallengeItem) => void;
+  onRequestCancel?: (id: number) => void;
+  onConfirmCancel?: (id: number) => void;
+  onDeclineCancel?: (id: number) => void;
 }) {
   const isPast = ["completed", "declined", "cancelled"].includes(item.status);
   const isCompleted = item.status === "completed";
+  const isActive = item.status === "accepted";
+  const isParticipant = item.challengerId === currentUserId || item.challengedId === currentUserId;
 
   const p1Color = isCompleted
     ? item.winnerId === item.challengerId ? "#22C55E" : "#EF4444"
@@ -760,7 +765,9 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
     ? item.winnerId === item.challengedId ? "#22C55E" : "#EF4444"
     : "#CCC";
 
-  void currentUserId;
+  const cancelPending = isActive && item.cancelRequestedBy !== null;
+  const iRequestedCancel = cancelPending && item.cancelRequestedBy === currentUserId;
+  const otherRequestedCancel = cancelPending && item.cancelRequestedBy !== currentUserId;
 
   return (
     <View style={rStyles.challengeRow}>
@@ -785,7 +792,17 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
               <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
             </Pressable>
           )}
-          {canManage && !isPast && item.status === "accepted" && (
+          {isActive && !cancelPending && isParticipant && onEdit && item.challengerId === currentUserId && (
+            <Pressable onPress={() => onEdit(item)} hitSlop={8}>
+              <Ionicons name="pencil-outline" size={14} color="#888" />
+            </Pressable>
+          )}
+          {isActive && !cancelPending && isParticipant && onRequestCancel && (
+            <Pressable onPress={() => onRequestCancel(item.id)} hitSlop={8}>
+              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+            </Pressable>
+          )}
+          {canManage && !isPast && isActive && !cancelPending && (
             <Pressable onPress={() => onSetResult(item)} hitSlop={8}>
               <Ionicons name="time-outline" size={16} color="#D4AF37" />
             </Pressable>
@@ -794,6 +811,28 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
       </View>
       {item.status === "declined" && <Text style={rStyles.statusBadgeDec}>DECLINADO</Text>}
       {item.status === "cancelled" && <Text style={rStyles.statusBadgeCan}>CANCELADO</Text>}
+
+      {iRequestedCancel && (
+        <Text style={[rStyles.statusBadgeDec, { color: "#888", marginTop: 4 }]}>CANCELACIÓN SOLICITADA — ESPERANDO RESPUESTA</Text>
+      )}
+
+      {otherRequestedCancel && onConfirmCancel && onDeclineCancel && (
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+          <Text style={[rStyles.statusBadgeDec, { color: "#888", flex: 1, fontSize: 8 }]}>Tu oponente quiere cancelar el reto</Text>
+          <Pressable
+            style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#22C55E" }}
+            onPress={() => onConfirmCancel(item.id)}
+          >
+            <Text style={{ color: "#22C55E", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 }}>ACEPTAR</Text>
+          </Pressable>
+          <Pressable
+            style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#EF4444" }}
+            onPress={() => onDeclineCancel(item.id)}
+          >
+            <Text style={{ color: "#EF4444", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 }}>RECHAZAR</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -1096,6 +1135,18 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
     try { await challengesApi.setResult(challengeId, winnerId); await load(); } catch {}
   }, [load]);
 
+  const handleRequestCancel = useCallback(async (id: number) => {
+    try { await challengesApi.requestCancel(id); await load(); } catch {}
+  }, [load]);
+
+  const handleConfirmCancel = useCallback(async (id: number) => {
+    try { await challengesApi.confirmCancel(id); await load(); } catch {}
+  }, [load]);
+
+  const handleDeclineCancel = useCallback(async (id: number) => {
+    try { await challengesApi.declineCancel(id); await load(); } catch {}
+  }, [load]);
+
   const filteredUsers = users.filter((u) =>
     u.displayName.toLowerCase().includes(search.toLowerCase())
   );
@@ -1163,7 +1214,17 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
               <Ionicons name={activeExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
             </Pressable>
             {activeExpanded && challenges.active.map((ch) => (
-              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} />
+              <ChallengeRow
+                key={ch.id}
+                item={ch}
+                currentUserId={currentUserId}
+                canManage={canManage}
+                onSetResult={setResultChallenge}
+                onEdit={handleEditChallenge}
+                onRequestCancel={handleRequestCancel}
+                onConfirmCancel={handleConfirmCancel}
+                onDeclineCancel={handleDeclineCancel}
+              />
             ))}
           </View>
         )}

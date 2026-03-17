@@ -818,6 +818,7 @@ export interface ChallengeItem {
   notes: string | null;
   status: "pending" | "accepted" | "declined" | "completed" | "cancelled";
   winnerId: number | null;
+  cancelRequestedBy: number | null;
   respondedAt: string | null;
   createdAt: string;
   trainingSystemName: string;
@@ -851,6 +852,15 @@ export const challengesApi = {
 
   update: (id: number, data: { trainingSystemId?: number; scheduledAt?: string; notes?: string | null }) =>
     apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}`, { method: "PATCH", body: data }),
+
+  requestCancel: (id: number) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/request-cancel`, { method: "POST" }),
+
+  confirmCancel: (id: number) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/confirm-cancel`, { method: "POST" }),
+
+  declineCancel: (id: number) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/challenges/${id}/decline-cancel`, { method: "POST" }),
 
   cancel: (id: number) =>
     apiFetch<{ success: boolean }>(`/challenges/${id}`, { method: "DELETE" }),
