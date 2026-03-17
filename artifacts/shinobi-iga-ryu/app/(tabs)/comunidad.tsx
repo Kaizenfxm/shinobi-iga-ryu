@@ -336,12 +336,24 @@ const eStyles = StyleSheet.create({
   attendBtnTextActive: { color: "#000" },
 });
 
-function EventosTab({ canManage }: { canManage: boolean }) {
+function EventosTab({ canManage, extraEvents }: {
+  canManage: boolean;
+  extraEvents?: EventItem[];
+}) {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [createVisible, setCreateVisible] = useState(false);
   const [attendeesEvent, setAttendeesEvent] = useState<EventItem | null>(null);
+
+  useEffect(() => {
+    if (extraEvents && extraEvents.length > 0) {
+      setEvents((prev) => {
+        const ids = new Set(prev.map((e) => e.id));
+        const newOnes = extraEvents.filter((e) => !ids.has(e.id));
+        return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+      });
+    }
+  }, [extraEvents]);
 
   const load = useCallback(async () => {
     try {
@@ -414,18 +426,6 @@ function EventosTab({ canManage }: { canManage: boolean }) {
         )}
       </ScrollView>
 
-      {canManage && (
-        <Pressable style={fabStyle.fab} onPress={() => setCreateVisible(true)}>
-          <MaterialCommunityIcons name="plus" size={22} color="#000" />
-        </Pressable>
-      )}
-
-      <CreateEventModal
-        visible={createVisible}
-        onClose={() => setCreateVisible(false)}
-        onCreated={(ev) => { setEvents((prev) => [ev, ...prev]); }}
-      />
-
       {attendeesEvent && (
         <AttendeesModal
           eventId={attendeesEvent.id}
@@ -438,25 +438,6 @@ function EventosTab({ canManage }: { canManage: boolean }) {
   );
 }
 
-const fabStyle = StyleSheet.create({
-  fab: {
-    position: "absolute",
-    bottom: Platform.OS === "web" ? 104 : 96,
-    right: 20,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "#D4AF37",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-  },
-});
-
 function ComingSoon() {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -468,10 +449,12 @@ function ComingSoon() {
 export default function ComunidadScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { hasRole, isAuthenticated } = useAuth();
+  const { hasRole, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<ComunidadTab>("eventos");
+  const [createVisible, setCreateVisible] = useState(false);
+  const [createdEvents, setCreatedEvents] = useState<EventItem[]>([]);
 
-  const canManage = isAuthenticated && (hasRole("admin") || hasRole("profesor"));
+  const canManage = !isLoading && isAuthenticated && (hasRole("admin") || hasRole("profesor"));
 
   return (
     <View style={styles.root}>
@@ -497,10 +480,22 @@ export default function ComunidadScreen() {
       </View>
 
       {activeTab === "eventos" ? (
-        <EventosTab canManage={canManage} />
+        <EventosTab canManage={canManage} extraEvents={createdEvents} />
       ) : (
         <ComingSoon />
       )}
+
+      {canManage && activeTab === "eventos" && (
+        <Pressable style={styles.fab} onPress={() => setCreateVisible(true)}>
+          <MaterialCommunityIcons name="plus" size={24} color="#000" />
+        </Pressable>
+      )}
+
+      <CreateEventModal
+        visible={createVisible}
+        onClose={() => setCreateVisible(false)}
+        onCreated={(ev) => setCreatedEvents((prev) => [ev, ...prev])}
+      />
     </View>
   );
 }
@@ -516,4 +511,21 @@ const styles = StyleSheet.create({
   subTabSep: { width: 1, height: 14, backgroundColor: "#1a1a1a" },
   subTabText: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 10, letterSpacing: 1 },
   subTabTextActive: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold" },
+  fab: {
+    position: "absolute",
+    bottom: 24,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#D4AF37",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 6,
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    zIndex: 100,
+  },
 });
