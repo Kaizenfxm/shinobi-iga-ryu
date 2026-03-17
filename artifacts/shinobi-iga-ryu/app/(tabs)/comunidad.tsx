@@ -701,24 +701,49 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
 
   return (
     <View style={rStyles.pendingCard}>
-      <View style={rStyles.pendingCardHeader}>
-        <MaterialCommunityIcons name="boxing-glove" size={16} color="#D4AF37" />
-        <Text style={rStyles.pendingTitle} numberOfLines={1}>
-          <Text style={rStyles.pendingChallenger}>{item.challengerName}</Text>
-          <Text style={{ color: "#888" }}> te reta en </Text>
-          <Text style={rStyles.pendingSystem}>{item.trainingSystemName}</Text>
-        </Text>
+      <View style={rStyles.pendingBanner}>
+        <View style={rStyles.pendingBannerLine} />
+        <Text style={rStyles.pendingBannerText}>⚔ DESAFÍO RECIBIDO ⚔</Text>
+        <View style={rStyles.pendingBannerLine} />
       </View>
-      <View style={rStyles.pendingMeta}>
-        <Ionicons name="calendar-outline" size={11} color="#888" />
+
+      <View style={rStyles.pendingFightLayout}>
+        <View style={rStyles.pendingFighterBlock}>
+          <View style={rStyles.pendingAvatarCircle}>
+            <Text style={rStyles.pendingAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+          </View>
+          <Text style={rStyles.pendingFighterName} numberOfLines={2}>{item.challengerName.toUpperCase()}</Text>
+          <Text style={rStyles.pendingFighterLabel}>RETADOR</Text>
+        </View>
+
+        <View style={rStyles.pendingVsBlock}>
+          <Text style={rStyles.pendingVsText}>VS</Text>
+          <View style={rStyles.pendingSystemTag}>
+            <Text style={rStyles.pendingSystemName} numberOfLines={2}>{item.trainingSystemName}</Text>
+          </View>
+        </View>
+
+        <View style={rStyles.pendingFighterBlock}>
+          <View style={[rStyles.pendingAvatarCircle, { borderColor: "#D4AF37" }]}>
+            <Text style={[rStyles.pendingAvatarLetter, { color: "#D4AF37" }]}>TÚ</Text>
+          </View>
+          <Text style={rStyles.pendingFighterName} numberOfLines={2}>TÚ</Text>
+          <Text style={rStyles.pendingFighterLabel}>RETADO</Text>
+        </View>
+      </View>
+
+      <View style={rStyles.pendingMetaRow}>
+        <Ionicons name="calendar-outline" size={11} color="#C41E3A" />
         <Text style={rStyles.pendingDate}>{formatChallengeDate(item.scheduledAt)}</Text>
       </View>
-      {item.notes ? <Text style={rStyles.pendingNotes}>{item.notes}</Text> : null}
+      {item.notes ? (
+        <Text style={rStyles.pendingNotes}>"{item.notes}"</Text>
+      ) : null}
 
       {decided ? (
-        <View style={{ marginTop: 8 }}>
-          <Text style={[rStyles.decidedText, decided === "accepted" ? { color: "#22C55E" } : { color: "#EF4444" }]}>
-            {decided === "accepted" ? "✓ Aceptado" : "✕ Declinado"}
+        <View style={{ marginTop: 12, alignItems: "center" }}>
+          <Text style={[rStyles.decidedText, decided === "accepted" ? { color: "#22C55E" } : { color: "#C41E3A" }]}>
+            {decided === "accepted" ? "✓ ACEPTADO — PREPÁRATE" : "✕ DESAFÍO RECHAZADO"}
           </Text>
           {respondedAt && (
             <UndoTimer
@@ -731,10 +756,10 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
       ) : (
         <View style={rStyles.pendingActions}>
           <Pressable style={rStyles.declineBtn} onPress={() => handleDecision("declined")}>
-            <Ionicons name="close" size={18} color="#EF4444" />
+            <Text style={rStyles.declineBtnText}>✕  DECLINAR</Text>
           </Pressable>
           <Pressable style={rStyles.acceptBtn} onPress={() => handleDecision("accepted")}>
-            <Ionicons name="checkmark" size={18} color="#22C55E" />
+            <Text style={rStyles.acceptBtnText}>✓  ACEPTAR</Text>
           </Pressable>
         </View>
       )}
@@ -769,67 +794,88 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
   const iRequestedCancel = cancelPending && item.cancelRequestedBy === currentUserId;
   const otherRequestedCancel = cancelPending && item.cancelRequestedBy !== currentUserId;
 
+  const borderColor = isCompleted
+    ? (item.winnerId === currentUserId ? "#D4AF37" : "#333")
+    : isActive ? "#C41E3A"
+    : item.status === "pending" ? "#4a3000"
+    : "#1a1a1a";
+
   return (
-    <View style={rStyles.challengeRow}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <View style={[rStyles.challengeRowMain, { flex: 1 }]}>
-          <Text style={[rStyles.challengePlayer, { color: p1Color }]} numberOfLines={1}>{item.challengerName}</Text>
-          <Text style={rStyles.challengeVs}>VS</Text>
-          <Text style={[rStyles.challengePlayer, { color: p2Color }]} numberOfLines={1}>{item.challengedName}</Text>
-          <Text style={rStyles.challengeSep}>|</Text>
-          <Text style={rStyles.challengeSystem} numberOfLines={1}>{item.trainingSystemName}</Text>
-          <Text style={rStyles.challengeSep}>|</Text>
-          <Text style={rStyles.challengeDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
+    <View style={[rStyles.fightCard, { borderLeftColor: borderColor }]}>
+      <View style={rStyles.fightCardInner}>
+        <View style={rStyles.fightCardFighters}>
+          <Text style={[rStyles.fightCardName, { color: p1Color, textAlign: "left" }]} numberOfLines={2}>
+            {item.challengerName.toUpperCase()}
+          </Text>
+          <View style={rStyles.fightCardVsBlock}>
+            <Text style={rStyles.fightCardVs}>VS</Text>
+            <Text style={rStyles.fightCardSystem} numberOfLines={1}>{item.trainingSystemName}</Text>
+            <Text style={rStyles.fightCardDate}>{formatChallengeDate(item.scheduledAt).split("  ")[0]}</Text>
+          </View>
+          <Text style={[rStyles.fightCardName, { color: p2Color, textAlign: "right" }]} numberOfLines={2}>
+            {item.challengedName.toUpperCase()}
+          </Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 8 }}>
+
+        <View style={rStyles.fightCardActions}>
           {item.status === "pending" && onEdit && (
             <Pressable onPress={() => onEdit(item)} hitSlop={8}>
-              <Ionicons name="pencil-outline" size={14} color="#888" />
+              <Ionicons name="pencil-outline" size={13} color="#555" />
             </Pressable>
           )}
           {item.status === "pending" && onCancel && (
             <Pressable onPress={() => onCancel(item.id)} hitSlop={8}>
-              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+              <Ionicons name="close-circle-outline" size={15} color="#C41E3A" />
             </Pressable>
           )}
           {isActive && !cancelPending && isParticipant && onEdit && item.challengerId === currentUserId && (
             <Pressable onPress={() => onEdit(item)} hitSlop={8}>
-              <Ionicons name="pencil-outline" size={14} color="#888" />
+              <Ionicons name="pencil-outline" size={13} color="#555" />
             </Pressable>
           )}
           {isActive && !cancelPending && isParticipant && onRequestCancel && (
             <Pressable onPress={() => onRequestCancel(item.id)} hitSlop={8}>
-              <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+              <Ionicons name="close-circle-outline" size={15} color="#C41E3A" />
             </Pressable>
           )}
           {canManage && !isPast && isActive && !cancelPending && (
             <Pressable onPress={() => onSetResult(item)} hitSlop={8}>
-              <Ionicons name="time-outline" size={16} color="#D4AF37" />
+              <Ionicons name="time-outline" size={15} color="#D4AF37" />
             </Pressable>
           )}
         </View>
       </View>
-      {item.status === "declined" && <Text style={rStyles.statusBadgeDec}>DECLINADO</Text>}
-      {item.status === "cancelled" && <Text style={rStyles.statusBadgeCan}>CANCELADO</Text>}
+
+      {item.status === "declined" && (
+        <Text style={[rStyles.fightCardStatus, { color: "#C41E3A" }]}>✕ DECLINADO</Text>
+      )}
+      {item.status === "cancelled" && (
+        <Text style={[rStyles.fightCardStatus, { color: "#444" }]}>— CANCELADO</Text>
+      )}
+      {isCompleted && item.winnerId && (
+        <Text style={[rStyles.fightCardStatus, { color: "#D4AF37" }]}>
+          ★ GANADOR: {item.winnerId === item.challengerId ? item.challengerName : item.challengedName}
+        </Text>
+      )}
 
       {iRequestedCancel && (
-        <Text style={[rStyles.statusBadgeDec, { color: "#888", marginTop: 4 }]}>CANCELACIÓN SOLICITADA — ESPERANDO RESPUESTA</Text>
+        <Text style={[rStyles.fightCardStatus, { color: "#555" }]}>⏸ CANCELACIÓN SOLICITADA — ESPERANDO RESPUESTA</Text>
       )}
 
       {otherRequestedCancel && onConfirmCancel && onDeclineCancel && (
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-          <Text style={[rStyles.statusBadgeDec, { color: "#888", flex: 1, fontSize: 8 }]}>Tu oponente quiere cancelar el reto</Text>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 8, alignItems: "center" }}>
+          <Text style={[rStyles.fightCardStatus, { flex: 1, color: "#888", marginTop: 0 }]}>Tu oponente quiere cancelar</Text>
           <Pressable
-            style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#22C55E" }}
+            style={[rStyles.miniActionBtn, { borderColor: "#22C55E" }]}
             onPress={() => onConfirmCancel(item.id)}
           >
-            <Text style={{ color: "#22C55E", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 }}>ACEPTAR</Text>
+            <Text style={[rStyles.miniActionBtnText, { color: "#22C55E" }]}>ACEPTAR</Text>
           </Pressable>
           <Pressable
-            style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#EF4444" }}
+            style={[rStyles.miniActionBtn, { borderColor: "#C41E3A" }]}
             onPress={() => onDeclineCancel(item.id)}
           >
-            <Text style={{ color: "#EF4444", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 }}>RECHAZAR</Text>
+            <Text style={[rStyles.miniActionBtnText, { color: "#C41E3A" }]}>RECHAZAR</Text>
           </Pressable>
         </View>
       )}
@@ -1180,7 +1226,6 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 
         {hasPending && (
           <View style={rStyles.pendingSection}>
-            <Text style={rStyles.pendingSectionTitle}>RETOS RECIBIDOS</Text>
             {challenges.pending.map((ch) => (
               <PendingChallengeCard
                 key={ch.id}
@@ -1196,9 +1241,10 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         {challenges.sent.length > 0 && (
           <View style={rStyles.section}>
             <Pressable style={rStyles.sectionHeader} onPress={() => setSentExpanded((p) => !p)}>
+              <View style={[rStyles.sectionDot, { backgroundColor: "#4a3000" }]} />
               <Text style={rStyles.sectionTitle}>RETOS ENVIADOS</Text>
               <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{challenges.sent.length}</Text></View>
-              <Ionicons name={sentExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
+              <Ionicons name={sentExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
             </Pressable>
             {sentExpanded && challenges.sent.map((ch) => (
               <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} onEdit={handleEditChallenge} />
@@ -1209,9 +1255,10 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         {challenges.active.length > 0 && (
           <View style={rStyles.section}>
             <Pressable style={rStyles.sectionHeader} onPress={() => setActiveExpanded((p) => !p)}>
-              <Text style={rStyles.sectionTitle}>RETOS ACTIVOS</Text>
-              <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{challenges.active.length}</Text></View>
-              <Ionicons name={activeExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
+              <View style={[rStyles.sectionDot, { backgroundColor: "#C41E3A" }]} />
+              <Text style={[rStyles.sectionTitle, { color: "#C41E3A" }]}>RETOS ACTIVOS</Text>
+              <View style={[rStyles.sectionBadge, { borderColor: "#C41E3A" }]}><Text style={[rStyles.sectionBadgeText, { color: "#C41E3A" }]}>{challenges.active.length}</Text></View>
+              <Ionicons name={activeExpanded ? "chevron-up" : "chevron-down"} size={12} color="#C41E3A" style={{ marginLeft: "auto" }} />
             </Pressable>
             {activeExpanded && challenges.active.map((ch) => (
               <ChallengeRow
@@ -1232,9 +1279,10 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         {challenges.past.length > 0 && (
           <View style={rStyles.section}>
             <Pressable style={rStyles.sectionHeader} onPress={() => setPastExpanded((p) => !p)}>
-              <Text style={rStyles.sectionTitle}>RETOS PASADOS</Text>
+              <View style={[rStyles.sectionDot, { backgroundColor: "#333" }]} />
+              <Text style={rStyles.sectionTitle}>HISTORIAL</Text>
               <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{challenges.past.length}</Text></View>
-              <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" style={{ marginLeft: "auto" }} />
+              <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
             </Pressable>
             {pastExpanded && challenges.past.map((ch) => (
               <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} />
@@ -1242,7 +1290,12 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
           </View>
         )}
 
-        <View style={rStyles.userListSection}>
+        <View style={rStyles.rosterSection}>
+          <View style={rStyles.rosterHeader}>
+            <View style={rStyles.rosterHeaderLine} />
+            <Text style={rStyles.rosterHeaderText}>SELECCIONA TU OPONENTE</Text>
+            <View style={rStyles.rosterHeaderLine} />
+          </View>
           {filteredUsers.length === 0 ? (
             <Text style={rStyles.emptyText}>
               {search ? "Sin resultados para la búsqueda" : "Sin miembros activos"}
@@ -1250,16 +1303,18 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
           ) : (
             filteredUsers.map((u) => (
               <View key={u.id} style={rStyles.userRow}>
-                {u.avatarUrl ? (
-                  <Image source={{ uri: getAvatarServingUrl(u.avatarUrl) ?? undefined }} style={rStyles.userAvatar} />
-                ) : (
-                  <View style={[rStyles.userAvatar, rStyles.userAvatarFallback]}>
-                    <Text style={rStyles.userAvatarLetter}>{(u.displayName[0] ?? "?").toUpperCase()}</Text>
-                  </View>
-                )}
-                <Text style={rStyles.userName} numberOfLines={1}>{u.displayName}</Text>
+                <View style={rStyles.userAvatarWrap}>
+                  {u.avatarUrl ? (
+                    <Image source={{ uri: getAvatarServingUrl(u.avatarUrl) ?? undefined }} style={rStyles.userAvatar} />
+                  ) : (
+                    <View style={[rStyles.userAvatar, rStyles.userAvatarFallback]}>
+                      <Text style={rStyles.userAvatarLetter}>{(u.displayName[0] ?? "?").toUpperCase()}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={rStyles.userName} numberOfLines={1}>{u.displayName.toUpperCase()}</Text>
                 <Pressable style={rStyles.gloveBtn} onPress={() => { setTargetUser(u); setCreateVisible(true); }}>
-                  <MaterialCommunityIcons name="boxing-glove" size={20} color="#D4AF37" />
+                  <Text style={rStyles.gloveBtnText}>⚔ RETAR</Text>
                 </Pressable>
               </View>
             ))
@@ -1297,59 +1352,209 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 const rStyles = StyleSheet.create({
   searchWrapper: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#1a1a1a",
-    marginHorizontal: 16, marginTop: 12, marginBottom: 4,
-    paddingHorizontal: 12, paddingVertical: 9, borderRadius: 4,
+    backgroundColor: "#080808", borderWidth: 1, borderColor: "#1c1c1c",
+    marginHorizontal: 12, marginTop: 12, marginBottom: 8,
+    paddingHorizontal: 12, paddingVertical: 9, borderRadius: 2,
   },
-  searchInput: { flex: 1, color: "#FFF", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
-  pendingSection: { marginTop: 8, marginHorizontal: 0, borderTopWidth: 2, borderTopColor: "#D4AF37" },
-  pendingSectionTitle: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 2, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  searchInput: { flex: 1, color: "#CCC", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+
+  pendingSection: { marginTop: 0 },
   pendingCard: {
-    backgroundColor: "#090909", borderBottomWidth: 1, borderBottomColor: "#1a1a1a",
-    paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: "#070707",
+    borderTopWidth: 2, borderTopColor: "#C41E3A",
+    borderBottomWidth: 1, borderBottomColor: "#1a0000",
+    marginHorizontal: 12, marginTop: 10,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16,
+    borderRadius: 2,
   },
-  pendingCardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  pendingTitle: { flex: 1, fontFamily: "NotoSansJP_400Regular", fontSize: 13, color: "#CCC" },
-  pendingChallenger: { color: "#FFF", fontFamily: "NotoSansJP_700Bold" },
-  pendingSystem: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold" },
-  pendingMeta: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 2 },
+  pendingBanner: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14,
+  },
+  pendingBannerLine: { flex: 1, height: 1, backgroundColor: "#2a0000" },
+  pendingBannerText: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 9,
+    letterSpacing: 3,
+  },
+  pendingFightLayout: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12,
+  },
+  pendingFighterBlock: {
+    flex: 1, alignItems: "center", gap: 4,
+  },
+  pendingAvatarCircle: {
+    width: 44, height: 44, borderRadius: 22,
+    borderWidth: 2, borderColor: "#C41E3A",
+    backgroundColor: "#0d0000", alignItems: "center", justifyContent: "center",
+  },
+  pendingAvatarLetter: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 16,
+  },
+  pendingFighterName: {
+    color: "#FFF", fontFamily: "NotoSansJP_700Bold", fontSize: 11,
+    letterSpacing: 1, textAlign: "center", lineHeight: 14,
+  },
+  pendingFighterLabel: {
+    color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
+    letterSpacing: 2,
+  },
+  pendingVsBlock: { alignItems: "center", gap: 4 },
+  pendingVsText: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 26,
+    letterSpacing: 2, lineHeight: 30,
+  },
+  pendingSystemTag: {
+    backgroundColor: "#0d0d0d", borderWidth: 1, borderColor: "#2a2a2a",
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 2,
+  },
+  pendingSystemName: {
+    color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 9,
+    letterSpacing: 1, textAlign: "center",
+  },
+  pendingMetaRow: {
+    flexDirection: "row", alignItems: "center", gap: 5, justifyContent: "center", marginBottom: 4,
+  },
   pendingDate: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 11 },
-  pendingNotes: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 11, fontStyle: "italic", marginTop: 2 },
-  pendingActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 10 },
-  declineBtn: { width: 36, height: 36, borderRadius: 4, borderWidth: 1, borderColor: "#EF4444", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(239,68,68,0.08)" },
-  acceptBtn: { width: 36, height: 36, borderRadius: 4, borderWidth: 1, borderColor: "#22C55E", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(34,197,94,0.08)" },
-  decidedText: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
-  undoBtn: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 2, borderWidth: 1, borderColor: "#D4AF37" },
-  undoBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 0.5 },
-  section: { marginTop: 12 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#1a1a1a", borderBottomWidth: 1, borderBottomColor: "#1a1a1a", backgroundColor: "#050505" },
-  sectionTitle: { color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 2 },
-  sectionBadge: { backgroundColor: "#1a1a1a", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 2 },
-  sectionBadgeText: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10 },
-  challengeRow: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#111", backgroundColor: "#000" },
-  challengeRowMain: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 4 },
-  challengePlayer: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, maxWidth: 100 },
-  challengeVs: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1, marginHorizontal: 2 },
-  challengeSep: { color: "#333", fontSize: 12, marginHorizontal: 2 },
-  challengeSystem: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, maxWidth: 90 },
-  challengeDate: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 11 },
-  statusBadgeDec: { color: "#EF4444", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1, marginTop: 2 },
-  statusBadgeCan: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1, marginTop: 2 },
-  cancelBtn: { padding: 4 },
-  resultBtn: { marginTop: 6, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 2, borderWidth: 1, borderColor: "#D4AF37" },
-  resultBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1 },
-  userListSection: { marginTop: 8 },
-  userRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#0d0d0d", gap: 12 },
-  userAvatar: { width: 38, height: 38, borderRadius: 19 },
-  userAvatarFallback: { backgroundColor: "#111", alignItems: "center", justifyContent: "center" },
-  userAvatarLetter: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 14 },
-  userName: { flex: 1, color: "#CCC", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
-  gloveBtn: { padding: 8, backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 4 },
-  emptyText: { color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 12, textAlign: "center", paddingTop: 40, letterSpacing: 1 },
-  sectionLabel: { color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 2, marginBottom: 6, marginTop: 4 },
-  systemChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 2, borderWidth: 1, borderColor: "#2a2a2a", backgroundColor: "#0a0a0a" },
-  systemChipActive: { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.1)" },
-  systemChipText: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 12 },
+  pendingNotes: {
+    color: "#3a3a3a", fontFamily: "NotoSansJP_400Regular", fontSize: 11,
+    fontStyle: "italic", textAlign: "center", marginBottom: 4,
+  },
+  pendingActions: { flexDirection: "row", gap: 10, marginTop: 14 },
+  declineBtn: {
+    flex: 1, paddingVertical: 11, borderRadius: 2, borderWidth: 1,
+    borderColor: "#C41E3A", backgroundColor: "rgba(196,30,58,0.07)",
+    alignItems: "center", justifyContent: "center",
+  },
+  declineBtnText: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 2,
+  },
+  acceptBtn: {
+    flex: 1, paddingVertical: 11, borderRadius: 2, borderWidth: 1,
+    borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)",
+    alignItems: "center", justifyContent: "center",
+  },
+  acceptBtnText: {
+    color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 2,
+  },
+  decidedText: { fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 2 },
+  undoBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    marginTop: 8, alignSelf: "center",
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 2,
+    borderWidth: 1, borderColor: "#333",
+  },
+  undoBtnText: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1 },
+
+  section: { marginTop: 10 },
+  sectionHeader: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 12, paddingVertical: 9,
+    backgroundColor: "#050505",
+    borderTopWidth: 1, borderTopColor: "#111",
+    borderBottomWidth: 1, borderBottomColor: "#111",
+  },
+  sectionDot: { width: 4, height: 14, borderRadius: 1 },
+  sectionTitle: {
+    color: "#444", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 3,
+  },
+  sectionBadge: {
+    borderWidth: 1, borderColor: "#2a2a2a",
+    paddingHorizontal: 6, paddingVertical: 1, borderRadius: 1,
+  },
+  sectionBadgeText: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 10 },
+
+  fightCard: {
+    marginHorizontal: 12, marginTop: 6,
+    backgroundColor: "#060606", borderRadius: 2,
+    borderLeftWidth: 3, borderLeftColor: "#C41E3A",
+    paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10,
+    borderTopWidth: 1, borderTopColor: "#111",
+    borderBottomWidth: 1, borderBottomColor: "#111",
+    borderRightWidth: 1, borderRightColor: "#111",
+  },
+  fightCardInner: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+  },
+  fightCardFighters: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 6,
+  },
+  fightCardName: {
+    flex: 1, fontFamily: "NotoSansJP_700Bold", fontSize: 11,
+    letterSpacing: 0.5, lineHeight: 14,
+  },
+  fightCardVsBlock: { alignItems: "center", paddingHorizontal: 2 },
+  fightCardVs: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 14,
+    letterSpacing: 2, lineHeight: 18,
+  },
+  fightCardSystem: {
+    color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
+    letterSpacing: 0.5, textAlign: "center", maxWidth: 72,
+  },
+  fightCardDate: {
+    color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 8,
+    textAlign: "center",
+  },
+  fightCardActions: {
+    flexDirection: "column", alignItems: "center", gap: 8, paddingLeft: 4,
+  },
+  fightCardStatus: {
+    fontFamily: "NotoSansJP_700Bold", fontSize: 8, letterSpacing: 2, marginTop: 8,
+  },
+  miniActionBtn: {
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 2, borderWidth: 1,
+  },
+  miniActionBtnText: { fontFamily: "NotoSansJP_700Bold", fontSize: 8, letterSpacing: 1 },
+
+  rosterSection: { marginTop: 14 },
+  rosterHeader: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 16, marginBottom: 4,
+  },
+  rosterHeaderLine: { flex: 1, height: 1, backgroundColor: "#1a1a1a" },
+  rosterHeaderText: {
+    color: "#2a2a2a", fontFamily: "NotoSansJP_700Bold", fontSize: 8,
+    letterSpacing: 3,
+  },
+  userRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 12, paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: "#0d0d0d",
+    gap: 10,
+  },
+  userAvatarWrap: {
+    width: 34, height: 34,
+    borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 2,
+    overflow: "hidden",
+  },
+  userAvatar: { width: 34, height: 34, borderRadius: 0 },
+  userAvatarFallback: { backgroundColor: "#0a0a0a", alignItems: "center", justifyContent: "center" },
+  userAvatarLetter: { color: "#444", fontFamily: "NotoSansJP_700Bold", fontSize: 13 },
+  userName: {
+    flex: 1, color: "#666", fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11, letterSpacing: 1,
+  },
+  gloveBtn: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 2,
+    borderWidth: 1, borderColor: "#C41E3A",
+    backgroundColor: "rgba(196,30,58,0.06)",
+  },
+  gloveBtnText: {
+    color: "#C41E3A", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1,
+  },
+  emptyText: {
+    color: "#222", fontFamily: "NotoSansJP_400Regular", fontSize: 11,
+    textAlign: "center", paddingTop: 40, letterSpacing: 2,
+  },
+  sectionLabel: {
+    color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 9,
+    letterSpacing: 2, marginBottom: 6, marginTop: 4,
+  },
+  systemChip: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 2,
+    borderWidth: 1, borderColor: "#2a2a2a", backgroundColor: "#080808",
+  },
+  systemChipActive: { borderColor: "#D4AF37", backgroundColor: "rgba(212,175,55,0.08)" },
+  systemChipText: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 12 },
   systemChipTextActive: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold" },
 });
 
