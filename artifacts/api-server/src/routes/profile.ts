@@ -56,6 +56,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         beltName: beltDefinitionsTable.name,
         beltColor: beltDefinitionsTable.color,
         beltOrder: beltDefinitionsTable.orderIndex,
+        updatedAt: studentBeltsTable.updatedAt,
       })
       .from(studentBeltsTable)
       .innerJoin(beltDefinitionsTable, eq(studentBeltsTable.currentBeltId, beltDefinitionsTable.id))
