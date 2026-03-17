@@ -1143,6 +1143,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
   const [systems, setSystems] = useState<TrainingSystem[]>([]);
   const [challenges, setChallenges] = useState<{ pending: ChallengeItem[]; sent: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>({ pending: [], sent: [], active: [], past: [] });
   const [communityPending, setCommunityPending] = useState<ChallengeItem[]>([]);
+  const [communityActive, setCommunityActive] = useState<ChallengeItem[]>([]);
   const [communityExpanded, setCommunityExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1157,11 +1158,12 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
 
   const load = useCallback(async () => {
     try {
-      const [usersRes, systemsRes, challengesRes, communityRes] = await Promise.all([
+      const [usersRes, systemsRes, challengesRes, communityRes, communityActiveRes] = await Promise.all([
         challengesApi.getUsers(),
         trainingApi.getSystems(),
         challengesApi.getAll(),
         challengesApi.getCommunityPending(),
+        challengesApi.getCommunityActive(),
       ]);
       setUsers(usersRes.users);
       setSystems(systemsRes.systems);
@@ -1172,6 +1174,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
         past: challengesRes.past ?? [],
       });
       setCommunityPending(communityRes.challenges ?? []);
+      setCommunityActive(communityActiveRes.challenges ?? []);
       await refreshBadge();
     } catch {
     } finally {
@@ -1346,29 +1349,36 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
           </View>
         )}
 
-        {challenges.active.length > 0 && (
-          <View style={rStyles.section}>
-            <Pressable style={rStyles.sectionHeader} onPress={() => setActiveExpanded((p) => !p)}>
-              <View style={[rStyles.sectionDot, { backgroundColor: "#C41E3A" }]} />
-              <Text style={[rStyles.sectionTitle, { color: "#C41E3A" }]}>RETOS ACTIVOS</Text>
-              <View style={[rStyles.sectionBadge, { borderColor: "#C41E3A" }]}><Text style={[rStyles.sectionBadgeText, { color: "#C41E3A" }]}>{challenges.active.length}</Text></View>
-              <Ionicons name={activeExpanded ? "chevron-up" : "chevron-down"} size={12} color="#C41E3A" style={{ marginLeft: "auto" }} />
-            </Pressable>
-            {activeExpanded && challenges.active.map((ch) => (
-              <ChallengeRow
-                key={ch.id}
-                item={ch}
-                currentUserId={currentUserId}
-                canManage={canManage}
-                onSetResult={setResultChallenge}
-                onEdit={handleEditChallenge}
-                onRequestCancel={handleRequestCancel}
-                onConfirmCancel={handleConfirmCancel}
-                onDeclineCancel={handleDeclineCancel}
-              />
-            ))}
-          </View>
-        )}
+        {(() => {
+          const ownIds = new Set(challenges.active.map((c) => c.id));
+          const allActive = [
+            ...challenges.active,
+            ...communityActive.filter((c) => !ownIds.has(c.id)),
+          ];
+          return allActive.length > 0 ? (
+            <View style={rStyles.section}>
+              <Pressable style={rStyles.sectionHeader} onPress={() => setActiveExpanded((p) => !p)}>
+                <View style={[rStyles.sectionDot, { backgroundColor: "#C41E3A" }]} />
+                <Text style={[rStyles.sectionTitle, { color: "#C41E3A" }]}>RETOS ACTIVOS</Text>
+                <View style={[rStyles.sectionBadge, { borderColor: "#C41E3A" }]}><Text style={[rStyles.sectionBadgeText, { color: "#C41E3A" }]}>{allActive.length}</Text></View>
+                <Ionicons name={activeExpanded ? "chevron-up" : "chevron-down"} size={12} color="#C41E3A" style={{ marginLeft: "auto" }} />
+              </Pressable>
+              {activeExpanded && allActive.map((ch) => (
+                <ChallengeRow
+                  key={ch.id}
+                  item={ch}
+                  currentUserId={currentUserId}
+                  canManage={canManage}
+                  onSetResult={setResultChallenge}
+                  onEdit={handleEditChallenge}
+                  onRequestCancel={handleRequestCancel}
+                  onConfirmCancel={handleConfirmCancel}
+                  onDeclineCancel={handleDeclineCancel}
+                />
+              ))}
+            </View>
+          ) : null;
+        })()}
 
         {challenges.past.length > 0 && (
           <View style={rStyles.section}>
