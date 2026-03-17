@@ -479,16 +479,16 @@ export default function ComunidadScreen() {
         </View>
       </View>
 
+      {canManage && activeTab === "eventos" && (
+        <Pressable style={styles.createBar} onPress={() => setCreateVisible(true)}>
+          <MaterialCommunityIcons name="plus" size={18} color="#D4AF37" />
+        </Pressable>
+      )}
+
       {activeTab === "eventos" ? (
         <EventosTab canManage={canManage} extraEvents={createdEvents} />
       ) : (
         <ComingSoon />
-      )}
-
-      {canManage && activeTab === "eventos" && (
-        <Pressable style={styles.fab} onPress={() => setCreateVisible(true)}>
-          <MaterialCommunityIcons name="plus" size={24} color="#000" />
-        </Pressable>
       )}
 
       <CreateEventModal
@@ -511,21 +511,13 @@ const styles = StyleSheet.create({
   subTabSep: { width: 1, height: 14, backgroundColor: "#1a1a1a" },
   subTabText: { color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 10, letterSpacing: 1 },
   subTabTextActive: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold" },
-  fab: {
-    position: "absolute",
-    bottom: 24,
-    right: 20,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#D4AF37",
+  createBar: {
+    width: "100%",
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 6,
-    shadowColor: "#D4AF37",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    zIndex: 100,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+    backgroundColor: "#050505",
   },
 });
