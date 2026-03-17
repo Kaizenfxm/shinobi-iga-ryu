@@ -165,7 +165,16 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
       return true;
     });
 
-    const past = rows.filter((r) => ["completed", "declined", "cancelled"].includes(r.status));
+    const past = rows.filter((r) => {
+      if (!["completed", "declined", "cancelled"].includes(r.status)) return false;
+      if (
+        r.status === "declined" &&
+        r.challengedId === userId &&
+        r.respondedAt &&
+        now - new Date(r.respondedAt).getTime() < UNDO_WINDOW_MS
+      ) return false;
+      return true;
+    });
 
     res.json({ pending, active, past });
   } catch (error) {
