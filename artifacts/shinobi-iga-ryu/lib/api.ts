@@ -916,11 +916,20 @@ export const eventsApi = {
   getAttendees: (id: number) =>
     apiFetch<{ attendees: EventAttendee[] }>(`/events/${id}/attendees`),
 
-  getCoverUploadUrl: (contentType: string) =>
-    apiFetch<{ uploadURL: string; objectPath: string }>("/events/cover-upload-url", {
+  uploadCoverDirect: async (blob: Blob, mimeType: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/api/events/cover-upload`, {
       method: "POST",
-      body: { contentType },
-    }),
+      headers: { "Content-Type": mimeType },
+      body: blob,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error ?? "Upload failed");
+    }
+    const data = await res.json() as { objectPath: string };
+    return data.objectPath;
+  },
 };
 
 export interface RankingFighterEntry {

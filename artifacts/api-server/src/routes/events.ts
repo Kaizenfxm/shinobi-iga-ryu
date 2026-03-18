@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, raw } from "express";
 import { db } from "@workspace/db";
 import { eventsTable, eventAttendeesTable, usersTable, userRolesTable } from "@workspace/db/schema";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
@@ -22,23 +22,22 @@ async function canManageEvents(userId: number): Promise<boolean> {
   return rows.length > 0;
 }
 
-eventsRouter.post("/events/cover-upload-url", requireAuth, async (req, res) => {
+eventsRouter.post("/events/cover-upload", requireAuth, raw({ limit: "15mb", type: "image/*" }), async (req, res) => {
   try {
     const userId = req.session.userId!;
     if (!(await canManageEvents(userId))) {
       res.status(403).json({ error: "Sin permisos" });
       return;
     }
-    const { contentType } = req.body;
-    if (!contentType || typeof contentType !== "string" || !contentType.startsWith("image/")) {
-      res.status(400).json({ error: "contentType de imagen requerido" });
+    const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
+    if (!contentType.startsWith("image/")) {
+      res.status(400).json({ error: "Tipo de archivo inválido" });
       return;
     }
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-    res.json({ uploadURL, objectPath });
+    const objectPath = await objectStorageService.uploadBuffer(req.body as Buffer, contentType, 1200, 800);
+    res.json({ objectPath });
   } catch (error) {
-    console.error("Event cover upload URL error:", error);
+    console.error("Event cover upload error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -164,10 +163,16 @@ eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
     const [existing] = await db.select().from(eventsTable).where(eq(eventsTable.id, eventId)).limit(1);
     if (!existing) { res.status(404).json({ error: "Evento no encontrado" }); return; }
 
+    const oldCoverImageUrl = existing.coverImageUrl;
+
     const [updated] = await db.update(eventsTable)
       .set(updates as Partial<typeof eventsTable.$inferInsert>)
       .where(eq(eventsTable.id, eventId))
       .returning();
+
+    if (coverImageUrl !== undefined && coverImageUrl !== oldCoverImageUrl && oldCoverImageUrl) {
+      await objectStorageService.deleteObject(oldCoverImageUrl);
+    }
 
     res.json({ event: { ...updated, eventDate: updated.eventDate.toISOString() } });
   } catch (error) {

@@ -213,7 +213,7 @@ profileRouter.post("/profile/me/avatar/url", requireAuth, async (req, res) => {
   }
 });
 
-profileRouter.post("/profile/me/avatar/upload", requireAuth, raw({ limit: "10mb", type: "image/*" }), async (req, res) => {
+profileRouter.post("/profile/me/avatar/upload", requireAuth, raw({ limit: "15mb", type: "image/*" }), async (req, res) => {
   try {
     const userId = req.session.userId!;
     const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
@@ -221,7 +221,12 @@ profileRouter.post("/profile/me/avatar/upload", requireAuth, raw({ limit: "10mb"
       res.status(400).json({ error: "Tipo de archivo inválido" });
       return;
     }
-    const objectPath = await objectStorageService.uploadBuffer(req.body as Buffer, contentType);
+    const [currentUser] = await db
+      .select({ avatarUrl: usersTable.avatarUrl })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    const objectPath = await objectStorageService.uploadBuffer(req.body as Buffer, contentType, 512, 512);
     const [updated] = await db
       .update(usersTable)
       .set({ avatarUrl: objectPath, updatedAt: new Date() })
@@ -230,6 +235,9 @@ profileRouter.post("/profile/me/avatar/upload", requireAuth, raw({ limit: "10mb"
     if (!updated) {
       res.status(404).json({ error: "Usuario no encontrado" });
       return;
+    }
+    if (currentUser?.avatarUrl) {
+      await objectStorageService.deleteObject(currentUser.avatarUrl);
     }
     res.json({ objectPath });
   } catch (error) {

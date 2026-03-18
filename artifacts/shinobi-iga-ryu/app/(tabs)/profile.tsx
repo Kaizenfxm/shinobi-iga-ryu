@@ -168,6 +168,8 @@ export default function ProfileScreen() {
   const [editConfirmPassword, setEditConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null);
+  const [avatarSaveSuccess, setAvatarSaveSuccess] = useState(false);
   const [togglingFighter, setTogglingFighter] = useState(false);
   const [editingWeight, setEditingWeight] = useState(false);
   const [weightInput, setWeightInput] = useState("");
@@ -248,6 +250,8 @@ export default function ProfileScreen() {
     setEditNewPassword("");
     setEditConfirmPassword("");
     setWeightInput(profile?.weightData?.currentWeight?.toString() ?? "");
+    setPendingAvatarUri(null);
+    setAvatarSaveSuccess(false);
     setEditing(true);
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: actionsSectionYRef.current, animated: true });
@@ -272,14 +276,30 @@ export default function ProfileScreen() {
         quality: 0.8,
       });
       if (result.canceled || !result.assets[0]) return;
+      setPendingAvatarUri(result.assets[0].uri);
+      setAvatarSaveSuccess(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo seleccionar la foto";
+      if (typeof window !== "undefined") {
+        window.alert(`Error: ${msg}`);
+      } else {
+        Alert.alert("Error", msg);
+      }
+    }
+  };
 
-      const asset = result.assets[0];
-      const mimeType = asset.mimeType ?? "image/jpeg";
-
+  const handleConfirmAvatar = async () => {
+    if (!pendingAvatarUri) return;
+    try {
       setUploadingAvatar(true);
-      const imageBlob = await fetch(asset.uri).then((r) => r.blob());
-      const objectPath = await avatarApi.uploadDirect(imageBlob, mimeType);
+      const asset = pendingAvatarUri;
+      const blob = await fetch(asset).then((r) => r.blob());
+      const mimeType = blob.type || "image/jpeg";
+      const objectPath = await avatarApi.uploadDirect(blob, mimeType);
       setProfile((prev) => prev ? { ...prev, avatarUrl: objectPath } : prev);
+      setPendingAvatarUri(null);
+      setAvatarSaveSuccess(true);
+      setTimeout(() => setAvatarSaveSuccess(false), 3000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo subir la foto";
       if (typeof window !== "undefined") {
@@ -332,6 +352,7 @@ export default function ProfileScreen() {
           ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null, sedes: editSedes }
           : prev
       );
+      setPendingAvatarUri(null);
       setEditing(false);
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar el perfil");
@@ -477,8 +498,10 @@ export default function ProfileScreen() {
 
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                {getAvatarServingUrl(data.avatarUrl) ? (
+              <View style={[styles.avatar, pendingAvatarUri ? { borderWidth: 2, borderColor: "#D4AF37" } : null]}>
+                {pendingAvatarUri ? (
+                  <Image source={{ uri: pendingAvatarUri }} style={styles.avatarImage} />
+                ) : getAvatarServingUrl(data.avatarUrl) ? (
                   <Image
                     source={{ uri: getAvatarServingUrl(data.avatarUrl)! }}
                     style={styles.avatarImage}
@@ -487,7 +510,7 @@ export default function ProfileScreen() {
                   <Ionicons name="person" size={48} color="#666" />
                 )}
               </View>
-              <View style={styles.avatarBorder} />
+              <View style={[styles.avatarBorder, pendingAvatarUri ? { borderColor: "#D4AF37" } : null]} />
               <Pressable
                 style={styles.avatarEditBadge}
                 onPress={handleEditOpen}
@@ -633,20 +656,53 @@ export default function ProfileScreen() {
             <View style={styles.editForm}>
               <Text style={styles.editFormTitle}>Editar Perfil</Text>
 
-              <Pressable
-                style={styles.changePhotoButton}
-                onPress={handlePickAvatar}
-                disabled={uploadingAvatar || saving}
-              >
-                {uploadingAvatar ? (
-                  <ActivityIndicator size="small" color="#D4AF37" />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={16} color="#D4AF37" />
-                    <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
-                  </>
-                )}
-              </Pressable>
+              {avatarSaveSuccess && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, backgroundColor: "#0a1a0a", padding: 10, borderRadius: 2, borderLeftWidth: 3, borderLeftColor: "#D4AF37" }}>
+                  <Ionicons name="checkmark-circle" size={16} color="#D4AF37" />
+                  <Text style={{ color: "#D4AF37", fontSize: 13, fontFamily: "Inter_500Medium" }}>Foto actualizada correctamente</Text>
+                </View>
+              )}
+
+              {pendingAvatarUri ? (
+                <View style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <Image source={{ uri: pendingAvatarUri }} style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: "#D4AF37" }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: "#D4AF37", fontSize: 12, fontFamily: "Inter_600SemiBold", letterSpacing: 1 }}>FOTO SELECCIONADA</Text>
+                      <Text style={{ color: "#888", fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 }}>Lista para subir</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Pressable
+                      style={{ flex: 1, backgroundColor: "#D4AF37", paddingVertical: 10, alignItems: "center", borderRadius: 2 }}
+                      onPress={handleConfirmAvatar}
+                      disabled={uploadingAvatar}
+                    >
+                      {uploadingAvatar ? (
+                        <ActivityIndicator size="small" color="#000" />
+                      ) : (
+                        <Text style={{ color: "#000", fontSize: 13, fontFamily: "Inter_600SemiBold", letterSpacing: 0.5 }}>Guardar foto</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={{ paddingVertical: 10, paddingHorizontal: 16, alignItems: "center", borderRadius: 2, borderWidth: 1, borderColor: "#333" }}
+                      onPress={() => setPendingAvatarUri(null)}
+                      disabled={uploadingAvatar}
+                    >
+                      <Text style={{ color: "#888", fontSize: 13, fontFamily: "Inter_400Regular" }}>Cancelar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.changePhotoButton}
+                  onPress={handlePickAvatar}
+                  disabled={saving}
+                >
+                  <Ionicons name="camera-outline" size={16} color="#D4AF37" />
+                  <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
+                </Pressable>
+              )}
 
               <Text style={styles.editLabel}>Nombre</Text>
               <TextInput
@@ -746,7 +802,7 @@ export default function ProfileScreen() {
               <View style={styles.editActions}>
                 <Pressable
                   style={styles.editCancelButton}
-                  onPress={() => setEditing(false)}
+                  onPress={() => { setPendingAvatarUri(null); setEditing(false); }}
                   disabled={saving}
                 >
                   <Text style={styles.editCancelText}>Cancelar</Text>
