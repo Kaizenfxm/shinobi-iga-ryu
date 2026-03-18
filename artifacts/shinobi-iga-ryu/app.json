@@ -26,12 +26,7 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://shinobi-iga-ryu-production.up.railway.app/"
-        }
-      ],
+      "expo-router",
       "expo-font",
       "expo-web-browser",
       "@react-native-community/datetimepicker"
@@ -41,10 +36,6 @@
       "reactCompiler": true
     },
     "extra": {
-      "EXPO_PUBLIC_DOMAIN": "shinobi-iga-ryu-production.up.railway.app",
-      "router": {
-        "origin": "https://shinobi-iga-ryu-production.up.railway.app/"
-      },
       "eas": {
         "projectId": "03536a1a-7682-4c56-9f66-41a09696cb4e"
       }
