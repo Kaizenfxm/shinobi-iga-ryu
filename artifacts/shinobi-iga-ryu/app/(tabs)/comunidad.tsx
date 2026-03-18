@@ -13,6 +13,8 @@ import {
   Alert,
   ImageBackground,
   Image,
+  KeyboardAvoidingView,
+  Keyboard,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -217,11 +219,13 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
   const isWeb = Platform.OS === "web";
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={cStyles.backdrop} onPress={onClose}>
-        <Pressable onPress={() => {}} style={cStyles.sheet}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { Keyboard.dismiss(); onClose(); }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <Pressable style={cStyles.backdrop} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+        <Pressable onPress={Keyboard.dismiss} style={cStyles.sheet}>
           <View style={aStyles.handle} />
           <Text style={cStyles.heading}>{isEdit ? "EDITAR EVENTO" : "NUEVO EVENTO"}</Text>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <Pressable style={cStyles.imagePicker} onPress={pickImage} disabled={uploadingImg}>
             {coverUri ? (
@@ -360,8 +364,10 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
               <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? (isEdit ? "GUARDANDO..." : "CREANDO...") : (isEdit ? "GUARDAR" : "CREAR")}</Text>
             </Pressable>
           </View>
+          </ScrollView>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -995,11 +1001,13 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={cStyles.backdrop} onPress={onClose}>
-        <Pressable onPress={() => {}} style={cStyles.sheet}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { Keyboard.dismiss(); onClose(); }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <Pressable style={cStyles.backdrop} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+        <Pressable onPress={Keyboard.dismiss} style={cStyles.sheet}>
           <View style={aStyles.handle} />
           <Text style={cStyles.heading}>{isEditMode ? "MODIFICAR RETO" : `RETAR A ${(targetUser?.displayName ?? "").toUpperCase()}`}</Text>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <Text style={rStyles.sectionLabel}>SISTEMA</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
@@ -1102,8 +1110,10 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
               <Text style={[cStyles.btnText, { color: "#000" }]}>{saving ? (isEditMode ? "GUARDANDO..." : "ENVIANDO...") : (isEditMode ? "GUARDAR" : "RETAR")}</Text>
             </Pressable>
           </View>
+          </ScrollView>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

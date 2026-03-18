@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   TextInput,
   Linking,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
@@ -458,7 +459,10 @@ export default function ProfileScreen() {
   const hasFightRecord = data.isFighter && data.fightStats;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       <Pressable
         style={[styles.topShareBtn, { top: (isWeb ? 67 : insets.top) + 10 }]}
         onPress={handleShare}
@@ -473,6 +477,7 @@ export default function ProfileScreen() {
 
       <ScrollView
         ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
@@ -886,7 +891,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
