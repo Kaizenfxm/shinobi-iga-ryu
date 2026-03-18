@@ -1,0 +1,49 @@
+Admin delete user error: t [Error]: Failed query: delete from "users" where "users"."id" = $1
+params: 8
+    at uv.queryWithCache (/app/artifacts/api-server/dist/index.cjs:72:32423)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /app/artifacts/api-server/dist/index.cjs:100:109118
+    at async t.transaction (/app/artifacts/api-server/dist/index.cjs:72:37131)
+    at async /app/artifacts/api-server/dist/index.cjs:100:108080 {
+  query: 'delete from "users" where "users"."id" = $1',
+  params: [ 8 ],
+  cause: error: update or delete on table "users" violates foreign key constraint "notifications_target_user_id_fkey" on table "notifications"
+      at /app/artifacts/api-server/dist/index.cjs:65:13462
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async /app/artifacts/api-server/dist/index.cjs:72:35636
+      at async uv.queryWithCache (/app/artifacts/api-server/dist/index.cjs:72:32398)
+      at async /app/artifacts/api-server/dist/index.cjs:100:109118
+      at async t.transaction (/app/artifacts/api-server/dist/index.cjs:72:37131)
+      at async /app/artifacts/api-server/dist/index.cjs:100:108080 {
+    length: 315,
+    severity: 'ERROR',
+    code: '23503',
+    detail: 'Key (id)=(8) is still referenced from table "notifications".',
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'public',
+    table: 'notifications',
+    column: undefined,
+    dataType: undefined,
+    constraint: 'notifications_target_user_id_fkey',
+    file: 'ri_triggers.c',
+    line: '2799',
+    routine: 'ri_ReportViolation'
+  }
+}
+  '$metadata': { attempts: 1, totalRetryDelay: 0 }
+Avatar URL error: Error: Resolved credential object is not valid
+    at SignatureV4S3Express.validateResolvedCredentials (/app/node_modules/.pnpm/@smithy+signature-v4@5.3.12/node_modules/@smithy/signature-v4/dist-cjs/index.js:374:19)
+    at SignatureV4S3Express.presign (/app/node_modules/.pnpm/@smithy+signature-v4@5.3.12/node_modules/@smithy/signature-v4/dist-cjs/index.js:404:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /app/node_modules/.pnpm/@aws-sdk+s3-request-presigner@3.1010.0/node_modules/@aws-sdk/s3-request-presigner/dist-cjs/index.js:107:25
+    at async /app/node_modules/.pnpm/@smithy+middleware-retry@4.4.43/node_modules/@smithy/middleware-retry/dist-cjs/index.js:251:46
+    at async /app/node_modules/.pnpm/@aws-sdk+middleware-flexible-checksums@3.974.0/node_modules/@aws-sdk/middleware-flexible-checksums/dist-cjs/index.js:243:24
+    at async /app/node_modules/.pnpm/@aws-sdk+middleware-sdk-s3@3.972.20/node_modules/@aws-sdk/middleware-sdk-s3/dist-cjs/index.js:62:28
+    at async /app/node_modules/.pnpm/@aws-sdk+middleware-sdk-s3@3.972.20/node_modules/@aws-sdk/middleware-sdk-s3/dist-cjs/index.js:89:20
+    at async /app/node_modules/.pnpm/@aws-sdk+middleware-logger@3.972.8/node_modules/@aws-sdk/middleware-logger/dist-cjs/index.js:5:26
+    at async getSignedUrl (/app/node_modules/.pnpm/@aws-sdk+s3-request-presigner@3.1010.0/node_modules/@aws-sdk/s3-request-presigner/dist-cjs/index.js:126:24) {
+}

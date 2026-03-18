@@ -253,11 +253,14 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       await tx.update(exercisesTable).set({ createdByUserId: null }).where(eq(exercisesTable.createdByUserId, userId));
       await tx.update(knowledgeItemsTable).set({ createdByUserId: null }).where(eq(knowledgeItemsTable.createdByUserId, userId));
       await tx.update(beltHistoryTable).set({ promotedBy: null }).where(eq(beltHistoryTable.promotedBy, userId));
-      const userNotifs = await tx.select({ id: notificationsTable.id }).from(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
+      const userNotifs = await tx.select({ id: notificationsTable.id }).from(notificationsTable).where(
+        or(eq(notificationsTable.createdByUserId, userId), eq(notificationsTable.targetUserId, userId))
+      );
       if (userNotifs.length > 0) {
         await tx.delete(notificationReadsTable).where(inArray(notificationReadsTable.notificationId, userNotifs.map((n) => n.id)));
       }
       await tx.delete(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
+      await tx.delete(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
       await tx.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, userId));
       await tx.delete(studentRequirementChecksTable).where(eq(studentRequirementChecksTable.userId, userId));
       await tx.delete(beltApplicationsTable).where(eq(beltApplicationsTable.userId, userId));
