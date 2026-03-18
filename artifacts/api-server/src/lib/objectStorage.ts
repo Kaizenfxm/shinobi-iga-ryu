@@ -5,12 +5,12 @@ import type { Buffer } from "buffer";
 import sharp from "sharp";
 
 function getS3Client(): S3Client {
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const accountId = process.env.CF_ACCOUNT_ID;
+  const accessKeyId = process.env.CF_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.CF_SECRET_ACCESS_KEY;
   if (!accountId || !accessKeyId || !secretAccessKey) {
     throw new Error(
-      `R2 credentials missing. R2_ACCOUNT_ID=${!!accountId} R2_ACCESS_KEY_ID=${!!accessKeyId} R2_SECRET_ACCESS_KEY=${!!secretAccessKey}`
+      `R2 credentials missing. CF_ACCOUNT_ID=${!!accountId} CF_ACCESS_KEY_ID=${!!accessKeyId} CF_SECRET_ACCESS_KEY=${!!secretAccessKey}`
     );
   }
   return new S3Client({
@@ -21,7 +21,7 @@ function getS3Client(): S3Client {
 }
 
 function getBucket(): string {
-  return process.env.R2_BUCKET_NAME || "shinobi-iga-ryu";
+  return process.env.CF_BUCKET_NAME || "shinobi-iga-ryu";
 }
 
 export class ObjectNotFoundError extends Error {
