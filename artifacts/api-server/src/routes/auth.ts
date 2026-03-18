@@ -125,13 +125,13 @@ authRouter.post("/auth/login", async (req, res) => {
       .limit(1);
 
     if (!user) {
-      res.status(401).json({ error: "Credenciales inválidas" });
+      res.status(401).json({ error: "Usuario no encontrado [SRV-A]" });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      res.status(401).json({ error: "Credenciales inválidas" });
+      res.status(401).json({ error: "Contraseña incorrecta [SRV-B]" });
       return;
     }
 
