@@ -1,0 +1,50 @@
+const PRODUCTION_DOMAIN = "shinobi-iga-ryu-production.up.railway.app";
+
+module.exports = {
+  expo: {
+    name: "Shinobi Iga Ryu",
+    slug: "shinobi-iga-ryu",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "shinobi-iga-ryu",
+    userInterfaceStyle: "dark",
+    newArchEnabled: true,
+    splash: {
+      image: "./assets/images/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#000000",
+    },
+    ios: {
+      supportsTablet: false,
+      bundleIdentifier: "com.shinobiigarju.app",
+      buildNumber: "1",
+    },
+    android: {
+      package: "com.shinobiigarju.app",
+      versionCode: 1,
+    },
+    web: {
+      favicon: "./assets/images/icon.png",
+    },
+    plugins: [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true,
+    },
+    extra: {
+      EXPO_PUBLIC_DOMAIN: process.env.EXPO_PUBLIC_DOMAIN || PRODUCTION_DOMAIN,
+      router: {
+        origin: `https://${process.env.EXPO_PUBLIC_DOMAIN || PRODUCTION_DOMAIN}/`,
+      },
+      eas: {
+        projectId: "03536a1a-7682-4c56-9f66-41a09696cb4e",
+      },
+    },
+  },
+};
