@@ -17,6 +17,11 @@ const app: Express = express();
 
 app.set("trust proxy", 1);
 
+app.use((req, _res, next) => {
+  console.log(`${req.method} ${req.path} | session:${req.headers.cookie ? 'yes' : 'no'}`);
+  next();
+});
+
 app.use(cors({
   origin: true,
   credentials: true,
