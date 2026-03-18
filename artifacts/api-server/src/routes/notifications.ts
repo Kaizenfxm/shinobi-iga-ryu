@@ -16,7 +16,7 @@ async function getUserTargetInfo(userId: number) {
 
 function buildTargetCondition(isFighter: boolean, sedes: string[], userId: number) {
   const allowedTargets = ["todas"];
-  if (isFighter) allowedTargets.push("peleadores");
+  if (isFighter) allowedTargets.push("luchadores");
   if (sedes.includes("bogota")) allowedTargets.push("bogota");
   if (sedes.includes("chia")) allowedTargets.push("chia");
   return or(
@@ -72,7 +72,7 @@ notificationsRouter.post("/notifications", requireAdmin, async (req, res) => {
       return;
     }
 
-    const validTargets = ["todas", "bogota", "chia", "peleadores"];
+    const validTargets = ["todas", "bogota", "chia", "luchadores"];
     const resolvedTarget = validTargets.includes(target ?? "") ? target! : "todas";
 
     const [notification] = await db

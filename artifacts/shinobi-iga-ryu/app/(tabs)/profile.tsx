@@ -220,7 +220,7 @@ export default function ProfileScreen() {
       const res = await profileApi.toggleFighterMode(!current);
       setProfile((prev) => prev ? { ...prev, isFighter: res.isFighter } : prev);
     } catch {
-      Alert.alert("Error", "No se pudo actualizar el modo peleador");
+      Alert.alert("Error", "No se pudo actualizar el modo luchador");
     } finally {
       setTogglingFighter(false);
     }
@@ -533,7 +533,7 @@ export default function ProfileScreen() {
                       color={data.isFighter ? "#D4AF37" : "#555"}
                     />
                     <Text style={[styles.fighterPillText, !data.isFighter && styles.fighterPillTextInactive]}>
-                      {data.isFighter ? "Peleador" : "Entrenamiento"}
+                      {data.isFighter ? "Luchador" : "Entrenamiento"}
                     </Text>
                   </>
                 )}

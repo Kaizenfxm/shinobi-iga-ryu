@@ -116,7 +116,7 @@ export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: 
       <View style={styles.container}>
         <View style={[styles.centered, { paddingTop: skipSafeArea ? 24 : (isWeb ? 67 : insets.top) + 24 }]}>
           <MaterialCommunityIcons name="boxing-glove" size={48} color="#333" />
-          <Text style={styles.emptyText}>Inicia sesión para ver tu modo peleador</Text>
+          <Text style={styles.emptyText}>Inicia sesión para ver tu modo luchador</Text>
         </View>
       </View>
     );
@@ -149,7 +149,7 @@ export default function FightsScreen({ skipSafeArea = false }: { skipSafeArea?: 
             <Text style={styles.inactiveSubtitle}>No Activado</Text>
             <View style={styles.divider} />
             <Text style={styles.inactiveDesc}>
-              El modo peleador permite registrar tu historial de peleas y
+              El modo luchador permite registrar tu historial de peleas y
               mostrar tu récord. Solicita la activación a un administrador.
             </Text>
           </View>

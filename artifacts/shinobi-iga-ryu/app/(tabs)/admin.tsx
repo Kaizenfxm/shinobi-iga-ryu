@@ -137,7 +137,7 @@ const NOTIFICATION_TARGETS = [
   { value: "todas", label: "Todos" },
   { value: "bogota", label: "Bogotá" },
   { value: "chia", label: "Chía" },
-  { value: "peleadores", label: "Peleadores" },
+  { value: "luchadores", label: "Luchadores" },
 ];
 
 const INIT_USER_FORM = {
@@ -1581,13 +1581,13 @@ function UsersPanel({
                         await fightsApi.toggleFighterMode(u.id, !u.isFighter);
                         setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, isFighter: !u.isFighter } : x));
                       } catch {
-                        Alert.alert("Error", "No se pudo cambiar el modo peleador");
+                        Alert.alert("Error", "No se pudo cambiar el modo luchador");
                       }
                     }}
                   >
                     <MaterialCommunityIcons name="sword-cross" size={10} color={u.isFighter ? "#D4AF37" : "#555"} />
                     <Text style={[styles.editUserBtnText, { color: u.isFighter ? "#D4AF37" : "#555" }]}>
-                      {u.isFighter ? "Peleador" : "Peleador"}
+                      {u.isFighter ? "Luchador" : "Luchador"}
                     </Text>
                   </Pressable>
                   {!isCurrentUser && (
@@ -2285,7 +2285,7 @@ function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUs
     return (
       <View>
         <Text style={[styles.noHistoryText, { textAlign: "center", padding: 24 }]}>
-          No hay usuarios con modo peleador activo.{"\n"}Actívalo desde la sección de Usuarios.
+          No hay usuarios con modo luchador activo.{"\n"}Actívalo desde la sección de Usuarios.
         </Text>
       </View>
     );
@@ -2412,7 +2412,7 @@ const TARGET_LABELS: Record<string, string> = {
   todas: "Todos",
   bogota: "Bogotá",
   chia: "Chía",
-  peleadores: "Peleadores",
+  luchadores: "Luchadores",
 };
 
 function NotificationsPanel() {

@@ -129,7 +129,7 @@ fightsRouter.post("/fights", requireAdminOrProfesor, async (req, res) => {
     }
 
     if (!targetUser.isFighter) {
-      res.status(400).json({ error: "El usuario no tiene modo peleador activado" });
+      res.status(400).json({ error: "El usuario no tiene modo luchador activado" });
       return;
     }
 
@@ -200,7 +200,7 @@ fightsRouter.get("/fights/user/:userId", requireAdminOrProfesor, async (req, res
       .limit(1);
 
     if (!targetUser || !targetUser.isFighter) {
-      res.status(404).json({ error: "Peleador no encontrado" });
+      res.status(404).json({ error: "Luchador no encontrado" });
       return;
     }
 
