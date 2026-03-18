@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable, challengesTable, eventsTable, eventAttendeesTable, classesTable, pushTokensTable } from "@workspace/db";
 import { eq, and, or, desc, isNotNull, isNull, lte, notInArray, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -258,6 +258,11 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
         await tx.delete(notificationReadsTable).where(inArray(notificationReadsTable.notificationId, userNotifs.map((n) => n.id)));
       }
       await tx.delete(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
+      const targetNotifs = await tx.select({ id: notificationsTable.id }).from(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
+      if (targetNotifs.length > 0) {
+        await tx.delete(notificationReadsTable).where(inArray(notificationReadsTable.notificationId, targetNotifs.map((n) => n.id)));
+      }
+      await tx.delete(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
       await tx.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, userId));
       await tx.delete(studentRequirementChecksTable).where(eq(studentRequirementChecksTable.userId, userId));
       await tx.delete(beltApplicationsTable).where(eq(beltApplicationsTable.userId, userId));
@@ -277,6 +282,21 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       );
       await tx.delete(classAttendancesTable).where(eq(classAttendancesTable.userId, userId));
       await tx.delete(anthropometricEvaluationsTable).where(eq(anthropometricEvaluationsTable.userId, userId));
+      await tx.delete(eventAttendeesTable).where(eq(eventAttendeesTable.userId, userId));
+      const userEvents = await tx.select({ id: eventsTable.id }).from(eventsTable).where(eq(eventsTable.createdByUserId, userId));
+      if (userEvents.length > 0) {
+        await tx.delete(eventAttendeesTable).where(inArray(eventAttendeesTable.eventId, userEvents.map((e) => e.id)));
+        await tx.delete(eventsTable).where(inArray(eventsTable.id, userEvents.map((e) => e.id)));
+      }
+      await tx.update(classesTable).set({ professorUserId: null }).where(eq(classesTable.professorUserId, userId));
+      const userClasses = await tx.select({ id: classesTable.id }).from(classesTable).where(eq(classesTable.createdByUserId, userId));
+      if (userClasses.length > 0) {
+        await tx.delete(classAttendancesTable).where(inArray(classAttendancesTable.classId, userClasses.map((c) => c.id)));
+        await tx.delete(classesTable).where(inArray(classesTable.id, userClasses.map((c) => c.id)));
+      }
+      await tx.update(challengesTable).set({ winnerId: null }).where(eq(challengesTable.winnerId, userId));
+      await tx.update(challengesTable).set({ cancelRequestedBy: null }).where(eq(challengesTable.cancelRequestedBy, userId));
+      await tx.delete(pushTokensTable).where(eq(pushTokensTable.userId, userId));
       await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
       await tx.delete(usersTable).where(eq(usersTable.id, userId));
     });
