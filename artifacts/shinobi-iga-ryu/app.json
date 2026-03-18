@@ -15,11 +15,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.sir.app",
+      "bundleIdentifier": "com.shinobiigarju.app",
       "buildNumber": "1"
     },
     "android": {
-      "package": "com.sir.app",
+      "package": "com.shinobiigarju.app",
       "versionCode": 1
     },
     "web": {
@@ -41,7 +41,13 @@
       "reactCompiler": true
     },
     "extra": {
-      "EXPO_PUBLIC_DOMAIN": "shinobi-iga-ryu-production.up.railway.app"
+      "EXPO_PUBLIC_DOMAIN": "shinobi-iga-ryu-production.up.railway.app",
+      "router": {
+        "origin": "https://shinobi-iga-ryu-production.up.railway.app/"
+      },
+      "eas": {
+        "projectId": "03536a1a-7682-4c56-9f66-41a09696cb4e"
+      }
     }
   }
 }
