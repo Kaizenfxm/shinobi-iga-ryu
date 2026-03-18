@@ -15,9 +15,7 @@ if (isProduction && !process.env.SESSION_SECRET) {
 
 const app: Express = express();
 
-if (isProduction) {
-  app.set("trust proxy", 1);
-}
+app.set("trust proxy", 1);
 
 app.use(cors({
   origin: true,
@@ -40,8 +38,8 @@ app.use(
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
     },
   })
 );
