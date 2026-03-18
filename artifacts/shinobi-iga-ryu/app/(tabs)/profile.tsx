@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   TextInput,
   Linking,
-  KeyboardAvoidingView,
 } from "react-native";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -459,10 +459,7 @@ export default function ProfileScreen() {
   const hasFightRecord = data.isFighter && data.fightStats;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View style={styles.container}>
       <Pressable
         style={[styles.topShareBtn, { top: (isWeb ? 67 : insets.top) + 10 }]}
         onPress={handleShare}
@@ -475,9 +472,8 @@ export default function ProfileScreen() {
         )}
       </Pressable>
 
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         ref={scrollRef}
-        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
@@ -890,8 +886,8 @@ export default function ProfileScreen() {
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollViewCompat>
+    </View>
   );
 }
 

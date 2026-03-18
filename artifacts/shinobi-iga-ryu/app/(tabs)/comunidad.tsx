@@ -13,7 +13,6 @@ import {
   Alert,
   ImageBackground,
   Image,
-  KeyboardAvoidingView,
   Keyboard,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -141,6 +140,19 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
   const [formError, setFormError] = useState<string | null>(null);
   const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [kbHeight, setKbHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setKbHeight(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKbHeight(0)
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   useEffect(() => {
     if (visible && editEvent) {
@@ -220,8 +232,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { Keyboard.dismiss(); onClose(); }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-      <Pressable style={cStyles.backdrop} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+      <Pressable style={[cStyles.backdrop, { paddingBottom: kbHeight }]} onPress={() => { Keyboard.dismiss(); onClose(); }}>
         <Pressable onPress={Keyboard.dismiss} style={cStyles.sheet}>
           <View style={aStyles.handle} />
           <Text style={cStyles.heading}>{isEdit ? "EDITAR EVENTO" : "NUEVO EVENTO"}</Text>
@@ -367,7 +378,6 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           </ScrollView>
         </Pressable>
       </Pressable>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -950,7 +960,20 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
   const [formError, setFormError] = useState<string | null>(null);
   const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [kbHeight, setKbHeight] = useState(0);
   const isWeb = Platform.OS === "web";
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setKbHeight(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKbHeight(0)
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   useEffect(() => {
     if (visible && editChallenge) {
@@ -1002,8 +1025,7 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => { Keyboard.dismiss(); onClose(); }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-      <Pressable style={cStyles.backdrop} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+      <Pressable style={[cStyles.backdrop, { paddingBottom: kbHeight }]} onPress={() => { Keyboard.dismiss(); onClose(); }}>
         <Pressable onPress={Keyboard.dismiss} style={cStyles.sheet}>
           <View style={aStyles.handle} />
           <Text style={cStyles.heading}>{isEditMode ? "MODIFICAR RETO" : `RETAR A ${(targetUser?.displayName ?? "").toUpperCase()}`}</Text>
@@ -1113,7 +1135,6 @@ function CreateChallengeModal({ visible, onClose, targetUser, systems, onCreated
           </ScrollView>
         </Pressable>
       </Pressable>
-      </KeyboardAvoidingView>
     </Modal>
   );
 }
