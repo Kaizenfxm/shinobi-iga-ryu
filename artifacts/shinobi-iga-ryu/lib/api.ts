@@ -516,6 +516,20 @@ export const profileApi = {
 };
 
 export const avatarApi = {
+  uploadDirect: async (blob: Blob, mimeType: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/api/profile/me/avatar/upload`, {
+      method: "POST",
+      headers: { "Content-Type": mimeType },
+      body: blob,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error ?? "Upload failed");
+    }
+    const data = await res.json() as { objectPath: string };
+    return data.objectPath;
+  },
   getUploadUrl: (contentType: string) =>
     apiFetch<{ uploadURL: string; objectPath: string }>("/profile/me/avatar/url", {
       method: "POST",

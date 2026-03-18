@@ -258,7 +258,11 @@ export default function ProfileScreen() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permiso requerido", "Necesitamos acceso a tu galería para cambiar la foto");
+        if (typeof window !== "undefined") {
+          window.alert("Necesitamos acceso a tu galería para cambiar la foto");
+        } else {
+          Alert.alert("Permiso requerido", "Necesitamos acceso a tu galería para cambiar la foto");
+        }
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -273,20 +277,16 @@ export default function ProfileScreen() {
       const mimeType = asset.mimeType ?? "image/jpeg";
 
       setUploadingAvatar(true);
-      const { uploadURL, objectPath } = await avatarApi.getUploadUrl(mimeType);
-
       const imageBlob = await fetch(asset.uri).then((r) => r.blob());
-      const uploadRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": mimeType },
-        body: imageBlob,
-      });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-
-      await avatarApi.saveAvatar(objectPath);
+      const objectPath = await avatarApi.uploadDirect(imageBlob, mimeType);
       setProfile((prev) => prev ? { ...prev, avatarUrl: objectPath } : prev);
-    } catch {
-      Alert.alert("Error", "No se pudo subir la foto");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo subir la foto";
+      if (typeof window !== "undefined") {
+        window.alert(`Error: ${msg}`);
+      } else {
+        Alert.alert("Error", msg);
+      }
     } finally {
       setUploadingAvatar(false);
     }

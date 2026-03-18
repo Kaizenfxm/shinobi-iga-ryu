@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, raw } from "express";
 import {
   db,
   usersTable,
@@ -210,6 +210,31 @@ profileRouter.post("/profile/me/avatar/url", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Avatar URL error:", error);
     res.status(500).json({ error: "Error generando URL de subida" });
+  }
+});
+
+profileRouter.post("/profile/me/avatar/upload", requireAuth, raw({ limit: "10mb", type: "image/*" }), async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
+    if (!contentType.startsWith("image/")) {
+      res.status(400).json({ error: "Tipo de archivo inválido" });
+      return;
+    }
+    const objectPath = await objectStorageService.uploadBuffer(req.body as Buffer, contentType);
+    const [updated] = await db
+      .update(usersTable)
+      .set({ avatarUrl: objectPath, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId))
+      .returning({ avatarUrl: usersTable.avatarUrl });
+    if (!updated) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+    res.json({ objectPath });
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    res.status(500).json({ error: "Error subiendo foto" });
   }
 });
 

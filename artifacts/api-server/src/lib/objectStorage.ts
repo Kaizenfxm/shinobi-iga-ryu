@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
+import type { Buffer } from "buffer";
 
 const s3 = new S3Client({
   region: "auto",
@@ -26,6 +27,17 @@ export class ObjectStorageService {
     const key = `uploads/${randomUUID()}`;
     const command = new PutObjectCommand({ Bucket: BUCKET, Key: key });
     return getSignedUrl(s3, command, { expiresIn: 900 });
+  }
+
+  async uploadBuffer(buffer: Buffer, contentType: string): Promise<string> {
+    const key = `uploads/${randomUUID()}`;
+    await s3.send(new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    }));
+    return `/objects/${key}`;
   }
 
   normalizeObjectEntityPath(rawPath: string): string {
