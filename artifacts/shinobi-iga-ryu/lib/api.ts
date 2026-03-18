@@ -2,14 +2,18 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 function getBaseUrl(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname.includes(".expo.riker.replit.dev")) {
+      return `https://${hostname.replace(".expo.riker.replit.dev", ".riker.replit.dev")}`;
+    }
+    return "";
+  }
   const devDomain = Constants.expoConfig?.extra?.EXPO_PUBLIC_DOMAIN
     ?? process.env.EXPO_PUBLIC_DOMAIN
     ?? "";
   if (devDomain) {
     return `https://${devDomain}`;
-  }
-  if (Platform.OS === "web") {
-    return "";
   }
   return "http://localhost:8080";
 }
