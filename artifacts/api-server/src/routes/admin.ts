@@ -404,9 +404,13 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
       updates.membershipStatus = status as typeof validStatuses[number];
 
       if (status === "pausado") {
-        const pauseDate = pausedAt ? new Date(pausedAt) : new Date();
-        pauseDate.setHours(0, 0, 0, 0);
-        updates.membershipPausedAt = pauseDate;
+        const parsedPause = pausedAt ? new Date(pausedAt) : new Date();
+        if (isNaN(parsedPause.getTime())) {
+          res.status(400).json({ error: "Fecha de pausa inválida" });
+          return;
+        }
+        parsedPause.setHours(0, 0, 0, 0);
+        updates.membershipPausedAt = parsedPause;
       }
 
       if (status === "activo") {
@@ -418,6 +422,10 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
 
         if (current?.membershipPausedAt && current?.membershipExpiresAt) {
           const resumeDate = resumeAt ? new Date(resumeAt) : new Date();
+          if (isNaN(resumeDate.getTime())) {
+            res.status(400).json({ error: "Fecha de reanudación inválida" });
+            return;
+          }
           resumeDate.setHours(0, 0, 0, 0);
           const pausedMidnight = new Date(current.membershipPausedAt);
           pausedMidnight.setHours(0, 0, 0, 0);

@@ -1044,7 +1044,7 @@ function UsersPanel({
                 <Text style={prStyles.cancel}>CANCELAR</Text>
               </Pressable>
               <Text style={prStyles.title}>
-                {pauseResumeModal?.mode === "pause" ? "FECHA DE PAUSA" : "FECHA DE REANUDACIÓN"}
+                {pauseResumeModal?.mode === "pause" ? "PAUSAR DESDE" : "REANUDAR DESDE"}
               </Text>
               <Pressable onPress={confirmPauseResume}>
                 <Text style={prStyles.confirm}>CONFIRMAR</Text>
