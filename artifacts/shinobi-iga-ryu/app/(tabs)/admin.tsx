@@ -2795,24 +2795,33 @@ function EntrenamientoPanel() {
     setSavingCat(false);
   };
 
-  const deleteCat = async (id: number) => {
+  const deleteCat = (id: number) => {
     if (!selectedSystem) return;
+    const doDelete = async () => {
+      try {
+        if (contentType === "exercises") {
+          await trainingApi.deleteExerciseCategory(id);
+        } else {
+          await trainingApi.deleteKnowledgeCategory(id);
+        }
+        loadSystemDetail(selectedSystem);
+      } catch (e: unknown) {
+        if (Platform.OS === "web") {
+          window.alert(e instanceof Error ? e.message : "No se pudo eliminar");
+        } else {
+          Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+        }
+      }
+    };
+    if (Platform.OS === "web") {
+      if ((window as Window & typeof globalThis).confirm("¿Eliminar esta categoría? Se eliminarán también las asignaciones.")) {
+        void doDelete();
+      }
+      return;
+    }
     Alert.alert("Eliminar categoría", "Se eliminarán también las asignaciones. ¿Continuar?", [
       { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar", style: "destructive", onPress: async () => {
-          try {
-            if (contentType === "exercises") {
-              await trainingApi.deleteExerciseCategory(id);
-            } else {
-              await trainingApi.deleteKnowledgeCategory(id);
-            }
-            loadSystemDetail(selectedSystem);
-          } catch (e: unknown) {
-            Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
-          }
-        }
-      },
+      { text: "Eliminar", style: "destructive", onPress: () => { void doDelete(); } },
     ]);
   };
 
@@ -2902,24 +2911,33 @@ function EntrenamientoPanel() {
     setSavingItem(false);
   };
 
-  const deleteItem = async (id: number) => {
+  const deleteItem = (id: number) => {
     if (!selectedSystem) return;
+    const doDelete = async () => {
+      try {
+        if (contentType === "exercises") {
+          await trainingApi.deleteExercise(id);
+        } else {
+          await trainingApi.deleteKnowledge(id);
+        }
+        loadSystemDetail(selectedSystem);
+      } catch (e: unknown) {
+        if (Platform.OS === "web") {
+          window.alert(e instanceof Error ? e.message : "No se pudo eliminar");
+        } else {
+          Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+        }
+      }
+    };
+    if (Platform.OS === "web") {
+      if ((window as Window & typeof globalThis).confirm("¿Eliminar este contenido?")) {
+        void doDelete();
+      }
+      return;
+    }
     Alert.alert("Eliminar", "¿Estás seguro?", [
       { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar", style: "destructive", onPress: async () => {
-          try {
-            if (contentType === "exercises") {
-              await trainingApi.deleteExercise(id);
-            } else {
-              await trainingApi.deleteKnowledge(id);
-            }
-            loadSystemDetail(selectedSystem);
-          } catch (e: unknown) {
-            Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
-          }
-        }
-      },
+      { text: "Eliminar", style: "destructive", onPress: () => { void doDelete(); } },
     ]);
   };
 

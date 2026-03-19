@@ -30,6 +30,17 @@ async function runMigrations() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
+    await client.query(`
+      INSERT INTO training_systems (key, name, description, is_active) VALUES
+        ('ninjutsu',   'Ninjutsu',    'El arte del ninja',                    true),
+        ('mma',        'MMA',         'Artes marciales mixtas',               true),
+        ('box',        'Box',         'El arte del puño',                     true),
+        ('jiujitsu',   'Jiujitsu',    'El arte suave',                        true),
+        ('muaythai',   'Muay Thai',   'El arte de los ocho miembros',         true),
+        ('kickboxing', 'Kick Boxing', 'El arte del golpe y la patada',        true),
+        ('funcional',  'Funcional',   'Entrenamiento funcional',              true)
+      ON CONFLICT (key) DO NOTHING;
+    `);
     console.log("[migrations] startup migrations complete");
   } catch (err) {
     console.error("[migrations] error running startup migrations:", err);
