@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   TextInput,
   Linking,
+  RefreshControl,
 } from "react-native";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -159,6 +160,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -206,8 +208,14 @@ export default function ProfileScreen() {
       setProfile(null);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -478,6 +486,7 @@ export default function ProfileScreen() {
           styles.scrollContent,
           { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
         ]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
       >
         <ViewShot
           ref={viewShotRef}

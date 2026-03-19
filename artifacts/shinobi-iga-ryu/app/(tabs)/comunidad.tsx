@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { eventsApi, challengesApi, trainingApi, rankingApi, getAvatarServingUrl, EventItem, EventAttendee, ChallengeItem, ChallengeUser, TrainingSystem, RankingFighterEntry, RankingAttendanceEntry, RankingChallengeEntry } from "@/lib/api";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChallenges } from "@/contexts/ChallengesContext";
 
@@ -1769,15 +1770,25 @@ function RankingTab() {
   const [loadingF, setLoadingF] = useState(true);
   const [loadingA, setLoadingA] = useState(true);
   const [loadingC, setLoadingC] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    rankingApi.getFighters().then((r) => { setFighters(r.ranking); setLoadingF(false); }).catch(() => setLoadingF(false));
-    rankingApi.getAttendance().then((r) => { setAttendance(r.ranking); setAttendanceMonth(r.month); setLoadingA(false); }).catch(() => setLoadingA(false));
-    rankingApi.getChallenges().then((r) => { setChallenges(r.ranking); setLoadingC(false); }).catch(() => setLoadingC(false));
+  const load = useCallback(async () => {
+    await Promise.allSettled([
+      rankingApi.getFighters().then((r) => { setFighters(r.ranking); setLoadingF(false); }).catch(() => setLoadingF(false)),
+      rankingApi.getAttendance().then((r) => { setAttendance(r.ranking); setAttendanceMonth(r.month); setLoadingA(false); }).catch(() => setLoadingA(false)),
+      rankingApi.getChallenges().then((r) => { setChallenges(r.ranking); setLoadingC(false); }).catch(() => setLoadingC(false)),
+    ]);
+    setRefreshing(false);
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  const onRefresh = () => { setRefreshing(true); load(); };
+
   return (
-    <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
+    >
       <RankingSection title="⚔ PELEADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0}>
         {fighters.map((u, i) => (
           <RankingRow
@@ -1869,6 +1880,7 @@ const rkStyles = StyleSheet.create({
 export default function ComunidadScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const router = useRouter();
   const { hasRole, isAuthenticated, isLoading, user } = useAuth();
   const { pendingCount } = useChallenges();
   const [activeTab, setActiveTab] = useState<ComunidadTab>("eventos");
@@ -1888,7 +1900,9 @@ export default function ComunidadScreen() {
     <View style={styles.root}>
       <View style={[styles.headerContainer, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
         <View style={styles.logoRow}>
-          <Image source={require("@/assets/images/logo.png")} style={styles.logoImage} resizeMode="contain" />
+          <Pressable onPress={() => router.push("/conocenos")}>
+            <Image source={require("@/assets/images/logo.png")} style={styles.logoImage} resizeMode="contain" />
+          </Pressable>
         </View>
         <View style={styles.subTabBar}>
           {TABS.map((tab, i) => (

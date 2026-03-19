@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Pressable, StyleSheet, Platform, ScrollView, RefreshControl, ActivityIndicator, Image, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import BeltsScreen from "./belts";
 import FightsScreen from "./fights";
 import { classesApi, type MyAttendanceItem, type MyAttendanceStats } from "@/lib/api";
@@ -214,16 +215,19 @@ export default function CarreraScreen() {
   const [activeTab, setActiveTab] = useState<SubTab>("cinturones");
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const router = useRouter();
 
   return (
     <View style={styles.root}>
       <View style={[styles.headerContainer, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
         <View style={styles.logoRow}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <Pressable onPress={() => router.push("/conocenos")}>
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </Pressable>
         </View>
         <View style={styles.subTabBar}>
           <Pressable
