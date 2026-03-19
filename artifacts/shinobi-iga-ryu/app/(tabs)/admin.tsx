@@ -17,6 +17,7 @@ import {
   Image,
   Linking,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
@@ -716,17 +717,57 @@ function UsersPanel({
     }
   };
 
-  const changeMembership = async (userId: number, status: string) => {
+  const [pauseResumeModal, setPauseResumeModal] = useState<{ userId: number; mode: "pause" | "resume" } | null>(null);
+  const [pauseResumeDate, setPauseResumeDate] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
+  const [prTempDate, setPrTempDate] = useState(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; });
+  const [showPRDatePicker, setShowPRDatePicker] = useState(false);
+
+  const changeMembership = async (userId: number, status: string, extraData?: { pausedAt?: string; resumeAt?: string }) => {
     try {
-      await adminApi.updateMembership(userId, { status });
+      const res = await adminApi.updateMembership(userId, { status, ...extraData });
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === userId ? { ...u, membershipStatus: status as UserData["membershipStatus"] } : u
+          u.id === userId
+            ? {
+                ...u,
+                membershipStatus: status as UserData["membershipStatus"],
+                membershipPausedAt: res.membershipPausedAt ?? null,
+                membershipExpiresAt: res.membershipExpiresAt ?? u.membershipExpiresAt,
+              }
+            : u
         )
       );
     } catch {
       Alert.alert("Error", "No se pudo cambiar la membresía");
     }
+  };
+
+  const handleMembershipPress = (u: UserData, ms: typeof MEMBERSHIP_STATUSES[number]) => {
+    if (ms === u.membershipStatus) return;
+    if (ms === "pausado") {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      setPauseResumeDate(today);
+      setPrTempDate(today);
+      setPauseResumeModal({ userId: u.id, mode: "pause" });
+    } else if (ms === "activo" && u.membershipStatus === "pausado") {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      setPauseResumeDate(today);
+      setPrTempDate(today);
+      setPauseResumeModal({ userId: u.id, mode: "resume" });
+    } else {
+      changeMembership(u.id, ms);
+    }
+  };
+
+  const confirmPauseResume = async () => {
+    if (!pauseResumeModal) return;
+    const dateStr = pauseResumeDate.toISOString().split("T")[0];
+    if (pauseResumeModal.mode === "pause") {
+      await changeMembership(pauseResumeModal.userId, "pausado", { pausedAt: dateStr });
+    } else {
+      await changeMembership(pauseResumeModal.userId, "activo", { resumeAt: dateStr });
+    }
+    setPauseResumeModal(null);
   };
 
   const todayStr = () => new Date().toISOString().split("T")[0];
@@ -988,6 +1029,105 @@ function UsersPanel({
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
       />
+
+      {/* ── PAUSE / RESUME DATE PICKER MODAL ── */}
+      <Modal
+        visible={!!pauseResumeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPauseResumeModal(null)}
+      >
+        <Pressable style={prStyles.backdrop} onPress={() => setPauseResumeModal(null)}>
+          <Pressable onPress={() => {}} style={prStyles.sheet}>
+            <View style={prStyles.header}>
+              <Pressable onPress={() => setPauseResumeModal(null)}>
+                <Text style={prStyles.cancel}>CANCELAR</Text>
+              </Pressable>
+              <Text style={prStyles.title}>
+                {pauseResumeModal?.mode === "pause" ? "FECHA DE PAUSA" : "FECHA DE REANUDACIÓN"}
+              </Text>
+              <Pressable onPress={confirmPauseResume}>
+                <Text style={prStyles.confirm}>CONFIRMAR</Text>
+              </Pressable>
+            </View>
+            {Platform.OS === "web" ? (
+              <View style={prStyles.webPickerRow}>
+                <Text style={prStyles.webLabel}>
+                  {pauseResumeModal?.mode === "pause"
+                    ? "Selecciona la fecha desde la que se pausa la membresía:"
+                    : "Selecciona la fecha desde la que se reanuda la membresía:"}
+                </Text>
+                <input
+                  type="date"
+                  value={pauseResumeDate.toISOString().split("T")[0]}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const d = new Date(e.target.value + "T12:00:00");
+                      setPauseResumeDate(d);
+                    }
+                  }}
+                  style={{
+                    backgroundColor: "#1a1a1a",
+                    color: "#D4AF37",
+                    border: "1px solid #333",
+                    padding: "10px 14px",
+                    fontSize: 16,
+                    fontFamily: "inherit",
+                    borderRadius: 2,
+                    marginTop: 12,
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                />
+              </View>
+            ) : (
+              <>
+                <Pressable
+                  style={prStyles.dateBtn}
+                  onPress={() => { setPrTempDate(pauseResumeDate); setShowPRDatePicker(true); }}
+                >
+                  <Ionicons name="calendar-outline" size={16} color="#D4AF37" style={{ marginRight: 8 }} />
+                  <Text style={prStyles.dateBtnText}>
+                    {pauseResumeDate.toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" })}
+                  </Text>
+                </Pressable>
+                <Text style={prStyles.hint}>
+                  {pauseResumeModal?.mode === "pause"
+                    ? "Los días restantes de membresía quedan guardados."
+                    : "Los días restantes se añaden desde esta fecha."}
+                </Text>
+                {showPRDatePicker && (
+                  <Modal visible transparent animationType="slide" onRequestClose={() => setShowPRDatePicker(false)}>
+                    <Pressable style={prStyles.backdrop} onPress={() => setShowPRDatePicker(false)}>
+                      <Pressable onPress={() => {}} style={prStyles.sheet}>
+                        <View style={prStyles.header}>
+                          <Pressable onPress={() => setShowPRDatePicker(false)}>
+                            <Text style={prStyles.cancel}>CANCELAR</Text>
+                          </Pressable>
+                          <Text style={prStyles.title}>SELECCIONAR FECHA</Text>
+                          <Pressable onPress={() => { setPauseResumeDate(prTempDate); setShowPRDatePicker(false); }}>
+                            <Text style={prStyles.confirm}>CONFIRMAR</Text>
+                          </Pressable>
+                        </View>
+                        <DateTimePicker
+                          value={prTempDate}
+                          mode="date"
+                          display="spinner"
+                          onChange={(_, selected) => { if (selected) setPrTempDate(selected); }}
+                          textColor="#FFFFFF"
+                          themeVariant="dark"
+                          style={{ width: "100%" }}
+                        />
+                      </Pressable>
+                    </Pressable>
+                  </Modal>
+                )}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={styles.searchRow}>
         <View style={[styles.searchContainer, { flex: 1 }]}>
           <Ionicons name="search" size={16} color="#666" />
@@ -1193,7 +1333,7 @@ function UsersPanel({
                           styles.toggleButton,
                           isActive && { backgroundColor: MEMBERSHIP_COLORS[ms], borderColor: MEMBERSHIP_COLORS[ms] },
                         ]}
-                        onPress={() => changeMembership(u.id, ms)}
+                        onPress={() => handleMembershipPress(u, ms)}
                       >
                         <Text
                           style={[
@@ -1207,6 +1347,11 @@ function UsersPanel({
                     );
                   })}
                 </View>
+                {u.membershipStatus === "pausado" && u.membershipPausedAt && (
+                  <Text style={[styles.membershipExpiry, { color: "#D4AF37" }]}>
+                    Pausado desde: {new Date(u.membershipPausedAt).toLocaleDateString("es-CO")}
+                  </Text>
+                )}
                 {u.lastPaymentAt && (
                   <Text style={styles.membershipExpiry}>
                     Último pago: {new Date(u.lastPaymentAt).toLocaleDateString("es-CO")}
@@ -5580,4 +5725,43 @@ const styles = StyleSheet.create({
   headerWhatsappBtn: {
     padding: 7,
   },
+});
+
+const prStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: "#111", borderTopWidth: 2, borderTopColor: "#D4AF37", paddingBottom: 40 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+  },
+  title: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, letterSpacing: 1 },
+  cancel: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  confirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  dateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "#333",
+    padding: 12,
+    borderRadius: 2,
+  },
+  dateBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 14 },
+  hint: {
+    color: "#555",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    marginHorizontal: 20,
+    marginTop: 8,
+    letterSpacing: 0.3,
+  },
+  webPickerRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 },
+  webLabel: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
 });

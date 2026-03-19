@@ -47,6 +47,7 @@ async function fetchUsersWithRoles() {
       sedes: usersTable.sedes,
       membershipStatus: usersTable.membershipStatus,
       membershipExpiresAt: usersTable.membershipExpiresAt,
+      membershipPausedAt: usersTable.membershipPausedAt,
       trialEndsAt: usersTable.trialEndsAt,
       lastPaymentAt: usersTable.lastPaymentAt,
       membershipNotes: usersTable.membershipNotes,
@@ -148,6 +149,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         sedes: usersTable.sedes,
         membershipStatus: usersTable.membershipStatus,
         membershipExpiresAt: usersTable.membershipExpiresAt,
+        membershipPausedAt: usersTable.membershipPausedAt,
         trialEndsAt: usersTable.trialEndsAt,
         lastPaymentAt: usersTable.lastPaymentAt,
         membershipNotes: usersTable.membershipNotes,
@@ -215,6 +217,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         sedes: usersTable.sedes,
         membershipStatus: usersTable.membershipStatus,
         membershipExpiresAt: usersTable.membershipExpiresAt,
+        membershipPausedAt: usersTable.membershipPausedAt,
         trialEndsAt: usersTable.trialEndsAt,
         lastPaymentAt: usersTable.lastPaymentAt,
         membershipNotes: usersTable.membershipNotes,
@@ -386,7 +389,7 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
       return;
     }
 
-    const { status, membershipExpiresAt, notes } = req.body;
+    const { status, membershipExpiresAt, notes, pausedAt, resumeAt } = req.body;
     const validStatuses = ["activo", "inactivo", "pausado"] as const;
 
     const updates: Partial<typeof usersTable.$inferInsert> & { updatedAt: Date } = {
@@ -399,6 +402,35 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
         return;
       }
       updates.membershipStatus = status as typeof validStatuses[number];
+
+      if (status === "pausado") {
+        const pauseDate = pausedAt ? new Date(pausedAt) : new Date();
+        pauseDate.setHours(0, 0, 0, 0);
+        updates.membershipPausedAt = pauseDate;
+      }
+
+      if (status === "activo") {
+        const [current] = await db
+          .select({ membershipPausedAt: usersTable.membershipPausedAt, membershipExpiresAt: usersTable.membershipExpiresAt })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId))
+          .limit(1);
+
+        if (current?.membershipPausedAt && current?.membershipExpiresAt) {
+          const resumeDate = resumeAt ? new Date(resumeAt) : new Date();
+          resumeDate.setHours(0, 0, 0, 0);
+          const pausedMs = current.membershipExpiresAt.getTime() - current.membershipPausedAt.getTime();
+          const remainingDays = Math.max(0, Math.ceil(pausedMs / (1000 * 60 * 60 * 24)));
+          const newExpiry = new Date(resumeDate.getTime() + remainingDays * 24 * 60 * 60 * 1000);
+          newExpiry.setHours(23, 59, 59, 0);
+          updates.membershipExpiresAt = newExpiry;
+        }
+        updates.membershipPausedAt = null;
+      }
+
+      if (status === "inactivo") {
+        updates.membershipPausedAt = null;
+      }
     }
 
     if (membershipExpiresAt !== undefined) {
@@ -417,6 +449,7 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
         id: usersTable.id,
         membershipStatus: usersTable.membershipStatus,
         membershipExpiresAt: usersTable.membershipExpiresAt,
+        membershipPausedAt: usersTable.membershipPausedAt,
         membershipNotes: usersTable.membershipNotes,
       });
 

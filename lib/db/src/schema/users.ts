@@ -22,6 +22,7 @@ export const usersTable = pgTable("users", {
   sedes: text("sedes").array().notNull().default([]),
   membershipStatus: membershipStatusEnum("membership_status").default("activo").notNull(),
   membershipExpiresAt: timestamp("membership_expires_at"),
+  membershipPausedAt: timestamp("membership_paused_at"),
   trialEndsAt: timestamp("trial_ends_at"),
   lastPaymentAt: timestamp("last_payment_at"),
   membershipNotes: text("membership_notes"),

@@ -92,6 +92,7 @@ export interface UserData {
   roles: string[];
   membershipStatus: "activo" | "inactivo" | "pausado";
   membershipExpiresAt: string | null;
+  membershipPausedAt: string | null;
   trialEndsAt: string | null;
   lastPaymentAt: string | null;
   membershipNotes: string | null;
@@ -165,8 +166,8 @@ export const adminApi = {
       { method: "PUT", body: { subscriptionLevel } }
     ),
 
-  updateMembership: (userId: number, data: { status?: string; membershipExpiresAt?: string | null; notes?: string | null }) =>
-    apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string | null; membershipNotes: string | null }>(
+  updateMembership: (userId: number, data: { status?: string; membershipExpiresAt?: string | null; notes?: string | null; pausedAt?: string; resumeAt?: string }) =>
+    apiFetch<{ success: boolean; id: number; membershipStatus: string; membershipExpiresAt: string | null; membershipPausedAt: string | null; membershipNotes: string | null }>(
       `/admin/users/${userId}/membership`,
       { method: "PUT", body: data }
     ),
