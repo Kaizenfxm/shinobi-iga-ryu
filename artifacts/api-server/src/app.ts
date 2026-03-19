@@ -41,6 +41,45 @@ async function runMigrations() {
         ('funcional',  'Funcional',   'Entrenamiento funcional',              true)
       ON CONFLICT (key) DO NOTHING;
     `);
+
+    // Categorías de ejercicio base para Ninjutsu
+    const ninjutsuCats = [
+      { name: "Gimnasia",             description: "Ejercicios para coordinación, acrobacias y condición física", order_index: 0 },
+      { name: "Patadas",              description: "Técnicas de pateo, barridos y golpes con piernas",            order_index: 1 },
+      { name: "Combates",             description: "Práctica de combate, sparring y aplicación de técnicas",      order_index: 2 },
+      { name: "Resistencia al dolor", description: "Entrenamiento de resistencia física y mental extrema",        order_index: 3 },
+      { name: "Katas",                description: "Formas tradicionales y secuencias de técnicas codificadas",   order_index: 4 },
+    ];
+    for (const cat of ninjutsuCats) {
+      await client.query(
+        `INSERT INTO exercise_categories (training_system_id, name, description, order_index, is_active)
+         SELECT ts.id, $1::varchar, $2::text, $3::int, true
+         FROM training_systems ts WHERE ts.key = 'ninjutsu'
+         AND NOT EXISTS (
+           SELECT 1 FROM exercise_categories ec
+           WHERE ec.training_system_id = ts.id AND ec.name = $1::varchar
+         )`,
+        [cat.name, cat.description, cat.order_index]
+      );
+    }
+
+    // Ejercicio base: Mawate Kiritsu (Ninjutsu / Gimnasia)
+    await client.query(
+      `INSERT INTO exercises (training_system_id, exercise_category_id, title, description, video_url, level, order_index, is_active)
+       SELECT ts.id, ec.id,
+         'Mawate Kiritsu',
+         'La kick up, o levantada ninja. Consiste en un ejercicio con múltiples elementos que deberán ser ejecutados al tiempo para funcionar: Giro, pateo, empuje, arco, cabeceo.',
+         'https://www.youtube.com/watch?v=T9Cq4NcvTQ4',
+         'basico', 0, true
+       FROM training_systems ts
+       JOIN exercise_categories ec ON ec.training_system_id = ts.id AND ec.name = 'Gimnasia'
+       WHERE ts.key = 'ninjutsu'
+       AND NOT EXISTS (
+         SELECT 1 FROM exercises e
+         WHERE e.training_system_id = ts.id AND e.title = 'Mawate Kiritsu'
+       )`
+    );
+
     console.log("[migrations] startup migrations complete");
   } catch (err) {
     console.error("[migrations] error running startup migrations:", err);
