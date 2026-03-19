@@ -419,9 +419,13 @@ adminRouter.put("/admin/users/:id/membership", requireAdmin, async (req, res) =>
         if (current?.membershipPausedAt && current?.membershipExpiresAt) {
           const resumeDate = resumeAt ? new Date(resumeAt) : new Date();
           resumeDate.setHours(0, 0, 0, 0);
-          const pausedMs = current.membershipExpiresAt.getTime() - current.membershipPausedAt.getTime();
-          const remainingDays = Math.max(0, Math.ceil(pausedMs / (1000 * 60 * 60 * 24)));
-          const newExpiry = new Date(resumeDate.getTime() + remainingDays * 24 * 60 * 60 * 1000);
+          const pausedMidnight = new Date(current.membershipPausedAt);
+          pausedMidnight.setHours(0, 0, 0, 0);
+          const expiryMidnight = new Date(current.membershipExpiresAt);
+          expiryMidnight.setHours(0, 0, 0, 0);
+          const DAY_MS = 24 * 60 * 60 * 1000;
+          const remainingDays = Math.max(0, Math.round((expiryMidnight.getTime() - pausedMidnight.getTime()) / DAY_MS));
+          const newExpiry = new Date(resumeDate.getTime() + remainingDays * DAY_MS);
           newExpiry.setHours(23, 59, 59, 0);
           updates.membershipExpiresAt = newExpiry;
         }
