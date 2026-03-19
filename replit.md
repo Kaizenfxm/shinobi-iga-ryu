@@ -98,6 +98,8 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 
 ### Features (Fase 4)
 - Fighter Mode: admin can toggle `isFighter` flag per user via admin panel "Peleas" tab
+- Hidden from Community: admin can toggle `hiddenFromCommunity` flag per user (eye/eye-off button in user card); hidden users are excluded from all ranking tabs and from the challenge user picker
+- Privacy Policy URL: admin can set `privacy_policy_url` in General Settings panel; subtle link appears on login/register screen (only when URL is set); URL opened via device browser
 - Fight history: fights table stores opponent, event, date, result (victoria/derrota/empate), method (ko/tko/sumision/decision/etc), discipline (mma/box/jiujitsu/muay_thai/ninjutsu/otro), rounds, notes
 - Student fight screen: "Peleas" tab visible only when fighter mode active; shows V-D-E record with win percentage bar, full fight history cards
 - Admin/Profesor fight management: register fights for fighters, view fight history, delete fights

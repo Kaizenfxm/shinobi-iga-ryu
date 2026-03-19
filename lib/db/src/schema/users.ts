@@ -18,6 +18,7 @@ export const usersTable = pgTable("users", {
   subscriptionLevel: subscriptionLevelEnum("subscription_level").default("basico").notNull(),
   phone: varchar("phone", { length: 50 }),
   isFighter: boolean("is_fighter").default(false).notNull(),
+  hiddenFromCommunity: boolean("hidden_from_community").default(false).notNull(),
   sedes: text("sedes").array().notNull().default([]),
   membershipStatus: membershipStatusEnum("membership_status").default("activo").notNull(),
   membershipExpiresAt: timestamp("membership_expires_at"),

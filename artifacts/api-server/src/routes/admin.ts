@@ -42,6 +42,7 @@ async function fetchUsersWithRoles() {
       avatarUrl: usersTable.avatarUrl,
       subscriptionLevel: usersTable.subscriptionLevel,
       isFighter: usersTable.isFighter,
+      hiddenFromCommunity: usersTable.hiddenFromCommunity,
       phone: usersTable.phone,
       sedes: usersTable.sedes,
       membershipStatus: usersTable.membershipStatus,
@@ -142,6 +143,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
         isFighter: usersTable.isFighter,
+        hiddenFromCommunity: usersTable.hiddenFromCommunity,
         phone: usersTable.phone,
         sedes: usersTable.sedes,
         membershipStatus: usersTable.membershipStatus,
@@ -208,6 +210,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
         isFighter: usersTable.isFighter,
+        hiddenFromCommunity: usersTable.hiddenFromCommunity,
         phone: usersTable.phone,
         sedes: usersTable.sedes,
         membershipStatus: usersTable.membershipStatus,
@@ -493,7 +496,7 @@ adminRouter.put("/admin/settings", requireAdmin, async (req, res) => {
       return;
     }
 
-    const allowedKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address"];
+    const allowedKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address", "privacy_policy_url"];
     await db.transaction(async (tx) => {
       for (const [key, value] of Object.entries(settings)) {
         if (!allowedKeys.includes(key)) continue;

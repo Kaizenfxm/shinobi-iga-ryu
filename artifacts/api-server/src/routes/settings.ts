@@ -6,7 +6,7 @@ const settingsRouter = Router();
 
 settingsRouter.get("/settings/public", async (_req, res) => {
   try {
-    const publicKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address"];
+    const publicKeys = ["whatsapp_admin_number", "payment_link_url", "bogota_video_url", "chia_video_url", "bogota_address", "chia_address", "privacy_policy_url"];
     const rows = await db
       .select()
       .from(appSettingsTable)
@@ -24,6 +24,7 @@ settingsRouter.get("/settings/public", async (_req, res) => {
       chiaVideoUrl: result["chia_video_url"] || "",
       bogotaAddress: result["bogota_address"] || "",
       chiaAddress: result["chia_address"] || "",
+      privacyPolicyUrl: result["privacy_policy_url"] || "",
     });
   } catch (error) {
     console.error("Get public settings error:", error);

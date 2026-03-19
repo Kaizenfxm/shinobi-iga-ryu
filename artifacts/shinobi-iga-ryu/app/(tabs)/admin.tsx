@@ -1590,6 +1590,22 @@ function UsersPanel({
                       {u.isFighter ? "Luchador" : "Luchador"}
                     </Text>
                   </Pressable>
+                  <Pressable
+                    style={[styles.editUserBtn, u.hiddenFromCommunity && { borderColor: "#FF4444", backgroundColor: "#1a0000" }]}
+                    onPress={async () => {
+                      try {
+                        await fightsApi.toggleHiddenFromCommunity(u.id, !u.hiddenFromCommunity);
+                        setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, hiddenFromCommunity: !u.hiddenFromCommunity } : x));
+                      } catch {
+                        Alert.alert("Error", "No se pudo cambiar visibilidad");
+                      }
+                    }}
+                  >
+                    <Ionicons name={u.hiddenFromCommunity ? "eye-off" : "eye-outline"} size={10} color={u.hiddenFromCommunity ? "#FF4444" : "#555"} />
+                    <Text style={[styles.editUserBtnText, { color: u.hiddenFromCommunity ? "#FF4444" : "#555" }]}>
+                      {u.hiddenFromCommunity ? "Oculto" : "Visible"}
+                    </Text>
+                  </Pressable>
                   {!isCurrentUser && (
                     <Pressable
                       style={styles.deleteUserBtn}
@@ -3241,6 +3257,7 @@ function SettingsPanel() {
   const [chiaVideo, setChiaVideo] = useState("");
   const [bogotaAddress, setBogotaAddress] = useState("");
   const [chiaAddress, setChiaAddress] = useState("");
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -3252,6 +3269,7 @@ function SettingsPanel() {
       setChiaVideo(settings["chia_video_url"] || "");
       setBogotaAddress(settings["bogota_address"] || "");
       setChiaAddress(settings["chia_address"] || "");
+      setPrivacyPolicyUrl(settings["privacy_policy_url"] || "");
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -3265,6 +3283,7 @@ function SettingsPanel() {
         chia_video_url: chiaVideo.trim(),
         bogota_address: bogotaAddress.trim(),
         chia_address: chiaAddress.trim(),
+        privacy_policy_url: privacyPolicyUrl.trim(),
       });
       Alert.alert("Guardado", "Configuración actualizada");
     } catch {
@@ -3349,6 +3368,20 @@ function SettingsPanel() {
         placeholder="Calle 123 # 45-67, Chía"
         placeholderTextColor="#444"
         autoCapitalize="words"
+      />
+
+      <Text style={settingsPanelStyles.sectionDivider}>LEGAL</Text>
+
+      <Text style={settingsPanelStyles.label}>URL POLÍTICA DE PRIVACIDAD</Text>
+      <Text style={settingsPanelStyles.hint}>Enlace que verán los usuarios en la pantalla de login</Text>
+      <TextInput
+        style={settingsPanelStyles.input}
+        value={privacyPolicyUrl}
+        onChangeText={setPrivacyPolicyUrl}
+        placeholder="https://..."
+        placeholderTextColor="#444"
+        keyboardType="url"
+        autoCapitalize="none"
       />
 
       <Pressable

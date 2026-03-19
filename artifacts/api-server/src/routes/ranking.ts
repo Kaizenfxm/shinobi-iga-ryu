@@ -9,7 +9,10 @@ async function getActiveAlumnoIds(): Promise<number[]> {
   const rows = await db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.membershipStatus, "activo"));
+    .where(and(
+      eq(usersTable.membershipStatus, "activo"),
+      eq(usersTable.hiddenFromCommunity, false),
+    ));
   return rows.map((r) => r.id);
 }
 

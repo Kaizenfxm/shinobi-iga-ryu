@@ -87,6 +87,7 @@ export interface UserData {
   subscriptionLevel: string;
   phone: string | null;
   isFighter: boolean;
+  hiddenFromCommunity: boolean;
   sedes: string[];
   roles: string[];
   membershipStatus: "activo" | "inactivo" | "pausado";
@@ -223,6 +224,7 @@ export const settingsApi = {
       chiaVideoUrl: string;
       bogotaAddress: string;
       chiaAddress: string;
+      privacyPolicyUrl: string;
     }>("/settings/public"),
 };
 
@@ -719,6 +721,12 @@ export const fightsApi = {
     apiFetch<{ success: boolean; isFighter: boolean }>(`/admin/users/${userId}/fighter`, {
       method: "PUT",
       body: { isFighter },
+    }),
+
+  toggleHiddenFromCommunity: (userId: number, hiddenFromCommunity: boolean) =>
+    apiFetch<{ success: boolean; hiddenFromCommunity: boolean }>(`/admin/users/${userId}/hidden-from-community`, {
+      method: "PUT",
+      body: { hiddenFromCommunity },
     }),
 };
 

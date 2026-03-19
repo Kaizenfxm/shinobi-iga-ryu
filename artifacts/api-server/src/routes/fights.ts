@@ -84,6 +84,28 @@ fightsRouter.put("/admin/users/:userId/fighter", requireAdmin, async (req, res) 
   }
 });
 
+fightsRouter.put("/admin/users/:userId/hidden-from-community", requireAdmin, async (req, res) => {
+  try {
+    const userId = parseInt(String(req.params.userId), 10);
+    if (isNaN(userId)) {
+      res.status(400).json({ error: "ID de usuario inválido" });
+      return;
+    }
+    const { hiddenFromCommunity } = req.body;
+    if (typeof hiddenFromCommunity !== "boolean") {
+      res.status(400).json({ error: "Se requiere hiddenFromCommunity (boolean)" });
+      return;
+    }
+    const [user] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
+    await db.update(usersTable).set({ hiddenFromCommunity, updatedAt: new Date() }).where(eq(usersTable.id, userId));
+    res.json({ success: true, hiddenFromCommunity });
+  } catch (error) {
+    console.error("Toggle hidden from community error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 fightsRouter.post("/fights", requireAdminOrProfesor, async (req, res) => {
   try {
     const { userId, opponentName, eventName, fightDate, result, method, discipline, rounds, notes } = req.body;

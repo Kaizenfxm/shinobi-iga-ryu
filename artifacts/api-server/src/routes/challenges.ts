@@ -86,6 +86,7 @@ challengesRouter.get("/challenges/users", requireAuth, async (req, res) => {
       .from(usersTable)
       .where(and(
         eq(usersTable.membershipStatus, "activo"),
+        eq(usersTable.hiddenFromCommunity, false),
         ne(usersTable.id, userId),
       ))
       .orderBy(usersTable.displayName);

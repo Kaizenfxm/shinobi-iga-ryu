@@ -12,11 +12,12 @@ import {
   Alert,
   Image,
   Animated,
+  Linking,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
-import { ApiError } from "@/lib/api";
+import { ApiError, settingsApi } from "@/lib/api";
 
 type Mode = "welcome" | "login" | "register";
 
@@ -31,8 +32,15 @@ export default function AuthScreen() {
   const [sedes, setSedes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState("");
   const mottoOpacity = useRef(new Animated.Value(1)).current;
   const [mottoText, setMottoText] = useState("忍者は永遠に");
+
+  useEffect(() => {
+    settingsApi.getPublic().then((s) => {
+      if (s.privacyPolicyUrl) setPrivacyPolicyUrl(s.privacyPolicyUrl);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (mode === "welcome") {
@@ -284,6 +292,12 @@ export default function AuthScreen() {
               : "¿Ya tienes cuenta? Inicia sesión"}
           </Text>
         </Pressable>
+
+        {!!privacyPolicyUrl && (
+          <Pressable onPress={() => Linking.openURL(privacyPolicyUrl)}>
+            <Text style={styles.privacyLink}>Política de Privacidad</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -471,5 +485,13 @@ const styles = StyleSheet.create({
   },
   sedeChipTextSelected: {
     color: "#D4AF37",
+  },
+  privacyLink: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#444",
+    textAlign: "center",
+    marginTop: 16,
+    textDecorationLine: "underline",
   },
 });
