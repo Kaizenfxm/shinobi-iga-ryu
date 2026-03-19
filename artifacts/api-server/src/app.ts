@@ -5,6 +5,22 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "@workspace/db";
 import router from "./routes";
 
+async function runMigrations() {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS membership_paused_at TIMESTAMPTZ;"
+    );
+    console.log("[migrations] membership_paused_at column ensured");
+  } catch (err) {
+    console.error("[migrations] error running startup migrations:", err);
+  } finally {
+    client.release();
+  }
+}
+
+runMigrations().catch((err) => console.error("[migrations] fatal:", err));
+
 const PgStore = connectPgSimple(session);
 
 const isProduction = process.env.NODE_ENV === "production";
