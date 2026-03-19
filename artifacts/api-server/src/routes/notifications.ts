@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, notificationsTable, notificationReadsTable, usersTable } from "@workspace/db";
 import { eq, desc, and, or, inArray, gte, isNull } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { notifyTarget } from "../lib/push";
 
 const notificationsRouter = Router();
 
@@ -84,6 +85,8 @@ notificationsRouter.post("/notifications", requireAdmin, async (req, res) => {
         createdByUserId: adminId,
       })
       .returning();
+
+    void notifyTarget(resolvedTarget, title.trim(), body.trim());
 
     res.json({ notification });
   } catch (error) {

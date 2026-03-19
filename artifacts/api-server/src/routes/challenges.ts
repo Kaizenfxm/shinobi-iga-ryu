@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, challengesTable, pushTokensTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
+import { db, challengesTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
 import { eq, and, ne, or, desc, sql, aliasedTable } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import { notifyUser } from "../lib/push";
 
 const challengerUsers = aliasedTable(usersTable, "challenger_users");
 const challengedUsers = aliasedTable(usersTable, "challenged_users");
@@ -19,25 +20,6 @@ async function isAdminOrProfesor(userId: number): Promise<boolean> {
   return rows.length > 0;
 }
 
-async function sendExpoPush(token: string, title: string, body: string, data?: Record<string, unknown>) {
-  try {
-    await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ to: token, title, body, data: data ?? {}, sound: "default" }),
-    });
-  } catch {
-  }
-}
-
-async function notifyUser(targetUserId: number, title: string, body: string, data?: Record<string, unknown>) {
-  const tokens = await db
-    .select({ token: pushTokensTable.token })
-    .from(pushTokensTable)
-    .where(eq(pushTokensTable.userId, targetUserId));
-  await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
-}
-
 async function createInAppNotification(targetUserId: number, title: string, body: string, createdByUserId: number) {
   await db.insert(notificationsTable).values({
     title,
@@ -46,6 +28,7 @@ async function createInAppNotification(targetUserId: number, title: string, body
     targetUserId,
     createdByUserId,
   });
+  void notifyUser(targetUserId, title, body);
 }
 
 challengesRouter.post("/push-token", requireAuth, async (req, res) => {

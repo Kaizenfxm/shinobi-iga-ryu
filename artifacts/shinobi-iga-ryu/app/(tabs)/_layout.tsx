@@ -1,13 +1,14 @@
 import { BlurView } from "expo-blur";
 import { Tabs, useRouter } from "expo-router";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Platform, StyleSheet, View, Text, Pressable } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { MembershipGate } from "@/components/MembershipGate";
 import { useMembership } from "@/hooks/useMembership";
 import { useChallenges } from "@/contexts/ChallengesContext";
 import QrScannerButton from "@/components/QrScanner";
+import { suggestionsApi } from "@/lib/api";
 
 function CountdownBadge() {
   const { showCountdown, daysRemaining } = useMembership();
@@ -65,6 +66,22 @@ export default function TabLayout() {
   const showAdmin = isAuthenticated && hasRole("admin");
   const showAlumnos = isAuthenticated && hasRole("profesor");
 
+  const [adminSuggestionCount, setAdminSuggestionCount] = useState(0);
+
+  const fetchAdminSuggestionCount = useCallback(async () => {
+    if (!showAdmin) return;
+    try {
+      const { count } = await suggestionsApi.adminUnreviewedCount();
+      setAdminSuggestionCount(count);
+    } catch {}
+  }, [showAdmin]);
+
+  useEffect(() => {
+    fetchAdminSuggestionCount();
+    const interval = setInterval(fetchAdminSuggestionCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchAdminSuggestionCount]);
+
   return (
     <MembershipGate>
       <View style={{ flex: 1 }}>
@@ -111,6 +128,8 @@ export default function TabLayout() {
             options={{
               title: "Admin",
               href: showAdmin ? undefined : null,
+              tabBarBadge: showAdmin && adminSuggestionCount > 0 ? adminSuggestionCount : undefined,
+              tabBarBadgeStyle: { backgroundColor: "#FF3B30", color: "#fff", fontSize: 10, fontFamily: "NotoSansJP_700Bold" },
               tabBarIcon: ({ color }) => (
                 <MaterialCommunityIcons name="shield-crown" size={22} color={color} />
               ),

@@ -4137,6 +4137,7 @@ export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
+  const [unreviewedCount, setUnreviewedCount] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -4147,9 +4148,22 @@ export default function AdminScreen() {
     }
   }, []);
 
+  const fetchUnreviewedCount = useCallback(async () => {
+    try {
+      const { count } = await suggestionsApi.adminUnreviewedCount();
+      setUnreviewedCount(count);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchData().finally(() => setLoading(false));
   }, [fetchData]);
+
+  useEffect(() => {
+    fetchUnreviewedCount();
+    const interval = setInterval(fetchUnreviewedCount, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchUnreviewedCount]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -4247,11 +4261,20 @@ export default function AdminScreen() {
           style={[styles.tabButton, activeTab === "sugerencias" && styles.tabButtonActive]}
           onPress={() => setActiveTab("sugerencias")}
         >
-          <Ionicons
-            name="chatbubble-ellipses-outline"
-            size={20}
-            color={activeTab === "sugerencias" ? "#000" : "#666"}
-          />
+          <View style={{ position: "relative" }}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={20}
+              color={activeTab === "sugerencias" ? "#000" : "#666"}
+            />
+            {unreviewedCount > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>
+                  {unreviewedCount > 99 ? "99+" : unreviewedCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </Pressable>
       </View>
 
@@ -4473,6 +4496,24 @@ const styles = StyleSheet.create({
   tabButtonActive: {
     backgroundColor: "#D4AF37",
     borderColor: "#D4AF37",
+  },
+  tabBadge: {
+    position: "absolute",
+    top: -6,
+    right: -8,
+    backgroundColor: "#FF3B30",
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  tabBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontFamily: "NotoSansJP_700Bold",
+    lineHeight: 14,
   },
   tabButtonText: {
     fontFamily: "NotoSansJP_500Medium",

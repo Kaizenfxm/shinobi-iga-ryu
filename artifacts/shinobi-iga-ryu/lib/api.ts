@@ -990,6 +990,9 @@ export const suggestionsApi = {
   adminList: () =>
     apiFetch<{ suggestions: SuggestionItem[] }>("/admin/suggestions"),
 
+  adminUnreviewedCount: () =>
+    apiFetch<{ count: number }>("/admin/suggestions/unreviewed-count"),
+
   adminMarkReviewed: (id: number) =>
     apiFetch<{ ok: boolean }>(`/admin/suggestions/${id}/reviewed`, { method: "PUT" }),
 

@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, suggestionsTable, notificationsTable } from "@workspace/db";
+import { db, suggestionsTable, notificationsTable, userRolesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { notifyUser, notifyAllAdmins } from "../lib/push";
 
 const suggestionsRouter = Router();
 
@@ -24,6 +25,29 @@ suggestionsRouter.post("/suggestions", requireAuth, async (req, res) => {
       userId,
       content: content.trim(),
     });
+
+    const adminRows = await db
+      .select({ userId: userRolesTable.userId })
+      .from(userRolesTable)
+      .where(eq(userRolesTable.role, "admin"));
+
+    const adminIds = adminRows.map((r) => r.userId);
+
+    if (adminIds.length > 0) {
+      await db.insert(notificationsTable).values(
+        adminIds.map((adminId) => ({
+          title: "Nueva sugerencia anónima",
+          body: "Un miembro ha enviado una nueva sugerencia. Revísala en el panel de admin.",
+          target: "personal" as const,
+          targetUserId: adminId,
+          createdByUserId: userId,
+        }))
+      );
+      void notifyAllAdmins(
+        "💬 Nueva sugerencia",
+        "Un miembro ha enviado una nueva sugerencia anónima."
+      );
+    }
 
     res.json({ ok: true });
   } catch (error) {
@@ -48,6 +72,20 @@ suggestionsRouter.get("/admin/suggestions", requireAdmin, async (req, res) => {
     res.json({ suggestions });
   } catch (error) {
     console.error("Get suggestions error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+suggestionsRouter.get("/admin/suggestions/unreviewed-count", requireAdmin, async (_req, res) => {
+  try {
+    const rows = await db
+      .select({ id: suggestionsTable.id })
+      .from(suggestionsTable)
+      .where(eq(suggestionsTable.isReviewed, false));
+
+    res.json({ count: rows.length });
+  } catch (error) {
+    console.error("Unreviewed suggestions count error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -83,13 +121,18 @@ suggestionsRouter.put("/admin/suggestions/:id/reviewed", requireAdmin, async (re
       .set({ isReviewed: true, reviewedAt: new Date() })
       .where(eq(suggestionsTable.id, suggestionId));
 
+    const notifTitle = "Tu sugerencia fue revisada";
+    const notifBody = "Un administrador ha revisado tu sugerencia. ¡Gracias por ayudarnos a mejorar!";
+
     await db.insert(notificationsTable).values({
-      title: "Tu sugerencia fue revisada",
-      body: "Un administrador ha revisado tu sugerencia. ¡Gracias por ayudarnos a mejorar!",
+      title: notifTitle,
+      body: notifBody,
       target: "personal",
       targetUserId: suggestion.userId,
       createdByUserId: adminId,
     });
+
+    void notifyUser(suggestion.userId, notifTitle, notifBody);
 
     res.json({ ok: true });
   } catch (error) {

@@ -11,31 +11,17 @@ import {
   studentBeltUnlocksTable,
   beltApplicationsTable,
   studentRequirementChecksTable,
-  pushTokensTable,
   notificationsTable,
 } from "@workspace/db";
 import { eq, and, asc, inArray, desc, lte } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { notifyUser } from "../lib/push";
 
 const beltsRouter = Router();
 
-async function sendExpoPush(token: string, title: string, body: string, data?: Record<string, unknown>) {
-  try {
-    await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ to: token, title, body, data: data ?? {}, sound: "default" }),
-    });
-  } catch {}
-}
-
-async function notifyUser(targetUserId: number, title: string, body: string, data?: Record<string, unknown>) {
-  const tokens = await db.select({ token: pushTokensTable.token }).from(pushTokensTable).where(eq(pushTokensTable.userId, targetUserId));
-  await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
-}
-
 async function createInAppNotification(targetUserId: number, title: string, body: string, createdByUserId: number) {
   await db.insert(notificationsTable).values({ title, body, target: "personal", targetUserId, createdByUserId });
+  void notifyUser(targetUserId, title, body);
 }
 
 beltsRouter.get("/belts/definitions", requireAuth, async (_req, res) => {
