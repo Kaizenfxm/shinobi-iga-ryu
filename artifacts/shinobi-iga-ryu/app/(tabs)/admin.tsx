@@ -23,7 +23,7 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { BeltStrip } from "@/components/BeltStrip";
-import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, suggestionsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee, type SuggestionItem } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -60,7 +60,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "clases" | "configuracion";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "clases" | "configuracion" | "sugerencias";
 
 const TRAINING_SYSTEM_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
@@ -4243,6 +4243,16 @@ export default function AdminScreen() {
             color={activeTab === "configuracion" ? "#000" : "#666"}
           />
         </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "sugerencias" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("sugerencias")}
+        >
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={20}
+            color={activeTab === "sugerencias" ? "#000" : "#666"}
+          />
+        </Pressable>
       </View>
 
       <View style={styles.divider} />
@@ -4277,10 +4287,142 @@ export default function AdminScreen() {
           <ClassesPanel users={users} />
         ) : activeTab === "configuracion" ? (
           <SettingsPanel />
+        ) : activeTab === "sugerencias" ? (
+          <SuggestionsPanel />
         ) : (
           <NotificationsPanel />
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+function SuggestionsPanel() {
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actingOn, setActingOn] = useState<Set<number>>(new Set());
+
+  const loadSuggestions = useCallback(async () => {
+    try {
+      const { suggestions: data } = await suggestionsApi.adminList();
+      setSuggestions(data);
+    } catch (e) {
+      console.error("[SuggestionsPanel] load error:", e instanceof Error ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSuggestions(); }, [loadSuggestions]);
+
+  const handleMarkReviewed = async (id: number) => {
+    setActingOn((s) => new Set(s).add(id));
+    try {
+      await suggestionsApi.adminMarkReviewed(id);
+      setSuggestions((prev) =>
+        prev.map((s) => s.id === id ? { ...s, isReviewed: true, reviewedAt: new Date().toISOString() } : s)
+      );
+    } catch {
+      Alert.alert("Error", "No se pudo marcar como revisada");
+    } finally {
+      setActingOn((s) => { const ns = new Set(s); ns.delete(id); return ns; });
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    const doDelete = async () => {
+      setActingOn((s) => new Set(s).add(id));
+      try {
+        await suggestionsApi.adminDelete(id);
+        setSuggestions((prev) => prev.filter((s) => s.id !== id));
+      } catch {
+        Alert.alert("Error", "No se pudo eliminar la sugerencia");
+      } finally {
+        setActingOn((s) => { const ns = new Set(s); ns.delete(id); return ns; });
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if ((window as Window & typeof globalThis).confirm("¿Eliminar esta sugerencia?")) {
+        doDelete();
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Eliminar",
+      "¿Eliminar esta sugerencia? Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: doDelete },
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={{ alignItems: "center", paddingTop: 40 }}>
+        <ActivityIndicator color="#D4AF37" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ paddingTop: 16 }}>
+      <View style={suggestPanelStyles.titleRow}>
+        <Ionicons name="chatbubble-ellipses-outline" size={16} color="#D4AF37" />
+        <Text style={suggestPanelStyles.panelTitle}>SUGERENCIAS ANÓNIMAS</Text>
+        <Text style={suggestPanelStyles.countBadge}>{suggestions.length}</Text>
+      </View>
+
+      {suggestions.length === 0 ? (
+        <View style={suggestPanelStyles.emptyBox}>
+          <Ionicons name="chatbubble-outline" size={32} color="#333" />
+          <Text style={suggestPanelStyles.emptyText}>Sin sugerencias aún</Text>
+        </View>
+      ) : (
+        suggestions.map((s) => (
+          <View key={s.id} style={[suggestPanelStyles.card, s.isReviewed && suggestPanelStyles.cardReviewed]}>
+            <View style={suggestPanelStyles.cardHeader}>
+              <Text style={suggestPanelStyles.cardDate}>
+                {new Date(s.createdAt).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+              </Text>
+              {s.isReviewed && (
+                <View style={suggestPanelStyles.reviewedBadge}>
+                  <Ionicons name="checkmark-circle" size={12} color="#D4AF37" />
+                  <Text style={suggestPanelStyles.reviewedBadgeText}>Revisada</Text>
+                </View>
+              )}
+            </View>
+            <Text style={suggestPanelStyles.cardContent}>{s.content}</Text>
+            <View style={suggestPanelStyles.cardActions}>
+              {!s.isReviewed && (
+                <Pressable
+                  style={suggestPanelStyles.reviewBtn}
+                  onPress={() => handleMarkReviewed(s.id)}
+                  disabled={actingOn.has(s.id)}
+                >
+                  {actingOn.has(s.id) ? (
+                    <ActivityIndicator size="small" color="#D4AF37" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-outline" size={14} color="#D4AF37" />
+                      <Text style={suggestPanelStyles.reviewBtnText}>Marcar revisada</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+              <Pressable
+                style={suggestPanelStyles.deleteBtn}
+                onPress={() => handleDelete(s.id)}
+                disabled={actingOn.has(s.id)}
+              >
+                <Ionicons name="trash-outline" size={14} color="#555" />
+              </Pressable>
+            </View>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -5764,4 +5906,109 @@ const prStyles = StyleSheet.create({
   },
   webPickerRow: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 },
   webLabel: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+});
+
+const suggestPanelStyles = StyleSheet.create({
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+    paddingHorizontal: 20,
+  },
+  panelTitle: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.5,
+    flex: 1,
+  },
+  countBadge: {
+    color: "#555",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+  },
+  emptyBox: {
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 10,
+  },
+  emptyText: {
+    color: "#444",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+  },
+  card: {
+    backgroundColor: "#0a0a0a",
+    borderWidth: 1,
+    borderColor: "#1a1a1a",
+    borderRadius: 2,
+    padding: 14,
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  cardReviewed: {
+    borderColor: "#1a1a0a",
+    opacity: 0.7,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  cardDate: {
+    color: "#555",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+  },
+  reviewedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#111",
+    borderRadius: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  reviewedBadgeText: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  cardContent: {
+    color: "#ccc",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reviewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+  },
+  reviewBtnText: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    letterSpacing: 0.3,
+  },
+  deleteBtn: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 2,
+  },
 });

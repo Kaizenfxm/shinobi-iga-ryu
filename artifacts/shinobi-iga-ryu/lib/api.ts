@@ -974,3 +974,25 @@ export const rankingApi = {
   getChallenges: () =>
     apiFetch<{ ranking: RankingChallengeEntry[] }>("/ranking/challenges"),
 };
+
+export interface SuggestionItem {
+  id: number;
+  content: string;
+  isReviewed: boolean;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export const suggestionsApi = {
+  create: (content: string) =>
+    apiFetch<{ ok: boolean }>("/suggestions", { method: "POST", body: { content } }),
+
+  adminList: () =>
+    apiFetch<{ suggestions: SuggestionItem[] }>("/admin/suggestions"),
+
+  adminMarkReviewed: (id: number) =>
+    apiFetch<{ ok: boolean }>(`/admin/suggestions/${id}/reviewed`, { method: "PUT" }),
+
+  adminDelete: (id: number) =>
+    apiFetch<{ ok: boolean }>(`/admin/suggestions/${id}`, { method: "DELETE" }),
+};

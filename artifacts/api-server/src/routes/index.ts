@@ -14,6 +14,7 @@ import classesRouter from "./classes";
 import eventsRouter from "./events";
 import challengesRouter from "./challenges";
 import rankingRouter from "./ranking";
+import suggestionsRouter from "./suggestions";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(classesRouter);
 router.use(eventsRouter);
 router.use(challengesRouter);
 router.use(rankingRouter);
+router.use(suggestionsRouter);
 
 export default router;

@@ -11,7 +11,17 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS membership_paused_at TIMESTAMPTZ;"
     );
-    console.log("[migrations] membership_paused_at column ensured");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS suggestions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+        content TEXT NOT NULL,
+        is_reviewed BOOLEAN NOT NULL DEFAULT FALSE,
+        reviewed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    console.log("[migrations] startup migrations complete");
   } catch (err) {
     console.error("[migrations] error running startup migrations:", err);
   } finally {

@@ -12,13 +12,15 @@ import {
   TextInput,
   Linking,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
 } from "react-native";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, settingsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
+import { profileApi, avatarApi, settingsApi, suggestionsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
 import { scheduleWeightReminder } from "@/lib/notifications";
 import FightRecord from "@/components/FightRecord";
 import { BeltStrip, getDanNumber, getNinjutsuRankTitle } from "@/components/BeltStrip";
@@ -162,6 +164,10 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [suggestionText, setSuggestionText] = useState("");
+  const [suggestionSending, setSuggestionSending] = useState(false);
+  const [suggestionSent, setSuggestionSent] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -242,6 +248,20 @@ export default function ProfileScreen() {
       await logout();
     } catch {
       Alert.alert("Error", "No se pudo cerrar la sesión");
+    }
+  };
+
+  const handleSendSuggestion = async () => {
+    if (!suggestionText.trim()) return;
+    setSuggestionSending(true);
+    try {
+      await suggestionsApi.create(suggestionText.trim());
+      setSuggestionSent(true);
+      setSuggestionText("");
+    } catch {
+      Alert.alert("Error", "No se pudo enviar la sugerencia. Intenta de nuevo.");
+    } finally {
+      setSuggestionSending(false);
     }
   };
 
@@ -890,12 +910,84 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          <Pressable
+            style={styles.suggestionsButton}
+            onPress={() => { setSuggestionSent(false); setSuggestionText(""); setShowSuggestModal(true); }}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color="#888" />
+            <Text style={styles.suggestionsButtonText}>Sugerencias</Text>
+          </Pressable>
+
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#FF4444" />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
           </Pressable>
         </View>
       </KeyboardAwareScrollViewCompat>
+
+      {/* ── SUGGESTION MODAL ── */}
+      <Modal
+        visible={showSuggestModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSuggestModal(false)}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+          <Pressable
+            style={suggestStyles.backdrop}
+            onPress={() => setShowSuggestModal(false)}
+          >
+            <Pressable onPress={() => {}} style={suggestStyles.sheet}>
+              <View style={suggestStyles.handle} />
+              <View style={suggestStyles.header}>
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color="#D4AF37" />
+                <Text style={suggestStyles.title}>SUGERENCIAS ANÓNIMAS</Text>
+              </View>
+              <Text style={suggestStyles.subtitle}>
+                Tu sugerencia es anónima. Recibirás una notificación cuando sea revisada.
+              </Text>
+              {suggestionSent ? (
+                <View style={suggestStyles.successBox}>
+                  <Ionicons name="checkmark-circle" size={32} color="#D4AF37" />
+                  <Text style={suggestStyles.successText}>¡Sugerencia enviada!</Text>
+                  <Text style={suggestStyles.successSub}>Gracias por ayudarnos a mejorar.</Text>
+                  <Pressable
+                    style={suggestStyles.closeBtn}
+                    onPress={() => setShowSuggestModal(false)}
+                  >
+                    <Text style={suggestStyles.closeBtnText}>Cerrar</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <TextInput
+                    style={suggestStyles.input}
+                    placeholder="Escribe tu sugerencia aquí..."
+                    placeholderTextColor="#444"
+                    value={suggestionText}
+                    onChangeText={setSuggestionText}
+                    multiline
+                    maxLength={1000}
+                    textAlignVertical="top"
+                  />
+                  <Text style={suggestStyles.charCount}>{suggestionText.length}/1000</Text>
+                  <Pressable
+                    style={[suggestStyles.sendBtn, (!suggestionText.trim() || suggestionSending) && suggestStyles.sendBtnDisabled]}
+                    onPress={handleSendSuggestion}
+                    disabled={!suggestionText.trim() || suggestionSending}
+                  >
+                    {suggestionSending ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <Text style={suggestStyles.sendBtnText}>Enviar Sugerencia</Text>
+                    )}
+                  </Pressable>
+                </>
+              )}
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -1091,6 +1183,23 @@ const styles = StyleSheet.create({
   actionsSection: {
     marginTop: 24,
     gap: 12,
+  },
+  suggestionsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 12,
+  },
+  suggestionsButtonText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#666",
+    letterSpacing: 0.5,
   },
   logoutButton: {
     flexDirection: "row",
@@ -1418,5 +1527,109 @@ const weightStyles = StyleSheet.create({
     fontSize: 12,
     color: "#000",
     letterSpacing: 1,
+  },
+});
+
+const suggestStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: "#111",
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  handle: {
+    width: 36,
+    height: 3,
+    backgroundColor: "#333",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  title: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    letterSpacing: 1.5,
+  },
+  subtitle: {
+    color: "#666",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  input: {
+    backgroundColor: "#0a0a0a",
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    padding: 12,
+    color: "#fff",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 14,
+    minHeight: 120,
+    maxHeight: 200,
+  },
+  charCount: {
+    color: "#444",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    textAlign: "right",
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  sendBtn: {
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  sendBtnDisabled: { opacity: 0.4 },
+  sendBtnText: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    letterSpacing: 1,
+  },
+  successBox: {
+    alignItems: "center",
+    paddingVertical: 30,
+    gap: 10,
+  },
+  successText: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 18,
+    letterSpacing: 1,
+  },
+  successSub: {
+    color: "#888",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+  },
+  closeBtn: {
+    marginTop: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+  },
+  closeBtnText: {
+    color: "#888",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
 });
