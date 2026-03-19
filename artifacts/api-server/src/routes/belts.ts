@@ -1317,10 +1317,7 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
       ? `Tu grado ha sido actualizado a ${beltLabel} en ${disciplineLabel}.`
       : `Felicitaciones por tu ascenso a ${beltLabel} en ${disciplineLabel}. ¡Sigue adelante!`;
 
-    await Promise.all([
-      notifyUser(userId, notifTitle, notifBody, { type: "belt_grant", beltId: beltDefinitionId, isDemotion }),
-      createInAppNotification(userId, notifTitle, notifBody, adminId),
-    ]);
+    void createInAppNotification(userId, notifTitle, notifBody, adminId);
 
     res.json({ success: true, isDemotion });
   } catch (error) {

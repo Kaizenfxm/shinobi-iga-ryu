@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, challengesTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
+import { db, challengesTable, pushTokensTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
 import { eq, and, ne, or, desc, sql, aliasedTable } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { notifyUser } from "../lib/push";
@@ -303,10 +303,7 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
     const notifTitle = "¡Te han retado!";
     const notifBody = `${challenger.displayName} te reta en ${system.name}`;
 
-    await Promise.all([
-      notifyUser(challengedId, notifTitle, notifBody, { challengeId: created.id, type: "challenge_received" }),
-      createInAppNotification(challengedId, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(challengedId, notifTitle, notifBody, userId);
 
     res.status(201).json({ challenge: created });
   } catch (error) {
@@ -362,10 +359,7 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
     const notifBody = wasAccepted
       ? `${challenger?.displayName ?? "El retador"} modificó las condiciones. Debes aceptar de nuevo.`
       : `${challenger?.displayName ?? "El retador"} modificó las condiciones del reto`;
-    await Promise.all([
-      notifyUser(challenge.challengedId, notifTitle, notifBody, { challengeId, type: "challenge_modified" }),
-      createInAppNotification(challenge.challengedId, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(challenge.challengedId, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -404,10 +398,7 @@ challengesRouter.post("/challenges/:id/request-cancel", requireAuth, async (req,
     const otherId = challenge.challengerId === userId ? challenge.challengedId : challenge.challengerId;
     const notifTitle = "Solicitud de cancelación";
     const notifBody = `${requester?.displayName ?? "Tu oponente"} quiere cancelar el reto. Confirma o rechaza.`;
-    await Promise.all([
-      notifyUser(otherId, notifTitle, notifBody, { challengeId, type: "cancel_requested" }),
-      createInAppNotification(otherId, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(otherId, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -442,10 +433,7 @@ challengesRouter.post("/challenges/:id/confirm-cancel", requireAuth, async (req,
 
     const notifTitle = "Reto eliminado";
     const notifBody = `${confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto — el reto fue eliminado`;
-    await Promise.all([
-      notifyUser(challenge.cancelRequestedBy!, notifTitle, notifBody, { challengeId, type: "cancel_confirmed" }),
-      createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId);
 
     res.json({ deleted: true, challengeId });
   } catch (error) {
@@ -483,10 +471,7 @@ challengesRouter.post("/challenges/:id/decline-cancel", requireAuth, async (req,
 
     const notifTitle = "Cancelación rechazada";
     const notifBody = `${decliner?.displayName ?? "Tu oponente"} rechazó cancelar el reto. El reto continúa.`;
-    await Promise.all([
-      notifyUser(challenge.cancelRequestedBy!, notifTitle, notifBody, { challengeId, type: "cancel_declined" }),
-      createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -525,10 +510,7 @@ challengesRouter.post("/challenges/:id/respond", requireAuth, async (req, res) =
       ? `${responder?.displayName ?? "El retado"} aceptó tu reto`
       : `${responder?.displayName ?? "El retado"} declinó tu reto`;
 
-    await Promise.all([
-      notifyUser(challenge.challengerId, notifTitle, notifBody, { challengeId, type: "challenge_responded", decision }),
-      createInAppNotification(challenge.challengerId, notifTitle, notifBody, userId),
-    ]);
+    void createInAppNotification(challenge.challengerId, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -606,12 +588,8 @@ challengesRouter.post("/challenges/:id/result", requireAuth, async (req, res) =>
     const loserTitle = "Resultado del reto";
     const loserBody = `${winner?.displayName ?? "Tu rival"} fue declarado ganador`;
 
-    await Promise.all([
-      notifyUser(winnerId, winnerTitle, winnerBody, { challengeId, type: "challenge_result" }),
-      createInAppNotification(winnerId, winnerTitle, winnerBody, userId),
-      notifyUser(loserId, loserTitle, loserBody, { challengeId, type: "challenge_result" }),
-      createInAppNotification(loserId, loserTitle, loserBody, userId),
-    ]);
+    void createInAppNotification(winnerId, winnerTitle, winnerBody, userId);
+    void createInAppNotification(loserId, loserTitle, loserBody, userId);
 
     res.json({ challenge: updated });
   } catch (error) {
