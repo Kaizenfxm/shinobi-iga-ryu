@@ -1,0 +1,51 @@
+ at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+error: relation "session" does not exist
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+    at async i._asyncQuery (/app/artifacts/api-server/dist/index.cjs:65:32740)
+    at /app/artifacts/api-server/dist/index.cjs:65:15227
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
