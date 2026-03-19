@@ -202,8 +202,8 @@ export default function ProfileScreen() {
     }
   }, [isAuthenticated, authLoading]);
 
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
+  const loadProfile = useCallback(async (isRefreshing = false) => {
+    if (!isRefreshing) setLoading(true);
     try {
       const res = await profileApi.getMyProfile();
       setProfile(res.profile);
@@ -220,7 +220,7 @@ export default function ProfileScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadProfile();
+    loadProfile(true);
   }, [loadProfile]);
 
   useEffect(() => {

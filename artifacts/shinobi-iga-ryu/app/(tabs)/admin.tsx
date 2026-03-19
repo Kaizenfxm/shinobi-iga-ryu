@@ -4165,9 +4165,12 @@ export default function AdminScreen() {
     return () => clearInterval(interval);
   }, [fetchUnreviewedCount]);
 
+  const [suggestionsReloadKey, setSuggestionsReloadKey] = useState(0);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([fetchData(), fetchUnreviewedCount()]);
+    setSuggestionsReloadKey((k) => k + 1);
     setRefreshing(false);
   };
 
@@ -4311,7 +4314,10 @@ export default function AdminScreen() {
         ) : activeTab === "configuracion" ? (
           <SettingsPanel />
         ) : activeTab === "sugerencias" ? (
-          <SuggestionsPanel />
+          <SuggestionsPanel
+            reloadKey={suggestionsReloadKey}
+            onCountChange={(delta) => setUnreviewedCount((c) => Math.max(0, c + delta))}
+          />
         ) : (
           <NotificationsPanel />
         )}
@@ -4320,7 +4326,7 @@ export default function AdminScreen() {
   );
 }
 
-function SuggestionsPanel() {
+function SuggestionsPanel({ reloadKey, onCountChange }: { reloadKey: number; onCountChange: (delta: number) => void }) {
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingOn, setActingOn] = useState<Set<number>>(new Set());
@@ -4336,15 +4342,18 @@ function SuggestionsPanel() {
     }
   }, []);
 
-  useEffect(() => { loadSuggestions(); }, [loadSuggestions]);
+  useEffect(() => { loadSuggestions(); }, [loadSuggestions, reloadKey]);
 
   const handleMarkReviewed = async (id: number) => {
+    const target = suggestions.find((s) => s.id === id);
+    const wasUnreviewed = target && !target.isReviewed;
     setActingOn((s) => new Set(s).add(id));
     try {
       await suggestionsApi.adminMarkReviewed(id);
       setSuggestions((prev) =>
         prev.map((s) => s.id === id ? { ...s, isReviewed: true, reviewedAt: new Date().toISOString() } : s)
       );
+      if (wasUnreviewed) onCountChange(-1);
     } catch {
       Alert.alert("Error", "No se pudo marcar como revisada");
     } finally {
@@ -4354,10 +4363,13 @@ function SuggestionsPanel() {
 
   const handleDelete = (id: number) => {
     const doDelete = async () => {
+      const target = suggestions.find((s) => s.id === id);
+      const wasUnreviewed = target && !target.isReviewed;
       setActingOn((s) => new Set(s).add(id));
       try {
         await suggestionsApi.adminDelete(id);
         setSuggestions((prev) => prev.filter((s) => s.id !== id));
+        if (wasUnreviewed) onCountChange(-1);
       } catch {
         Alert.alert("Error", "No se pudo eliminar la sugerencia");
       } finally {
