@@ -1064,6 +1064,23 @@ function UsersPanel({
                   <View style={styles.userNameRow}>
                     <Text style={styles.userName}>{u.displayName}</Text>
                     {isCurrentUser && <Text style={styles.youBadge}>Tú</Text>}
+                    <Pressable
+                      onPress={async () => {
+                        try {
+                          await fightsApi.toggleHiddenFromCommunity(u.id, !u.hiddenFromCommunity);
+                          setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, hiddenFromCommunity: !u.hiddenFromCommunity } : x));
+                        } catch {
+                          Alert.alert("Error", "No se pudo cambiar visibilidad");
+                        }
+                      }}
+                      hitSlop={8}
+                    >
+                      <Ionicons
+                        name={u.hiddenFromCommunity ? "eye-off" : "eye-outline"}
+                        size={13}
+                        color={u.hiddenFromCommunity ? "#FF4444" : "#444"}
+                      />
+                    </Pressable>
                   </View>
                   <Text style={styles.userEmail}>{u.email}</Text>
                   <View style={styles.roleBadges}>
@@ -1588,22 +1605,6 @@ function UsersPanel({
                     <MaterialCommunityIcons name="sword-cross" size={10} color={u.isFighter ? "#D4AF37" : "#555"} />
                     <Text style={[styles.editUserBtnText, { color: u.isFighter ? "#D4AF37" : "#555" }]}>
                       {u.isFighter ? "Luchador" : "Luchador"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.editUserBtn, u.hiddenFromCommunity && { borderColor: "#FF4444", backgroundColor: "#1a0000" }]}
-                    onPress={async () => {
-                      try {
-                        await fightsApi.toggleHiddenFromCommunity(u.id, !u.hiddenFromCommunity);
-                        setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, hiddenFromCommunity: !u.hiddenFromCommunity } : x));
-                      } catch {
-                        Alert.alert("Error", "No se pudo cambiar visibilidad");
-                      }
-                    }}
-                  >
-                    <Ionicons name={u.hiddenFromCommunity ? "eye-off" : "eye-outline"} size={10} color={u.hiddenFromCommunity ? "#FF4444" : "#555"} />
-                    <Text style={[styles.editUserBtnText, { color: u.hiddenFromCommunity ? "#FF4444" : "#555" }]}>
-                      {u.hiddenFromCommunity ? "Oculto" : "Visible"}
                     </Text>
                   </Pressable>
                   {!isCurrentUser && (
