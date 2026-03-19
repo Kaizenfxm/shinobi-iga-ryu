@@ -33,6 +33,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         sedes: usersTable.sedes,
         membershipStatus: usersTable.membershipStatus,
         membershipExpiresAt: usersTable.membershipExpiresAt,
+        membershipPausedAt: usersTable.membershipPausedAt,
         trialEndsAt: usersTable.trialEndsAt,
         lastPaymentAt: usersTable.lastPaymentAt,
       })
