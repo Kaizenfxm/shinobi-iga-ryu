@@ -280,7 +280,7 @@ export default function AlumnosScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.sectionLabel}>PELEADORES</Text>
+            <Text style={styles.sectionLabel}>LUCHADORES</Text>
             {fighters.length === 0 ? (
               <Text style={styles.noFightersText}>
                 No hay luchadores entre tus alumnos

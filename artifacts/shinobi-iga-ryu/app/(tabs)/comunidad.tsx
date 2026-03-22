@@ -1789,7 +1789,7 @@ function RankingTab() {
     <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
     >
-      <RankingSection title="⚔ PELEADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0}>
+      <RankingSection title="⚔ LUCHADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0}>
         {fighters.map((u, i) => (
           <RankingRow
             key={u.userId}
