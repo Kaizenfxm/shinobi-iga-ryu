@@ -684,6 +684,17 @@ beltsRouter.post("/admin/belts/promote", requireAdmin, async (req, res) => {
     const adminId = req.session.userId!;
 
     await db.transaction(async (tx) => {
+      // Clear any pending application for this discipline so it doesn't linger
+      await tx
+        .delete(beltApplicationsTable)
+        .where(
+          and(
+            eq(beltApplicationsTable.userId, parsedUserId),
+            eq(beltApplicationsTable.discipline, discipline as typeof validDisciplines[number]),
+            eq(beltApplicationsTable.status, "pending")
+          )
+        );
+
       await tx
         .update(studentBeltsTable)
         .set({
@@ -1259,6 +1270,17 @@ beltsRouter.post("/admin/belts/assign", requireAdmin, async (req, res) => {
       .orderBy(asc(beltDefinitionsTable.orderIndex));
 
     await db.transaction(async (tx) => {
+      // Cancel any pending belt application for this user/discipline so they can re-apply
+      await tx
+        .delete(beltApplicationsTable)
+        .where(
+          and(
+            eq(beltApplicationsTable.userId, userId),
+            eq(beltApplicationsTable.discipline, discipline),
+            eq(beltApplicationsTable.status, "pending")
+          )
+        );
+
       const [existing] = await tx
         .select()
         .from(studentBeltsTable)

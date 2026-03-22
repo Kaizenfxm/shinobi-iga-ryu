@@ -18,7 +18,9 @@
       "bundleIdentifier": "com.shinobiigarju.app",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Shinobi Iga Ryu uses your camera to update your profile picture and to scan QR codes to register your attendance at classes",
+        "NSPhotoLibraryUsageDescription": "Shinobi Iga Ryu needs access to your photo library to let you update your profile picture"
       }
     },
     "android": {
