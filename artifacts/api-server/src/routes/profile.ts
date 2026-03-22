@@ -346,4 +346,18 @@ profileRouter.put("/profile/me/fighter", requireAuth, async (req, res) => {
   }
 });
 
+profileRouter.delete("/profile/me", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+    req.session.destroy(() => {
+      res.clearCookie("sid");
+      res.json({ ok: true });
+    });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    res.status(500).json({ error: "Error al eliminar la cuenta" });
+  }
+});
+
 export default profileRouter;

@@ -516,6 +516,8 @@ export const profileApi = {
       method: "PATCH",
       body: { currentWeight },
     }),
+  deleteAccount: () =>
+    apiFetch<{ ok: boolean }>("/profile/me", { method: "DELETE" }),
 };
 
 export const avatarApi = {

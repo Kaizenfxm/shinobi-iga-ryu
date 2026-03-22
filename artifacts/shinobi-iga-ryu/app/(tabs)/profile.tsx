@@ -251,6 +251,61 @@ export default function ProfileScreen() {
     }
   };
 
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = () => {
+    const doDelete = async () => {
+      setDeletingAccount(true);
+      try {
+        await profileApi.deleteAccount();
+        await logout();
+      } catch {
+        Alert.alert("Error", "No se pudo eliminar la cuenta. Intenta de nuevo.");
+      } finally {
+        setDeletingAccount(false);
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (
+        (window as Window & typeof globalThis).confirm(
+          "¿Deseas eliminar tu cuenta? Esta acción es irreversible."
+        )
+      ) {
+        if (
+          (window as Window & typeof globalThis).confirm(
+            "Se eliminarán permanentemente todos tus datos: perfil, cinturones, peleas e historial. ¿Confirmas?"
+          )
+        ) {
+          void doDelete();
+        }
+      }
+      return;
+    }
+
+    Alert.alert(
+      "Eliminar cuenta",
+      "¿Deseas eliminar tu cuenta? Esta acción es irreversible.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Continuar",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Confirmación final",
+              "Se eliminarán permanentemente todos tus datos: perfil, cinturones, peleas e historial. ¿Confirmas?",
+              [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Sí, eliminar", style: "destructive", onPress: () => { void doDelete(); } },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const handleSendSuggestion = async () => {
     if (!suggestionText.trim()) return;
     setSuggestionSending(true);
@@ -918,6 +973,18 @@ export default function ProfileScreen() {
             <Text style={styles.suggestionsButtonText}>Sugerencias</Text>
           </Pressable>
 
+          <Pressable
+            style={styles.deleteAccountButton}
+            onPress={handleDeleteAccount}
+            disabled={deletingAccount}
+          >
+            {deletingAccount
+              ? <ActivityIndicator size="small" color="#FF4444" />
+              : <Ionicons name="trash-outline" size={16} color="#FF4444" />
+            }
+            <Text style={styles.deleteAccountText}>Eliminar cuenta</Text>
+          </Pressable>
+
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#FF4444" />
             <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -1199,6 +1266,25 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 13,
     color: "#666",
+    letterSpacing: 0.5,
+  },
+  deleteAccountButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#2a0000",
+    borderRadius: 12,
+    backgroundColor: "#0a0000",
+    opacity: 0.8,
+  },
+  deleteAccountText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#FF4444",
     letterSpacing: 0.5,
   },
   logoutButton: {
