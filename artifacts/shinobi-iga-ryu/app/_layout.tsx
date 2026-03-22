@@ -97,7 +97,16 @@ export default function RootLayout() {
     NotoSerifJP_900Black,
   });
 
-  const fontsLoaded = interLoaded && notoSansLoaded && notoSerifLoaded;
+  // Force-proceed after 2.5s so a slow/unavailable Google Fonts CDN
+  // never blocks the app (the webfontloader default timeout is 6000ms).
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setFontsTimedOut(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const fontsLoaded =
+    (interLoaded && notoSansLoaded && notoSerifLoaded) || fontsTimedOut;
   const fontError = interError || notoSansError || notoSerifError;
 
   const [splashDone, setSplashDone] = useState(false);
