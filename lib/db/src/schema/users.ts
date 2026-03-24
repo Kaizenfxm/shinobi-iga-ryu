@@ -26,6 +26,7 @@ export const usersTable = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at"),
   lastPaymentAt: timestamp("last_payment_at"),
   membershipNotes: text("membership_notes"),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

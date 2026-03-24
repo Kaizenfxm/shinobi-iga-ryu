@@ -80,6 +80,10 @@ async function runMigrations() {
        )`
     );
 
+    await client.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE;"
+    );
+
     console.log("[migrations] startup migrations complete");
   } catch (err) {
     console.error("[migrations] error running startup migrations:", err);

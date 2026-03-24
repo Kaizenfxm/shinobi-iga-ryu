@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable, pushTokensTable, suggestionsTable } from "@workspace/db";
 import { eq, and, or, desc, isNotNull, isNull, lte, notInArray, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/auth";
 
@@ -54,6 +54,7 @@ async function fetchUsersWithRoles() {
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
+    .where(eq(usersTable.isDeleted, false))
     .orderBy(desc(usersTable.createdAt));
 
   const allRoles = await db
@@ -245,7 +246,7 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
     }
 
     const [existing] = await db
-      .select({ id: usersTable.id })
+      .select({ id: usersTable.id, isDeleted: usersTable.isDeleted })
       .from(usersTable)
       .where(eq(usersTable.id, userId))
       .limit(1);
@@ -255,39 +256,45 @@ adminRouter.delete("/admin/users/:id", requireAdmin, async (req, res) => {
       return;
     }
 
+    if (existing.isDeleted) {
+      res.status(400).json({ error: "El usuario ya ha sido eliminado" });
+      return;
+    }
+
+    const randomHash = await bcrypt.hash(Math.random().toString(36) + Date.now(), 12);
+    const anonymousEmail = `deleted_${userId}_${Date.now()}@deleted.shinobi`;
+
     await db.transaction(async (tx) => {
-      await tx.update(exercisesTable).set({ createdByUserId: null }).where(eq(exercisesTable.createdByUserId, userId));
-      await tx.update(knowledgeItemsTable).set({ createdByUserId: null }).where(eq(knowledgeItemsTable.createdByUserId, userId));
-      await tx.update(beltHistoryTable).set({ promotedBy: null }).where(eq(beltHistoryTable.promotedBy, userId));
-      const userNotifs = await tx.select({ id: notificationsTable.id }).from(notificationsTable).where(
-        or(eq(notificationsTable.createdByUserId, userId), eq(notificationsTable.targetUserId, userId))
-      );
-      if (userNotifs.length > 0) {
-        await tx.delete(notificationReadsTable).where(inArray(notificationReadsTable.notificationId, userNotifs.map((n) => n.id)));
-      }
-      await tx.delete(notificationsTable).where(eq(notificationsTable.createdByUserId, userId));
-      await tx.delete(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
+      // Anonymize personal data — user row stays for FK integrity
+      await tx.update(usersTable).set({
+        displayName: "Ninja Anónimo",
+        email: anonymousEmail,
+        passwordHash: randomHash,
+        avatarUrl: null,
+        phone: null,
+        isDeleted: true,
+        hiddenFromCommunity: true,
+        isFighter: false,
+        updatedAt: new Date(),
+      }).where(eq(usersTable.id, userId));
+
+      // Remove roles (blocks login and any access)
+      await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
+
+      // Remove push tokens (no more notifications)
+      await tx.delete(pushTokensTable).where(eq(pushTokensTable.userId, userId));
+
+      // Remove personal suggestions (private content)
+      await tx.delete(suggestionsTable).where(eq(suggestionsTable.userId, userId));
+
+      // Remove personal notification reads and inbox
       await tx.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, userId));
-      await tx.delete(studentRequirementChecksTable).where(eq(studentRequirementChecksTable.userId, userId));
-      await tx.delete(beltApplicationsTable).where(eq(beltApplicationsTable.userId, userId));
-      await tx.delete(studentBeltUnlocksTable).where(
-        or(eq(studentBeltUnlocksTable.userId, userId), eq(studentBeltUnlocksTable.unlockedBy, userId))
-      );
-      await tx.delete(beltHistoryTable).where(eq(beltHistoryTable.userId, userId));
-      await tx.delete(studentBeltsTable).where(eq(studentBeltsTable.userId, userId));
-      await tx.delete(fightsTable).where(
-        or(eq(fightsTable.userId, userId), eq(fightsTable.registeredBy, userId))
-      );
-      await tx.delete(paymentHistoryTable).where(
-        or(eq(paymentHistoryTable.userId, userId), eq(paymentHistoryTable.registeredBy, userId))
-      );
+      await tx.delete(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
+
+      // Remove from profesor-alumno assignments
       await tx.delete(profesorStudentsTable).where(
         or(eq(profesorStudentsTable.profesorId, userId), eq(profesorStudentsTable.alumnoId, userId))
       );
-      await tx.delete(classAttendancesTable).where(eq(classAttendancesTable.userId, userId));
-      await tx.delete(anthropometricEvaluationsTable).where(eq(anthropometricEvaluationsTable.userId, userId));
-      await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
-      await tx.delete(usersTable).where(eq(usersTable.id, userId));
     });
 
     res.json({ success: true });

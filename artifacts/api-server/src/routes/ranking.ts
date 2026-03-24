@@ -12,6 +12,7 @@ async function getActiveAlumnoIds(): Promise<number[]> {
     .where(and(
       eq(usersTable.membershipStatus, "activo"),
       eq(usersTable.hiddenFromCommunity, false),
+      eq(usersTable.isDeleted, false),
     ));
   return rows.map((r) => r.id);
 }

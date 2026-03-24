@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, userRolesTable, profesorStudentsTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import { requireProfesor } from "../middlewares/auth";
 
 const profesorRouter = Router();
@@ -31,7 +31,7 @@ profesorRouter.get("/profesor/alumnos", requireProfesor, async (req, res) => {
         isFighter: usersTable.isFighter,
       })
       .from(usersTable)
-      .where(inArray(usersTable.id, alumnoIds));
+      .where(and(inArray(usersTable.id, alumnoIds), eq(usersTable.isDeleted, false)));
 
     const allRoles = await db
       .select({

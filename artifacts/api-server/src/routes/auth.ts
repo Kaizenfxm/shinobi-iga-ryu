@@ -125,7 +125,7 @@ authRouter.post("/auth/login", async (req, res) => {
       .where(eq(usersTable.email, email.toLowerCase().trim()))
       .limit(1);
 
-    if (!user) {
+    if (!user || user.isDeleted) {
       res.status(401).json({ error: "Credenciales inválidas" });
       return;
     }

@@ -7,8 +7,13 @@ import {
   beltDefinitionsTable,
   fightsTable,
   anthropometricEvaluationsTable,
+  pushTokensTable,
+  suggestionsTable,
+  notificationsTable,
+  notificationReadsTable,
+  profesorStudentsTable,
 } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, or } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import bcrypt from "bcryptjs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -349,7 +354,32 @@ profileRouter.put("/profile/me/fighter", requireAuth, async (req, res) => {
 profileRouter.delete("/profile/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    await db.delete(usersTable).where(eq(usersTable.id, userId));
+    const randomHash = await bcrypt.hash(Math.random().toString(36) + Date.now(), 12);
+    const anonymousEmail = `deleted_${userId}_${Date.now()}@deleted.shinobi`;
+
+    await db.transaction(async (tx) => {
+      await tx.update(usersTable).set({
+        displayName: "Ninja Anónimo",
+        email: anonymousEmail,
+        passwordHash: randomHash,
+        avatarUrl: null,
+        phone: null,
+        isDeleted: true,
+        hiddenFromCommunity: true,
+        isFighter: false,
+        updatedAt: new Date(),
+      }).where(eq(usersTable.id, userId));
+
+      await tx.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
+      await tx.delete(pushTokensTable).where(eq(pushTokensTable.userId, userId));
+      await tx.delete(suggestionsTable).where(eq(suggestionsTable.userId, userId));
+      await tx.delete(notificationReadsTable).where(eq(notificationReadsTable.userId, userId));
+      await tx.delete(notificationsTable).where(eq(notificationsTable.targetUserId, userId));
+      await tx.delete(profesorStudentsTable).where(
+        or(eq(profesorStudentsTable.profesorId, userId), eq(profesorStudentsTable.alumnoId, userId))
+      );
+    });
+
     req.session.destroy(() => {
       res.clearCookie("sid");
       res.json({ ok: true });
