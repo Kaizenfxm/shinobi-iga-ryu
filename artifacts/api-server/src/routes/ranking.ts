@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, fightsTable, classAttendancesTable, challengesTable, studentBeltsTable, beltDefinitionsTable } from "@workspace/db";
+import { db, usersTable, fightsTable, classAttendancesTable, challengesTable, studentBeltsTable, beltDefinitionsTable, trainingSystemsTable } from "@workspace/db";
 import { eq, and, sql, count, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
@@ -136,21 +136,40 @@ rankingRouter.get("/ranking/challenges", requireAuth, async (req, res) => {
     return;
   }
 
-  const stats = await db
+  const wonRows = await db
     .select({
-      userId: challengesTable.winnerId,
-      wins: count(challengesTable.id),
+      id: challengesTable.id,
+      winnerId: challengesTable.winnerId,
+      challengerId: challengesTable.challengerId,
+      challengedId: challengesTable.challengedId,
+      scheduledAt: challengesTable.scheduledAt,
+      artName: trainingSystemsTable.name,
     })
     .from(challengesTable)
-    .where(
-      and(
-        eq(challengesTable.status, "completed"),
-        inArray(challengesTable.winnerId, activeIds)
-      )
-    )
-    .groupBy(challengesTable.winnerId);
+    .innerJoin(trainingSystemsTable, eq(challengesTable.trainingSystemId, trainingSystemsTable.id))
+    .where(and(eq(challengesTable.status, "completed"), inArray(challengesTable.winnerId, activeIds)));
 
-  const statsMap = new Map(stats.map((s) => [s.userId!, Number(s.wins)]));
+  const opponentIds = [...new Set(wonRows.map((c) =>
+    c.winnerId === c.challengerId ? c.challengedId : c.challengerId
+  ))];
+
+  const opponents = opponentIds.length > 0
+    ? await db.select({ id: usersTable.id, displayName: usersTable.displayName }).from(usersTable).where(inArray(usersTable.id, opponentIds))
+    : [];
+  const opponentMap = new Map(opponents.map((o) => [o.id, o.displayName]));
+
+  const challengesByWinner = new Map<number, Array<{ id: number; opponentName: string; artName: string; scheduledAt: string }>>();
+  for (const c of wonRows) {
+    const opponentId = c.winnerId === c.challengerId ? c.challengedId : c.challengerId;
+    const list = challengesByWinner.get(c.winnerId!) ?? [];
+    list.push({
+      id: c.id,
+      opponentName: opponentMap.get(opponentId) ?? "Desconocido",
+      artName: c.artName,
+      scheduledAt: c.scheduledAt.toISOString(),
+    });
+    challengesByWinner.set(c.winnerId!, list);
+  }
 
   const users = await db
     .select({ id: usersTable.id, displayName: usersTable.displayName, avatarUrl: usersTable.avatarUrl })
@@ -158,12 +177,16 @@ rankingRouter.get("/ranking/challenges", requireAuth, async (req, res) => {
     .where(inArray(usersTable.id, activeIds));
 
   const ranking = users
-    .map((u) => ({
-      userId: u.id,
-      displayName: u.displayName,
-      avatarUrl: u.avatarUrl,
-      wins: statsMap.get(u.id) ?? 0,
-    }))
+    .map((u) => {
+      const won = challengesByWinner.get(u.id) ?? [];
+      return {
+        userId: u.id,
+        displayName: u.displayName,
+        avatarUrl: u.avatarUrl,
+        wins: won.length,
+        wonChallenges: won,
+      };
+    })
     .filter((u) => u.wins > 0)
     .sort((a, b) => b.wins - a.wins);
 

@@ -961,11 +961,19 @@ export interface RankingAttendanceEntry {
   attendances: number;
 }
 
+export interface RankingWonChallenge {
+  id: number;
+  opponentName: string;
+  artName: string;
+  scheduledAt: string;
+}
+
 export interface RankingChallengeEntry {
   userId: number;
   displayName: string;
   avatarUrl: string | null;
   wins: number;
+  wonChallenges: RankingWonChallenge[];
 }
 
 export const rankingApi = {
