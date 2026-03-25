@@ -3058,7 +3058,7 @@ export function EntrenamientoPanel() {
                 <View key={cat.id} style={trnStyles.catRow}>
                   {cat.imageUrl ? (
                     <Image
-                      source={{ uri: cat.imageUrl.startsWith("/objects/") ? `https://shinobi-iga-ryu-production.up.railway.app/api/storage${cat.imageUrl}` : cat.imageUrl }}
+                      source={{ uri: getAvatarServingUrl(cat.imageUrl) ?? cat.imageUrl }}
                       style={trnStyles.catThumb}
                     />
                   ) : (
@@ -3148,7 +3148,7 @@ export function EntrenamientoPanel() {
                 <ActivityIndicator color="#D4AF37" size="small" />
               ) : catImageUrl ? (
                 <Image
-                  source={{ uri: catImageUrl.startsWith("/objects/") ? `https://shinobi-iga-ryu-production.up.railway.app/api/storage${catImageUrl}` : catImageUrl }}
+                  source={{ uri: getAvatarServingUrl(catImageUrl) ?? catImageUrl }}
                   style={trnStyles.imagePreview}
                 />
               ) : (
