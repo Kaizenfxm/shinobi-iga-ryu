@@ -522,6 +522,7 @@ function EventosTab({ canManage, extraEvents }: {
   canManage: boolean;
   extraEvents?: EventItem[];
 }) {
+  const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -599,7 +600,7 @@ function EventosTab({ canManage, extraEvents }: {
     <View style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#D4AF37" />}
       >
         {events.length === 0 ? (
@@ -1149,6 +1150,7 @@ function ComingSoon() {
 }
 
 function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUserId: number }) {
+  const insets = useSafeAreaInsets();
   const { refresh: refreshBadge } = useChallenges();
   const [users, setUsers] = useState<ChallengeUser[]>([]);
   const [search, setSearch] = useState("");
@@ -1257,7 +1259,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
     <View style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#D4AF37" />}
       >
         <View style={rStyles.searchWrapper}>
@@ -1932,6 +1934,7 @@ function RankingSection({
 }
 
 function RankingTab() {
+  const insets = useSafeAreaInsets();
   const [fighters, setFighters] = useState<RankingFighterEntry[]>([]);
   const [attendance, setAttendance] = useState<RankingAttendanceEntry[]>([]);
   const [challenges, setChallenges] = useState<RankingChallengeEntry[]>([]);
@@ -1956,7 +1959,7 @@ function RankingTab() {
   const onRefresh = () => { setRefreshing(true); load(); };
 
   return (
-    <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}
+    <ScrollView style={rkStyles.scroll} contentContainerStyle={[rkStyles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
     >
       <RankingSection title="⚔ LUCHADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0} count={fighters.length}>

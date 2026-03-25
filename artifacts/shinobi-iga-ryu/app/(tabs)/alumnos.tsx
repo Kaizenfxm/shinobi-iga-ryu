@@ -192,7 +192,7 @@ export default function AlumnosScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
+          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: isWeb ? 100 : insets.bottom + 80 },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />

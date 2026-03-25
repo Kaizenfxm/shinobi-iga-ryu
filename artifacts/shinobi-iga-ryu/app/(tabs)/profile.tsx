@@ -565,7 +565,7 @@ export default function ProfileScreen() {
         ref={scrollRef}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: 100 },
+          { paddingTop: (isWeb ? 67 : insets.top) + 16, paddingBottom: isWeb ? 100 : insets.bottom + 80 },
         ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
       >

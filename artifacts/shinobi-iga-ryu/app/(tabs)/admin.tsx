@@ -4317,7 +4317,7 @@ export default function AdminScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: 0, paddingBottom: 100 },
+          { paddingTop: 0, paddingBottom: isWeb ? 100 : insets.bottom + 80 },
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />

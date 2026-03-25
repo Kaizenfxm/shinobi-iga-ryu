@@ -102,7 +102,7 @@ export default function MartialArtsScreen() {
           styles.scrollContent,
           {
             paddingTop: (isWeb ? 67 : insets.top) + 16,
-            paddingBottom: 100,
+            paddingBottom: isWeb ? 100 : insets.bottom + 80,
           },
         ]}
         showsVerticalScrollIndicator={false}

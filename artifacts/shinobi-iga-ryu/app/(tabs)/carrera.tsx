@@ -10,6 +10,7 @@ import { classesApi, type MyAttendanceItem, type MyAttendanceStats } from "@/lib
 type SubTab = "cinturones" | "peleas" | "clases";
 
 function ClasesTab() {
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<MyAttendanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +47,7 @@ function ClasesTab() {
     <View style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />}
       >
         {data && (
