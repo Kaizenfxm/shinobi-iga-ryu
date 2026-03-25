@@ -3094,6 +3094,20 @@ export function EntrenamientoPanel() {
     }
   };
 
+  const handleReorderKnowledge = async (catItems: KnowledgeItemData[], fromIndex: number, toIndex: number) => {
+    const reordered = reorderItems(catItems, fromIndex, toIndex);
+    const withNewOrder = reordered.map((k, idx) => ({ ...k, orderIndex: idx }));
+    setKnowledge((prev) => {
+      const updatedIds = new Set(withNewOrder.map((k) => k.id));
+      return [...prev.filter((k) => !updatedIds.has(k.id)), ...withNewOrder];
+    });
+    try {
+      await trainingApi.reorderKnowledge(withNewOrder.map((k) => ({ id: k.id, orderIndex: k.orderIndex })));
+    } catch {
+      if (selectedSystem) void loadSystemDetail(selectedSystem);
+    }
+  };
+
   if (loadingSystems) {
     return <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />;
   }
@@ -3190,7 +3204,7 @@ export function EntrenamientoPanel() {
                           <Text style={{ color: "#D4AF37", fontSize: 12, fontFamily: "NotoSansJP_400Regular" }}>+ Agregar</Text>
                         </Pressable>
                       </View>
-                    ) : Platform.OS !== "web" ? (
+                    ) : (
                       <NestedReorderableList
                         data={catExercises}
                         onReorder={({ from, to }) => { void handleReorderExercises(catExercises, from, to); }}
@@ -3202,14 +3216,6 @@ export function EntrenamientoPanel() {
                         )}
                         keyExtractor={(item) => String(item.id)}
                       />
-                    ) : (
-                      catExercises.map((ex) => (
-                        <ExerciseItemRow
-                          key={ex.id}
-                          exercise={ex}
-                          onDotPress={() => setActionSheet({ type: "exercise", exercise: ex })}
-                        />
-                      ))
                     )}
                   </View>
                 ) : null}
@@ -3233,27 +3239,17 @@ export function EntrenamientoPanel() {
                 </Pressable>
                 {isExpanded ? (
                   <View style={trnStyles.accordionBody}>
-                    {Platform.OS !== "web" ? (
-                      <NestedReorderableList
-                        data={uncatExercises}
-                        onReorder={({ from, to }) => { void handleReorderExercises(uncatExercises, from, to); }}
-                        renderItem={({ item }: ReorderableListRenderItemInfo<ExerciseData>) => (
-                          <ExerciseItemRowDraggable
-                            exercise={item}
-                            onDotPress={() => setActionSheet({ type: "exercise", exercise: item })}
-                          />
-                        )}
-                        keyExtractor={(item) => String(item.id)}
-                      />
-                    ) : (
-                      uncatExercises.map((ex) => (
-                        <ExerciseItemRow
-                          key={ex.id}
-                          exercise={ex}
-                          onDotPress={() => setActionSheet({ type: "exercise", exercise: ex })}
+                    <NestedReorderableList
+                      data={uncatExercises}
+                      onReorder={({ from, to }) => { void handleReorderExercises(uncatExercises, from, to); }}
+                      renderItem={({ item }: ReorderableListRenderItemInfo<ExerciseData>) => (
+                        <ExerciseItemRowDraggable
+                          exercise={item}
+                          onDotPress={() => setActionSheet({ type: "exercise", exercise: item })}
                         />
-                      ))
-                    )}
+                      )}
+                      keyExtractor={(item) => String(item.id)}
+                    />
                   </View>
                 ) : null}
               </View>
@@ -3304,13 +3300,17 @@ export function EntrenamientoPanel() {
                         </Pressable>
                       </View>
                     ) : (
-                      catItems.map((ki) => (
-                        <KnowledgeItemRow
-                          key={ki.id}
-                          item={ki}
-                          onDotPress={() => setActionSheet({ type: "kitem", kitem: ki })}
-                        />
-                      ))
+                      <NestedReorderableList
+                        data={catItems}
+                        onReorder={({ from, to }) => { void handleReorderKnowledge(catItems, from, to); }}
+                        renderItem={({ item }: ReorderableListRenderItemInfo<KnowledgeItemData>) => (
+                          <KnowledgeItemRowDraggable
+                            item={item}
+                            onDotPress={() => setActionSheet({ type: "kitem", kitem: item })}
+                          />
+                        )}
+                        keyExtractor={(item) => String(item.id)}
+                      />
                     )}
                   </View>
                 ) : null}
@@ -3334,13 +3334,17 @@ export function EntrenamientoPanel() {
                 </Pressable>
                 {isExpanded ? (
                   <View style={trnStyles.accordionBody}>
-                    {uncatItems.map((ki) => (
-                      <KnowledgeItemRow
-                        key={ki.id}
-                        item={ki}
-                        onDotPress={() => setActionSheet({ type: "kitem", kitem: ki })}
-                      />
-                    ))}
+                    <NestedReorderableList
+                      data={uncatItems}
+                      onReorder={({ from, to }) => { void handleReorderKnowledge(uncatItems, from, to); }}
+                      renderItem={({ item }: ReorderableListRenderItemInfo<KnowledgeItemData>) => (
+                        <KnowledgeItemRowDraggable
+                          item={item}
+                          onDotPress={() => setActionSheet({ type: "kitem", kitem: item })}
+                        />
+                      )}
+                      keyExtractor={(item) => String(item.id)}
+                    />
                   </View>
                 ) : null}
               </View>
@@ -3689,7 +3693,7 @@ function ExerciseItemRowDraggable({ exercise, onDotPress }: { exercise: Exercise
   return <ExerciseItemRow exercise={exercise} drag={drag} onDotPress={onDotPress} />;
 }
 
-function KnowledgeItemRow({ item, onDotPress }: { item: KnowledgeItemData; onDotPress: () => void }) {
+function KnowledgeItemRow({ item, drag, onDotPress }: { item: KnowledgeItemData; drag?: (() => void) | null; onDotPress: () => void }) {
   return (
     <View style={trnStyles.exerciseItemRow}>
       <View style={{ flex: 1 }}>
@@ -3701,8 +3705,18 @@ function KnowledgeItemRow({ item, onDotPress }: { item: KnowledgeItemData; onDot
       <Pressable style={trnStyles.dotBtn} hitSlop={10} onPress={onDotPress}>
         <Ionicons name="ellipsis-vertical" size={16} color="#555" />
       </Pressable>
+      {drag ? (
+        <Pressable onLongPress={drag} delayLongPress={150} style={trnStyles.dragHandle}>
+          <Ionicons name="reorder-three-outline" size={22} color="#444" />
+        </Pressable>
+      ) : null}
     </View>
   );
+}
+
+function KnowledgeItemRowDraggable({ item, onDotPress }: { item: KnowledgeItemData; onDotPress: () => void }) {
+  const drag = useReorderableDrag();
+  return <KnowledgeItemRow item={item} drag={drag} onDotPress={onDotPress} />;
 }
 
 const trnStyles = StyleSheet.create({

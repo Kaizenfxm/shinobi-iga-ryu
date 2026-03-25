@@ -737,6 +737,9 @@ export const trainingApi = {
   reorderExercises: (items: { id: number; orderIndex: number }[]) =>
     apiFetch<{ success: boolean }>("/admin/training/exercises/reorder", { method: "PATCH", body: { items } }),
 
+  reorderKnowledge: (items: { id: number; orderIndex: number }[]) =>
+    apiFetch<{ success: boolean }>("/admin/training/knowledge/reorder", { method: "PATCH", body: { items } }),
+
   uploadCategoryImageDirect: async (blob: Blob, mimeType: string): Promise<string> => {
     const res = await fetch(`${BASE_URL}/api/admin/training/category-image-upload`, {
       method: "POST",

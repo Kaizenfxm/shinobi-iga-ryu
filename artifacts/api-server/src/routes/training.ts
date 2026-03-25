@@ -943,6 +943,27 @@ trainingRouter.patch("/admin/training/exercises/reorder", requireProfesorOrAdmin
   }
 });
 
+trainingRouter.patch("/admin/training/knowledge/reorder", requireProfesorOrAdmin, async (req, res) => {
+  try {
+    const items = req.body.items as { id: number; orderIndex: number }[];
+    if (!Array.isArray(items)) {
+      res.status(400).json({ error: "items debe ser un arreglo" });
+      return;
+    }
+    await db.transaction(async (tx) => {
+      for (const item of items) {
+        const id = typeof item.id === "number" ? item.id : parseInt(String(item.id), 10);
+        const idx = typeof item.orderIndex === "number" ? item.orderIndex : parseInt(String(item.orderIndex), 10);
+        await tx.update(knowledgeItemsTable).set({ orderIndex: idx }).where(eq(knowledgeItemsTable.id, id));
+      }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Reorder knowledge error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 trainingRouter.post("/training/knowledge/:id/view", requireAuth, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
