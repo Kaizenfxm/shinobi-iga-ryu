@@ -63,7 +63,8 @@ const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
   katas: require("@/assets/images/categories/katas.png"),
 };
 
-function getCategoryImage(name: string, systemKey: string): ImageSourcePropType {
+function getCategoryImage(name: string, systemKey: string, imageUrl?: string | null): ImageSourcePropType {
+  if (imageUrl) return { uri: imageUrl };
   const key = name.toLowerCase().trim();
   if (CATEGORY_IMAGES[key]) return CATEGORY_IMAGES[key];
   return SYSTEM_ART_IMAGES[systemKey] ?? require("@/assets/images/arts/ninjutsu.jpg");
@@ -211,7 +212,7 @@ function CategoryCard({
   const gap = 10;
   const padding = 16;
   const cardSize = (width - padding * 2 - gap) / 2;
-  const img = getCategoryImage(category.name, sistemaKey);
+  const img = getCategoryImage(category.name, sistemaKey, category.imageUrl);
 
   return (
     <Pressable
