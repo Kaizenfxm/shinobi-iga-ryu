@@ -944,6 +944,7 @@ export default function ProfileScreen() {
                 )}
               </View>
 
+              {(!membershipExpiresAt || (daysRemaining !== null && daysRemaining <= 7)) && (
               <View style={membershipStyles.actions}>
                 {pubSettings?.whatsappAdminNumber ? (
                   <Pressable
@@ -968,6 +969,7 @@ export default function ProfileScreen() {
                   </Pressable>
                 ) : null}
               </View>
+              )}
             </View>
           )}
 
