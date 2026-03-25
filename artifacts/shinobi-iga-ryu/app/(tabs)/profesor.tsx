@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, type UserData } from "@/lib/api";
 import {
   FightsPanel,
@@ -36,7 +35,6 @@ const TABS: { key: ProfesorTab; label: string; icon: string }[] = [
 export default function ProfesorScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfesorTab>("peleas");
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
