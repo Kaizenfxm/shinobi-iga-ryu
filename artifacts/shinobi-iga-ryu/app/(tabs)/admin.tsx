@@ -2917,7 +2917,7 @@ export function EntrenamientoPanel() {
         setItemReqBeltOrder(null);
         setItemReqMinWins("");
         setItemReqMinAttendances("");
-        setItemPrerequisiteIds([]);
+        setItemPrerequisiteIds(ki.prerequisiteIds ?? []);
       }
     } else {
       setEditingItem(null);
@@ -2986,6 +2986,7 @@ export function EntrenamientoPanel() {
             videoUrl: itemVideoUrl.trim() || null,
             orderIndex: editingItem.orderIndex,
             categoryId: itemCategoryId,
+            prerequisiteIds: itemPrerequisiteIds,
           });
         } else {
           const catKnCount = knowledge.filter((k) => k.categoryId === (itemCategoryId ?? null) || (itemCategoryId == null && k.categoryId == null)).length;
@@ -2996,6 +2997,7 @@ export function EntrenamientoPanel() {
             videoUrl: itemVideoUrl.trim() || undefined,
             orderIndex: catKnCount,
             categoryId: itemCategoryId || undefined,
+            prerequisiteIds: itemPrerequisiteIds.length > 0 ? itemPrerequisiteIds : undefined,
           });
         }
       }
@@ -3498,7 +3500,35 @@ export function EntrenamientoPanel() {
                     ) : null}
                   </View>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <Text style={[trnStyles.fieldLabel, { marginTop: 12, color: "#D4AF37" }]}>— CONOCIMIENTO PRERREQUISITO —</Text>
+                  <Text style={{ color: "#555", fontSize: 11, fontFamily: "NotoSansJP_400Regular", marginBottom: 6 }}>El alumno debe leer estos conocimientos primero:</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {knowledge
+                      .filter((k) => k.id !== editingItem?.id)
+                      .map((k) => {
+                        const isSelected = itemPrerequisiteIds.includes(k.id);
+                        return (
+                          <Pressable
+                            key={k.id}
+                            style={[trnStyles.chipBtn, isSelected && trnStyles.chipBtnActive]}
+                            onPress={() => {
+                              setItemPrerequisiteIds((prev) =>
+                                isSelected ? prev.filter((id) => id !== k.id) : [...prev, k.id]
+                              );
+                            }}
+                          >
+                            <Text style={[trnStyles.chipText, isSelected && trnStyles.chipTextActive]} numberOfLines={1}>{k.title}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    {knowledge.filter((k) => k.id !== editingItem?.id).length === 0 ? (
+                      <Text style={{ color: "#444", fontSize: 11, fontFamily: "NotoSansJP_400Regular" }}>Sin otros conocimientos en este sistema</Text>
+                    ) : null}
+                  </View>
+                </>
+              )}
               <Pressable style={[trnStyles.saveBtn, savingItem && { opacity: 0.6 }]} onPress={saveItem} disabled={savingItem}>
                 {savingItem ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
               </Pressable>

@@ -162,6 +162,7 @@ export default function EntrenamientoScreen() {
               items={data?.knowledge ?? []}
               categories={data?.knowledgeCategories ?? []}
               sistemaKey={sistemaKey}
+              onView={load}
             />
           ) : (
             <EjerciciosTab
@@ -185,6 +186,9 @@ type KnowledgeItem = {
   imageUrl: string | null;
   orderIndex: number;
   categoryId: number | null;
+  isLocked?: boolean;
+  lockReason?: string | null;
+  viewedByUser?: boolean;
 };
 
 type ExerciseItem = {
@@ -239,24 +243,55 @@ function CategoryCard({
 
 const UNCATEGORIZED_ID = -1;
 
-function KnowledgeCard({ item }: { item: KnowledgeItem }) {
+function KnowledgeCard({ item, onView }: { item: KnowledgeItem; onView?: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const viewedRef = useRef(false);
+  const locked = item.isLocked ?? false;
+
+  const handlePress = () => {
+    if (locked) {
+      if (Platform.OS === "web") {
+        window.alert(item.lockReason ?? "Este conocimiento está bloqueado");
+      } else {
+        Alert.alert("Bloqueado", item.lockReason ?? "Debes leer los conocimientos previos primero", [{ text: "Entendido" }]);
+      }
+      return;
+    }
+    setExpanded((v) => !v);
+    if (!expanded && !viewedRef.current && !item.viewedByUser) {
+      viewedRef.current = true;
+      trainingApi.viewKnowledge(item.id)
+        .then(() => { onView?.(); })
+        .catch(() => {});
+    }
+  };
+
   return (
-    <View style={styles.knowledgeCard}>
-      <View style={styles.cardGoldBar} />
+    <View style={[styles.knowledgeCard, locked && styles.knowledgeCardLocked]}>
+      <View style={[styles.cardGoldBar, locked && { backgroundColor: "#333" }]} />
       <Pressable
         style={styles.exerciseCardTop}
-        onPress={() => setExpanded((v) => !v)}
+        onPress={handlePress}
       >
-        <Text style={[styles.knowledgeTitle, { flex: 1, marginTop: 4 }]}>{item.title}</Text>
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+          {locked ? (
+            <Ionicons name="lock-closed" size={13} color="#555" />
+          ) : item.viewedByUser || (expanded && viewedRef.current) ? (
+            <Ionicons name="checkmark-circle" size={13} color="#22C55E" />
+          ) : null}
+          <Text style={[styles.knowledgeTitle, locked && { color: "#555" }]}>{item.title}</Text>
+        </View>
         <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
+          name={locked ? "lock-closed" : expanded ? "chevron-up" : "chevron-down"}
           size={14}
-          color="#555"
+          color={locked ? "#333" : "#555"}
           style={{ marginTop: 4 }}
         />
       </Pressable>
-      {expanded ? (
+      {locked && item.lockReason ? (
+        <Text style={styles.lockReason}>{item.lockReason}</Text>
+      ) : null}
+      {!locked && expanded ? (
         <View style={{ gap: 8 }}>
           {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
           {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
@@ -266,12 +301,12 @@ function KnowledgeCard({ item }: { item: KnowledgeItem }) {
   );
 }
 
-function KnowledgeList({ items }: { items: KnowledgeItem[] }) {
+function KnowledgeList({ items, onView }: { items: KnowledgeItem[]; onView?: () => void }) {
   if (items.length === 0) return null;
   return (
     <>
       {items.map((item) => (
-        <KnowledgeCard key={item.id} item={item} />
+        <KnowledgeCard key={item.id} item={item} onView={onView} />
       ))}
     </>
   );
@@ -363,10 +398,12 @@ function ExerciseList({ items, onComplete }: { items: ExerciseItem[]; onComplete
 function ConocimientoTab({
   items,
   categories,
+  onView,
 }: {
   items: KnowledgeItem[];
   categories: KnowledgeCategoryData[];
   sistemaKey: string;
+  onView?: () => void;
 }) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
@@ -402,7 +439,7 @@ function ConocimientoTab({
   }
 
   if (categories.length === 0) {
-    return <View style={styles.listContainer}><KnowledgeList items={items} /></View>;
+    return <View style={styles.listContainer}><KnowledgeList items={items} onView={onView} /></View>;
   }
 
   return (
@@ -422,7 +459,7 @@ function ConocimientoTab({
                 {catItems.length === 0 ? (
                   <Text style={[styles.knowledgeContent, { textAlign: "center", paddingVertical: 12 }]}>Sin contenido en esta categoría</Text>
                 ) : (
-                  <KnowledgeList items={catItems} />
+                  <KnowledgeList items={catItems} onView={onView} />
                 )}
               </View>
             ) : null}
@@ -438,7 +475,7 @@ function ConocimientoTab({
           </Pressable>
           {expandedIds.has(UNCATEGORIZED_ID) ? (
             <View style={{ gap: 6, paddingTop: 6 }}>
-              <KnowledgeList items={uncategorized} />
+              <KnowledgeList items={uncategorized} onView={onView} />
             </View>
           ) : null}
         </View>
@@ -738,6 +775,17 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
     overflow: "hidden",
+  },
+  knowledgeCardLocked: {
+    borderColor: "#111",
+    opacity: 0.7,
+  },
+  lockReason: {
+    fontSize: 11,
+    fontFamily: "NotoSansJP_400Regular",
+    color: "#444",
+    paddingHorizontal: 4,
+    paddingBottom: 4,
   },
   cardGoldBar: {
     position: "absolute",

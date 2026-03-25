@@ -641,6 +641,10 @@ export interface KnowledgeItemData {
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
+  isLocked?: boolean;
+  lockReason?: string | null;
+  viewedByUser?: boolean;
+  prerequisiteIds?: number[];
 }
 
 export interface TrainingSystemDetail {
@@ -684,6 +688,9 @@ export const trainingApi = {
   deleteExercise: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/training/exercises/${id}`, { method: "DELETE" }),
 
+  viewKnowledge: (id: number) =>
+    apiFetch<{ viewed: boolean }>(`/training/knowledge/${id}/view`, { method: "POST" }),
+
   createKnowledge: (data: {
     trainingSystemId: number;
     title: string;
@@ -692,9 +699,10 @@ export const trainingApi = {
     imageUrl?: string;
     orderIndex?: number;
     categoryId?: number;
+    prerequisiteIds?: number[];
   }) => apiFetch<{ item: KnowledgeItemData }>("/admin/training/knowledge", { method: "POST", body: data }),
 
-  updateKnowledge: (id: number, data: Partial<KnowledgeItemData>) =>
+  updateKnowledge: (id: number, data: Partial<KnowledgeItemData> & { prerequisiteIds?: number[] }) =>
     apiFetch<{ item: KnowledgeItemData }>(`/admin/training/knowledge/${id}`, { method: "PUT", body: data }),
 
   deleteKnowledge: (id: number) =>

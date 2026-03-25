@@ -102,3 +102,28 @@ export const userExerciseCompletionsTable = pgTable("user_exercise_completions",
 }, (table) => [
   uniqueIndex("user_exercise_completions_idx").on(table.userId, table.exerciseId),
 ]);
+
+export const knowledgePrerequisitesTable = pgTable("knowledge_prerequisites", {
+  id: serial("id").primaryKey(),
+  knowledgeItemId: integer("knowledge_item_id")
+    .references(() => knowledgeItemsTable.id, { onDelete: "cascade" })
+    .notNull(),
+  prerequisiteKnowledgeItemId: integer("prerequisite_knowledge_item_id")
+    .references(() => knowledgeItemsTable.id, { onDelete: "cascade" })
+    .notNull(),
+}, (table) => [
+  uniqueIndex("knowledge_prereqs_idx").on(table.knowledgeItemId, table.prerequisiteKnowledgeItemId),
+]);
+
+export const userKnowledgeViewsTable = pgTable("user_knowledge_views", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => usersTable.id, { onDelete: "cascade" })
+    .notNull(),
+  knowledgeItemId: integer("knowledge_item_id")
+    .references(() => knowledgeItemsTable.id, { onDelete: "cascade" })
+    .notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("user_knowledge_views_idx").on(table.userId, table.knowledgeItemId),
+]);

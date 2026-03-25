@@ -8,6 +8,8 @@ import {
   knowledgeCategoriesTable,
   exercisePrerequisitesTable,
   userExerciseCompletionsTable,
+  knowledgePrerequisitesTable,
+  userKnowledgeViewsTable,
   studentBeltsTable,
   beltDefinitionsTable,
   classAttendancesTable,
@@ -96,8 +98,9 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
     ]);
 
     const exerciseIds = exercises.map((e) => e.id);
+    const knowledgeIds = knowledge.map((k) => k.id);
 
-    const [userBelts, winsResult, attResult, beltDefs, allPrereqs, completions] = await Promise.all([
+    const [userBelts, winsResult, attResult, beltDefs, allPrereqs, completions, allKnowledgePrereqs, knowledgeViews] = await Promise.all([
       db
         .select({ discipline: studentBeltsTable.discipline, orderIndex: beltDefinitionsTable.orderIndex })
         .from(studentBeltsTable)
@@ -134,6 +137,23 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
             .from(userExerciseCompletionsTable)
             .where(and(eq(userExerciseCompletionsTable.userId, userId), inArray(userExerciseCompletionsTable.exerciseId, exerciseIds)))
         : Promise.resolve([]),
+
+      knowledgeIds.length > 0
+        ? db
+            .select({
+              knowledgeItemId: knowledgePrerequisitesTable.knowledgeItemId,
+              prerequisiteKnowledgeItemId: knowledgePrerequisitesTable.prerequisiteKnowledgeItemId,
+            })
+            .from(knowledgePrerequisitesTable)
+            .where(inArray(knowledgePrerequisitesTable.knowledgeItemId, knowledgeIds))
+        : Promise.resolve([]),
+
+      knowledgeIds.length > 0
+        ? db
+            .select({ knowledgeItemId: userKnowledgeViewsTable.knowledgeItemId })
+            .from(userKnowledgeViewsTable)
+            .where(and(eq(userKnowledgeViewsTable.userId, userId), inArray(userKnowledgeViewsTable.knowledgeItemId, knowledgeIds)))
+        : Promise.resolve([]),
     ]);
 
     const userBeltMap: Record<string, number> = {};
@@ -160,6 +180,19 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
     const exerciseTitleMap: Record<number, string> = {};
     for (const e of exercises) {
       exerciseTitleMap[e.id] = e.title;
+    }
+
+    const knowledgePrereqMap: Record<number, number[]> = {};
+    for (const p of allKnowledgePrereqs) {
+      if (!knowledgePrereqMap[p.knowledgeItemId]) knowledgePrereqMap[p.knowledgeItemId] = [];
+      knowledgePrereqMap[p.knowledgeItemId].push(p.prerequisiteKnowledgeItemId);
+    }
+
+    const viewedKnowledgeIds = new Set<number>(knowledgeViews.map((v) => v.knowledgeItemId));
+
+    const knowledgeTitleMap: Record<number, string> = {};
+    for (const k of knowledge) {
+      knowledgeTitleMap[k.id] = k.title;
     }
 
     const exercisesWithMeta = exercises.map((e) => {
@@ -221,9 +254,43 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       };
     });
 
-    const knowledgeWithCategoryId = knowledge.map((k) => ({ ...k, categoryId: k.knowledgeCategoryId }));
+    const knowledgeWithMeta = knowledge.map((k) => {
+      if (isPrivileged) {
+        return {
+          ...k,
+          categoryId: k.knowledgeCategoryId,
+          isLocked: false,
+          lockReason: null,
+          viewedByUser: viewedKnowledgeIds.has(k.id),
+          prerequisiteIds: knowledgePrereqMap[k.id] ?? [],
+        };
+      }
 
-    res.json({ system, exercises: exercisesWithMeta, knowledge: knowledgeWithCategoryId, exerciseCategories, knowledgeCategories });
+      const prereqs = knowledgePrereqMap[k.id] ?? [];
+      const missing = prereqs.filter((pid) => !viewedKnowledgeIds.has(pid));
+      if (missing.length > 0) {
+        const titles = missing.map((pid) => knowledgeTitleMap[pid] ?? `Conocimiento ${pid}`).join(", ");
+        return {
+          ...k,
+          categoryId: k.knowledgeCategoryId,
+          isLocked: true,
+          lockReason: `Requiere leer primero: ${titles}`,
+          viewedByUser: viewedKnowledgeIds.has(k.id),
+          prerequisiteIds: prereqs,
+        };
+      }
+
+      return {
+        ...k,
+        categoryId: k.knowledgeCategoryId,
+        isLocked: false,
+        lockReason: null,
+        viewedByUser: viewedKnowledgeIds.has(k.id),
+        prerequisiteIds: prereqs,
+      };
+    });
+
+    res.json({ system, exercises: exercisesWithMeta, knowledge: knowledgeWithMeta, exerciseCategories, knowledgeCategories });
   } catch (error) {
     console.error("Get training system detail error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -751,6 +818,8 @@ trainingRouter.post("/admin/training/knowledge", requireProfesorOrAdmin, async (
       }
     }
 
+    const prerequisiteIds: number[] | undefined = req.body.prerequisiteIds;
+
     const [item] = await db
       .insert(knowledgeItemsTable)
       .values({
@@ -765,7 +834,13 @@ trainingRouter.post("/admin/training/knowledge", requireProfesorOrAdmin, async (
       })
       .returning();
 
-    res.json({ item: { ...item, categoryId: item.knowledgeCategoryId } });
+    if (prerequisiteIds && prerequisiteIds.length > 0) {
+      await db.insert(knowledgePrerequisitesTable).values(
+        prerequisiteIds.map((pid) => ({ knowledgeItemId: item.id, prerequisiteKnowledgeItemId: pid }))
+      );
+    }
+
+    res.json({ item: { ...item, categoryId: item.knowledgeCategoryId, prerequisiteIds: prerequisiteIds ?? [] } });
   } catch (error) {
     console.error("Create knowledge item error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -780,7 +855,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireProfesorOrAdmin, asyn
       return;
     }
 
-    const { title, content, videoUrl, imageUrl, orderIndex, isActive, categoryId: rawCatId, knowledgeCategoryId: rawKnCatId } = req.body;
+    const { title, content, videoUrl, imageUrl, orderIndex, isActive, categoryId: rawCatId, knowledgeCategoryId: rawKnCatId, prerequisiteIds } = req.body;
     const resolvedCategoryId = rawCatId !== undefined ? rawCatId : rawKnCatId;
 
     if (resolvedCategoryId) {
@@ -817,7 +892,21 @@ trainingRouter.put("/admin/training/knowledge/:id", requireProfesorOrAdmin, asyn
       return;
     }
 
-    res.json({ item: { ...updated, categoryId: updated.knowledgeCategoryId } });
+    if (prerequisiteIds !== undefined) {
+      await db.delete(knowledgePrerequisitesTable).where(eq(knowledgePrerequisitesTable.knowledgeItemId, id));
+      if (Array.isArray(prerequisiteIds) && prerequisiteIds.length > 0) {
+        await db.insert(knowledgePrerequisitesTable).values(
+          prerequisiteIds.map((pid: number) => ({ knowledgeItemId: id, prerequisiteKnowledgeItemId: pid }))
+        );
+      }
+    }
+
+    const currentPrereqs = await db
+      .select({ prerequisiteKnowledgeItemId: knowledgePrerequisitesTable.prerequisiteKnowledgeItemId })
+      .from(knowledgePrerequisitesTable)
+      .where(eq(knowledgePrerequisitesTable.knowledgeItemId, id));
+
+    res.json({ item: { ...updated, categoryId: updated.knowledgeCategoryId, prerequisiteIds: currentPrereqs.map((p) => p.prerequisiteKnowledgeItemId) } });
   } catch (error) {
     console.error("Update knowledge item error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -841,6 +930,25 @@ trainingRouter.patch("/admin/training/exercises/reorder", requireProfesorOrAdmin
     res.json({ success: true });
   } catch (error) {
     console.error("Reorder exercises error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.post("/training/knowledge/:id/view", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    const userId = req.session.userId!;
+    if (isNaN(id)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+    await db
+      .insert(userKnowledgeViewsTable)
+      .values({ userId, knowledgeItemId: id })
+      .onConflictDoNothing();
+    res.json({ viewed: true });
+  } catch (error) {
+    console.error("View knowledge item error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
