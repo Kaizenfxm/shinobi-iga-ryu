@@ -377,8 +377,13 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
       await trainingApi.uncompleteExercise(item.id);
       setLocalDone(false);
       onComplete?.();
-    } catch {
-      // silently ignore
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al desmarcar";
+      if (Platform.OS === "web") {
+        window.alert(msg);
+      } else {
+        Alert.alert("Error", msg);
+      }
     }
     setMarking(false);
   };
