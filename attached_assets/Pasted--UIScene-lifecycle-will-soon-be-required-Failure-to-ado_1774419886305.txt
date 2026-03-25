@@ -1,0 +1,155 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+_setUpFeatureFlags called with release level 2
+🟢 Registering module 'ExpoModulesCoreJSLogger'
+🟢 Registering module 'ExpoFetchModule'
+🟢 Registering module 'ExpoApplication'
+🟢 Registering module 'ExpoAsset'
+🟢 Registering module 'ExpoBlurView'
+🟢 Registering module 'ExpoCamera'
+🟢 Registering module 'ExponentConstants'
+🟢 Registering module 'FileSystem'
+🟢 Registering module 'ExponentFileSystem'
+🟢 Registering module 'ExpoFontLoader'
+🟢 Registering module 'ExpoFontUtils'
+🟢 Registering module 'ExpoGlassEffect'
+🟢 Registering module 'ExpoHaptics'
+🟢 Registering module 'ExpoImage'
+🟢 Registering module 'ExponentImagePicker'
+🟢 Registering module 'ExpoKeepAwake'
+🟢 Registering module 'ExpoLinearGradient'
+🟢 Registering module 'ExpoLinking'
+🟢 Registering module 'ExpoLocation'
+🟢 Registering module 'ExpoBackgroundNotificationTasksModule'
+🟢 Registering module 'ExpoBadgeModule'
+🟢 Registering module 'ExpoNotificationCategoriesModule'
+🟢 Registering module 'ExpoNotificationsEmitter'
+🟢 Registering module 'ExpoNotificationsHandlerModule'
+🟢 Registering module 'ExpoNotificationPermissionsModule'
+🟢 Registering module 'ExpoNotificationPresenter'
+🟢 Registering module 'ExpoPushTokenManager'
+🟢 Registering module 'ExpoNotificationScheduler'
+🟢 Registering module 'NotificationsServerRegistrationModule'
+🟢 Registering module 'ExpoHead'
+🟢 Registering module 'ExpoRouterNativeLinkPreview'
+🟢 Registering module 'ExpoSharing'
+🟢 Registering module 'ExpoSplashScreen'
+🟢 Registering module 'SymbolModule'
+🟢 Registering module 'ExpoSystemUI'
+🟢 Registering module 'ExpoWebBrowser'
+🟢 Creating JS object for module 'ExponentConstants'
+🟢 Creating JS object for module 'ExpoRouterNativeLinkPreview'
+Unbalanced calls start/end for tag 20
+Unbalanced calls start/end for tag 19
+🟢 Creating JS object for module 'ExpoSplashScreen'
+Running "main"
+🟢 Creating JS object for module 'ExpoBlurView'
+🟢 Creating JS object for module 'ExpoApplication'
+🟢 Creating JS object for module 'NotificationsServerRegistrationModule'
+🟢 Creating JS object for module 'ExpoPushTokenManager'
+🟢 Creating JS object for module 'ExpoBadgeModule'
+🟢 Creating JS object for module 'ExpoNotificationsEmitter'
+🟢 Creating JS object for module 'ExpoNotificationsHandlerModule'
+🟢 Creating JS object for module 'ExpoCamera'
+[TypeError: undefined is not a function]
+[TypeError: undefined is not a function]
+Unhandled JS Exception: TypeError: undefined is not a function
+[TypeError: undefined is not a function]
+[TypeError: undefined is not a function]
+{ [TypeError: Cannot read property 'ErrorBoundary' of undefined]
+  componentStack: '\n    at ContextNavigator (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:100554:24)\n    at ExpoRoot (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:100522:28)\n    at App (<anonymous>)\n    at RCTView (<anonymous>)\n    at View (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:36047:19)\n    at AppContainer (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:35971:24)',
+  isComponentError: true }
+libc++abi: terminating due to uncaught exception of type facebook::jsi::JSError: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: TypeError: undefined is not a function, stack:
+anonymous@251114:27
+loadModuleImplementation@157:43
+guardedLoadModule@94:46
+metroRequire@42:91
+get@67786:22
+metroContext@67809:14
+loadRoute@97145:41
+getLayoutNode@97475:31
+_loop3@97228:34
+getDirectoryTree@97265:20
+getRoutes@96942:40
+getRoutes@96811:41
+useStore@94136:46
+ContextNavigator@100590:44
+renderWithHooks@16530:31
+updateFunctionComponent@18083:31
+beginWork@18497:38
+performUnitOfWork@20050:24
+workLoopSync@19954:54
+renderRootSync@19939:18
+performWorkOnRoot@19721:96
+performWorkOnRootViaSchedulerTask@16085:21
+
+
+Error: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: TypeError: undefined is not a function, stack:
+anonymous@251114:27
+loadModuleImplementation@157:43
+guardedLoadModule@94:46
+metroRequire@42:91
+get@67786:22
+metroContext@67809:14
+loadRoute@97145:41
+getLayoutNode@97475:31
+_loop3@97228:34
+getDirectoryTree@97265:20
+getRoutes@96942:40
+getRoutes@96811:41
+useStore@94136:46
+ContextNavigator@100590:44
+renderWithHooks@16530:31
+updateFunctionComponent@18083:31
+beginWork@18497:38
+performUnitOfWork@20050:24
+workLoopSync@19954:54
+renderRootSync@19939:18
+performWorkOnRoot@19721:96
+performWorkOnRootViaSchedulerTask@16085:21
+
+terminating due to uncaught exception of type facebook::jsi::JSError: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: TypeError: undefined is not a function, stack:
+anonymous@251114:27
+loadModuleImplementation@157:43
+guardedLoadModule@94:46
+metroRequire@42:91
+get@67786:22
+metroContext@67809:14
+loadRoute@97145:41
+getLayoutNode@97475:31
+_loop3@97228:34
+getDirectoryTree@97265:20
+getRoutes@96942:40
+getRoutes@96811:41
+useStore@94136:46
+ContextNavigator@100590:44
+renderWithHooks@16530:31
+updateFunctionComponent@18083:31
+beginWork@18497:38
+performUnitOfWork@20050:24
+workLoopSync@19954:54
+renderRootSync@19939:18
+performWorkOnRoot@19721:96
+performWorkOnRootViaSchedulerTask@16085:21
+Error: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: TypeError: undefined is not a function, stack:
+anonymous@251114:27
+loadModuleImplementation@157:43
+guardedLoadModule@94:46
+metroRequire@42:91
+get@67786:22
+metroContext@67809:14
+loadRoute@97145:41
+getLayoutNode@97475:31
+_loop3@97228:34
+getDirectoryTree@97265:20
+getRoutes@96942:40
+getRoutes@96811:41
+useStore@94136:46
+ContextNavigator@100590:44
+renderWithHooks@16530:31
+updateFunctionComponent@18083:31
+beginWork@18497:38
+performUnitOfWork@20050:24
+workLoopSync@19954:54
+renderRootSync@19939:18
+performWorkOnRoot@19721:96
+performWorkOnRootViaSchedulerTask@16085:21

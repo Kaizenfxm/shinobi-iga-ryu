@@ -1,0 +1,685 @@
+predeterminado	01:15:51.585792-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:51.608412-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:51.631273-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:51.635760-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 50.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 80.000000
+predeterminado	01:15:51.635788-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:51.649303-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 60.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 84.000000
+predeterminado	01:15:51.649496-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:51.663372-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 70.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 88.000000
+predeterminado	01:15:51.663402-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:51.711246-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 80.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 92.000000
+predeterminado	01:15:51.711301-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:51.714659-0500	installd	0x16f023000 -[MIInstallationJournalEntry _refreshUUIDForContainer:withError:]: Data container for com.shinobiigarju.app is now at /private/var/mobile/Containers/Data/Application/843E55AA-DD80-45B6-B553-523E6DBC5660
+predeterminado	01:15:51.731406-0500	installd	0x16f023000 -[MIContainer makeContainerLiveReplacingContainer:reason:waitForDeletion:withError:]: Made container live for com.shinobiigarju.app at /private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4
+predeterminado	01:15:51.745783-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 90.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 96.000000
+predeterminado	01:15:51.745793-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:51.888533-0500	SpringBoard	termination assertion released for com.shinobiigarju.app
+predeterminado	01:15:51.903517-0500	installd	0x16f023000 -[MILaunchServicesOperationManager _onQueue_addPendingLaunchServicesOperation:error:]: Added pending LS operation <MILaunchServicesRegisterOperation: 20BA1E2D-5D03-4FF9-8D83-1E612CC42AB8:20 com.shinobiigarju.app/MIInstallationDomainSystemShared personas:[0B148290-DE8C-4008-B7A0-8652A7FC3A20]>
+predeterminado	01:15:51.905441-0500	lsd	com.shinobiigarju.app/Unknown Persona:5:4:1:1:Registering bundles via registrant - start
+predeterminado	01:15:51.916323-0500	lsd	com.shinobiigarju.app/Unknown Persona:5:5:1:1:Building bundle record for app
+predeterminado	01:15:51.917388-0500	lsd	com.shinobiigarju.app/Unknown Persona:5:5:2:1:Built bundle record for app
+predeterminado	01:15:51.933609-0500	lsd	com.shinobiigarju.app/Unknown Persona:5:4:2:1:Registered bundle status = success
+predeterminado	01:15:51.933624-0500	lsd	com.shinobiigarju.app/Unknown Persona:5:4:2:1:Finished registering com.shinobiigarju.app, bundle unit e04
+predeterminado	01:15:51.934109-0500	installd	0x16f023000 -[MIJournal purgeJournalEntry:withError:]: Removing journal entry <MIInstallationJournalEntry<0x91903c780> [com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]]/MIInstallationDomainSystemShared op:1 phase:JournalPhaseDidRegisterWithLS version:1>
+predeterminado	01:15:51.934122-0500	installd	com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20:7:7:2:1:Success (End) : Install (Promote From Placeholder)
+predeterminado	01:15:51.934142-0500	installd	0x16f023000 -[MIInstaller _logOperationCompletionWithStartTime:distributorID:]: Install successful for (Developer:com.shinobiigarju.app) [Distributor: com.apple.AppStore]; Staging: 0.03s; Waiting: 0.00s; Preflight/Patch: 0.15s, Verifying: 0.91s; Overall: 1.42s
+predeterminado	01:15:52.018364-0500	SpringBoard	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xc9bce49c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.018376-0500	SpringBoard	-[FBSApplicationLibrary applicationsDidInstall:] com.shinobiigarju.app
+predeterminado	01:15:52.018393-0500	SpringBoard	Regenerating application com.shinobiigarju.app:8652A7FC3A20 due to bundle path mismatch
+predeterminado	01:15:52.018805-0500	SpringBoard	com.shinobiigarju.app/Unknown Persona:10:4:1:1:Placeholder remove BEGIN
+predeterminado	01:15:52.019650-0500	SpringBoard	com.shinobiigarju.app/Unknown Persona:10:11:3:1:Application replaced
+predeterminado	01:15:52.019994-0500	runningboardd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xdb6c4f840> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.020164-0500	SpringBoard	Installed apps did change.
+Added: {(
+)}
+Removed: {(
+)}
+Replaced: {(
+    "com.shinobiigarju.app"
+)}
+Updated: (null)
+predeterminado	01:15:52.021156-0500	SpringBoard	Applications were replaced. Updating launch images for: (
+    "com.shinobiigarju.app"
+)
+predeterminado	01:15:52.021648-0500	SpringBoard	<XBApplicationSnapshot: 0xc94210a80; …423D6EE63501> [com.shinobiigarju.app] we're invalid because we don't have a relativePath. path: (null)
+predeterminado	01:15:52.021955-0500	SpringBoard	<XBApplicationSnapshotManifestImpl: 0xc98075b80> [com.shinobiigarju.app] Deleting snapshots: (
+    "<XBApplicationSnapshot: 0xc93d72bc0; identifier: 689A19C8-76DA-4E86-93B2-F25E38E64478; launchInterfaceIdentifier: __from_UILaunchStoryboardName__; contentType: GeneratedDefault; referenceSize: {430, 932}; interfaceOrientation: Portrait; userInterfaceStyle: Dark>"
+) matching predicate: <private>
+predeterminado	01:15:52.021960-0500	SpringBoard	<XBApplicationSnapshotManifestImpl: 0xc98075b80> [com.shinobiigarju.app] Deleting snapshot <XBApplicationSnapshot: 0xc93d72bc0; …F25E38E64478> [com.shinobiigarju.app] for reason: _contentType: GeneratedDefault(1)
+predeterminado	01:15:52.021975-0500	SpringBoard	<XBApplicationSnapshotManifestImpl: 0xc98075b80> [com.shinobiigarju.app] Deleting paths: <private>
+predeterminado	01:15:52.022855-0500	identityservicesd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x6b4afedc0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.023987-0500	CarPlay	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xc95246700> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.023998-0500	CarPlay	-[FBSApplicationLibrary applicationsDidInstall:] com.shinobiigarju.app
+predeterminado	01:15:52.025907-0500	navd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x7410fb540> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.027503-0500	appstored	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xda6d4ee80> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.027956-0500	homed	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xcb5bd4300> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.029145-0500	appconduitd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xd12cfc540> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.029486-0500	callservicesd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xc36fad5c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.030565-0500	liveactivitiesd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xc10e40540> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.030612-0500	bulletindistributord	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xb12cee700> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.031160-0500	PerfPowerServices	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x78f1da4c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.031240-0500	appconduitd	0x16d1cb000 -[ACXLaunchServicesWatcher applicationsInstalledWithAppRecords:]: Got app install notification: (
+    "{ bundleID: com.shinobiigarju.app, URL: file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ }"
+)
+predeterminado	01:15:52.031352-0500	appconduitd	0x16d1cb000 -[ACXAvailableApplicationManager applicationsInstalledWithAppRecords:]: Got app install notification: (
+    "{ bundleID: com.shinobiigarju.app, URL: file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ }"
+)
+predeterminado	01:15:52.037580-0500	installcoordinationd	-[IXSPendingOperationsTracker endPendingOperationForIdentity:]_block_invoke: Ending pending operation for [com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]]
+predeterminado	01:15:52.037967-0500	sosd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xdbcce4540> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.038053-0500	bluetoothd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x7feed5200> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.038222-0500	managedappdistributiond	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x83ad54b40> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.038311-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Got did update progress delegate with percentComplete 100.000000 phase IXCoordinatorProgressPhaseInstalling overallProgress 100.000000
+predeterminado	01:15:52.038325-0500	installcoordination_proxy	-[IXAppInstallCoordinator _clientDelegate_didUpdateProgress:forPhase:overallProgress:]_block_invoke: <IXUpdatingAppInstallCoordinator<0xcc8c1cec0> identity:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 creator:InstallCoordination Proxy>: Calling selector coordinator:didUpdateProgress:forPhase:overallProgress: on observer <IXSRemoteInstaller 0x0xcc8c1c500>
+predeterminado	01:15:52.040498-0500	SpringBoard	Validating resource SplashScreen.storyboardc in NSBundle </var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app> (not yet loaded)
+predeterminado	01:15:52.040803-0500	usernotificationsd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x6becbc780> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.042171-0500	activitysharingd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xb770f9080> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.042470-0500	donotdisturbd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xcb3136640> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.044671-0500	passd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xce1588e40> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.050874-0500	accessoryd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x7590a1200> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.069061-0500	appconduitd	0x16d027000 -[ACXLaunchServicesWatcher applicationsInstalledWithAppRecords:]_block_invoke: Updating entry for app com.shinobiigarju.app
+predeterminado	01:15:52.069084-0500	appconduitd	0x16d36f000 -[ACXCompanionSyncConnection noteNewCompanionApps:updatedApps:removedApps:forDBUUID:endingSequenceNumber:]_block_invoke: Sending message to gizmo noting installed companion apps: (
+    "com.shinobiigarju.app"
+)
+predeterminado	01:15:52.070007-0500	nsurlsessiond	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x841360300> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.070559-0500	backboardd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xd09a6ae80> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.070750-0500	imagent	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x6f4f49740> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.071799-0500	nanotimekitcompaniond	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xbe8f42a00> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.071813-0500	nanotimekitcompaniond	Setting data sources for SiriDefaultsPhoneThirdPartyDataSources - {(
+    "com.booking.BookingApp",
+    "com.hotmart.hifire",
+    "net.whatsapp.WhatsApp",
+    "net.whatsapp.WhatsAppSMB",
+    "MC.ManyChat-dev",
+    "us.zoom.videomeetings",
+    "com.google.Drive",
+    "com.burbn.barcelona",
+    "com.google.Chromecast",
+    "com.czzhao.binance",
+    "com.strava.stravaride",
+    "notion.id",
+    "com.ihoment.GoVeeSensor",
+    "com.google.Maps",
+    "com.google.ios.youtube",
+    "wtf.riedel.one-sec",
+    pinterest,
+    "com.pumble.app",
+    "com.reddit.Reddit",
+    "com.tradingview.tradingviewapp",
+    "com.irobot.home",
+    "com.facebook.Facebook",
+    "com.cameronchow.Strong",
+    "com.google.GoogleMobile",
+    "com.shinobiigarju.app",
+    "com.tplink.aria",
+    "com.lemon.lvoverseas",
+    "com.smart.vta",
+    "com.zhiliaoapp.musically",
+    "com.withings.wiScaleNG",
+    "ph.telegra.Telegraph"
+)}
+predeterminado	01:15:52.076329-0500	gamed	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x6b6fc5140> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.085483-0500	privacyaccountingd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x902c6c540> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.089556-0500	ctkd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xccad04240> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.089751-0500	installcoordinationd	-[IXSCoordinatedAppInstall setComplete:]: <IXSCoordinatedAppInstall<0x658ce9800> [P=installcoordination_proxy (pid 8229)] identifier:[com.shinobiigarju.app/0B148290-DE8C-4008-B7A0-8652A7FC3A20/[system-defined]] uuid:43798322-6475-47B7-AE20-77A4ACAB47E3 intent:IXCoordinatorIntentUpdating creator/appDRI:InstallCoordination Proxy importance:UserWaiting state:IXAppCoordinationStateComplete promise-state:PA2I4> complete!
+predeterminado	01:15:52.090751-0500	SpringBoard	Image generation complete for: <XBLaunchStateRequest: 0xc93658700; groupID: com.shinobiigarju.app - {DEFAULT GROUP}; statusBar: normal; refSize: {430, 932}; orientation: Portrait; userInterfaceStyle: Dark>
+predeterminado	01:15:52.090991-0500	splashboardd	Updating window to <XBLaunchStateRequest: 0x73ace0620; groupID: com.shinobiigarju.app - {DEFAULT GROUP}; statusBar: normal; refSize: {430, 932}; orientation: Portrait; userInterfaceStyle: Dark>
+predeterminado	01:15:52.226708-0500	CommCenter	#I Apps installed on the device: com.shinobiigarju.app
+predeterminado	01:15:52.229686-0500	SpringBoard	[com.shinobiigarju.app] Application installed using default data provider
+predeterminado	01:15:52.229701-0500	SpringBoard	Getting sectionInfos for section identifiers: {(
+    "com.shinobiigarju.app"
+)}
+predeterminado	01:15:52.288748-0500	SpringBoard	[{(
+    "com.shinobiigarju.app"
+)}] Got section infos [ hasResult: 1 ]
+predeterminado	01:15:52.295279-0500	SpringBoard	[com.shinobiigarju.app] Got section info [ enabled: 1 ]
+predeterminado	01:15:52.334043-0500	financed	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xbc2db76c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.334160-0500	deviceaccessd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x8cb100300> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.334194-0500	deviceaccessd	### applicationsDidInstall [
+    <LSApplicationProxy: 0x8cb100300> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+]
+predeterminado	01:15:52.334790-0500	deviceaccessd	### applicationsDidInstall com.shinobiigarju.app
+predeterminado	01:15:52.335299-0500	nanoweatherprefsd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xbf51580c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.335491-0500	deviceaccessd	### appBundleHasASKEnabled com.shinobiigarju.app supports None
+predeterminado	01:15:52.337362-0500	deviceaccessd	### UpdateAppsAccess: com.shinobiigarju.app with existing info plist options: None
+predeterminado	01:15:52.342780-0500	watchlistd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0x6c10fc0c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.347654-0500	SpringBoard	<XBApplicationSnapshotManifestImpl: 0xc98075b80> [com.shinobiigarju.app] Snapshot data for <XBApplicationSnapshot: 0xc903a3640; …6DF1BBFEA67F> [com.shinobiigarju.app] written to file: /private/var/mobile/Containers/Data/Application/843E55AA-DD80-45B6-B553-523E6DBC5660/Library/SplashBoard/Snapshots/com.shinobiigarju.app - {DEFAULT GROUP}/388D21AF-E619-4605-A38B-6DF1BBFEA67F@3x.ktx
+predeterminado	01:15:52.347733-0500	clipserviced	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xb530d40c0> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.350915-0500	locationd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xb237b9200> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:52.351223-0500	locationd	{"msg":"#Warning #ClientResolution the passed keyPath is not registered. Resolving to #nullCKP", "InputCKP":"icom.shinobiigarju.app:"}
+predeterminado	01:15:52.351279-0500	locationd	{"msg":"AppMonitor - application (un)installation notification", "notification":"Installation", "BundleId":"com.shinobiigarju.app", "BundlePath":"\/private\/var\/containers\/Bundle\/Application\/558CFE99-5CCE-48CA-AA9E-F2897D4992A4\/ShinobiIgaRyu.app", "ExecutablePath":"\/private\/var\/containers\/Bundle\/Application\/558CFE99-5CCE-48CA-AA9E-F2897D4992A4\/ShinobiIgaRyu.app\/ShinobiIgaRyu"}
+predeterminado	01:15:52.362646-0500	CommCenter	#I Added rules for consented apps com.shinobiigarju.app result: true
+predeterminado	01:15:52.363008-0500	nehelper	Handling an apps installed notification with bundle IDs (
+    "com.shinobiigarju.app"
+)
+predeterminado	01:15:52.364880-0500	appstored	Handling application installation: {bundleID = com.shinobiigarju.app; version = 1; shortVersion = 1.0.0; variantID = (null)}
+predeterminado	01:15:52.460036-0500	dtappserviced	[FBSSystemService][0x17c9] Sending request to open "com.shinobiigarju.app"
+predeterminado	01:15:52.461044-0500	SpringBoard	[FBSystemService][0x17c9] Received request to open "com.shinobiigarju.app" from dtappserviced:8202.
+predeterminado	01:15:52.461055-0500	SpringBoard	[FBSystemService][0x17c9] Activation request for com.shinobiigarju.app contained LSCacheGUID 1C0BCEEA-ECF5-4EC5-B6D6-8A33D83A6E49 and LSSequenceNumber 3588.
+predeterminado	01:15:52.461106-0500	SpringBoard	[FBSystemService][0x17c9] Activation request for com.shinobiigarju.app will wait 10.00s for app availability, with retry every 2.00s.
+predeterminado	01:15:52.461149-0500	SpringBoard	Received trusted open application request for "com.shinobiigarju.app" from <FBProcess: 0xc9e82b480; anon<dtappserviced>:8202(v54E4)>.
+predeterminado	01:15:52.489892-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:52.489939-0500	SpringBoard	SBWorkspaceTerminateApplication: com.shinobiigarju.app: "terminate for debugging launch request"
+predeterminado	01:15:52.491400-0500	SpringBoard	Executing request: <SBMainWorkspaceTransitionRequest: 0xc940df5c0; eventLabel: OpenApplication(sceneID:com.shinobiigarju.app-default)ForRequester(dtappserviced.8202); display: Main; source: FBSystemService>
+predeterminado	01:15:52.568499-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:52.570487-0500	SpringBoard	[FBWorkspaceEvent] Executing: <FBWorkspaceEvent: 0xc9e785480; OpenApplication(sceneID:com.shinobiigarju.app-default)ForRequester(dtappserviced.8202)>
+predeterminado	01:15:52.576935-0500	SpringBoard	[SwitcherOrientation] outSwitcherOrientation: portrait (1), outElementsOrientations: {
+    "sceneID:com.shinobiigarju.app-default" = 1;
+}
+predeterminado	01:15:52.577367-0500	SpringBoard	Generating initialization context on main thread for: com.shinobiigarju.app
+predeterminado	01:15:52.584333-0500	SpringBoard	Asked to bootstrap a new process with identity: app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>
+predeterminado	01:15:52.584362-0500	SpringBoard	Creating process (sync=true) with identity: app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>
+predeterminado	01:15:52.584407-0500	SpringBoard	Created <FBWorkspace: 0xc940dd9a0; <FBApplicationProcess: 0xc9e82ba80; app<com.shinobiigarju.app>:<invalid>>>
+predeterminado	01:15:52.584424-0500	SpringBoard	Bootstrapping app<com.shinobiigarju.app> with intent foreground-interactive
+predeterminado	01:15:52.585067-0500	SpringBoard	Prewarming for launch of com.shinobiigarju.app
+predeterminado	01:15:52.585279-0500	runningboardd	Acquiring assertion targeting app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)> from originator [osservice<com.apple.SpringBoard>:35] with description <RBSAssertionDescriptor| "FBApplicationProcess" ID:34-35-108196 target:app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)> attributes:[
+	<RBSDomainAttribute| domain:"com.apple.frontboard" name:"SuspendableLPRunReason-Resume" sourceEnvironment:"(null)">,
+	<RBSDomainAttribute| domain:"com.apple.frontboard" name:"Visibility" sourceEnvironment:"(null)">,
+	<RBSDomainAttribute| domain:"com.apple.frontboard" name:"SuspendableRole-UIFocal" sourceEnvironment:"(null)">,
+	<RBSDomainAttribute| domain:"com.apple.frontboard" name:"SuspendableJetsamPriority-Foreground" sourceEnvironment:"(null)">,
+	<RBSDomainAttribute| domain:"com.apple.frontboard" name:"SuspendableBootstrapping" sourceEnvironment:"(null)">
+	]>
+predeterminado	01:15:52.585318-0500	runningboardd	Assertion 34-35-108196 (target:app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>) will be created as active
+predeterminado	01:15:52.587866-0500	SpringBoard	<SBFullScreenSwitcherLiveContentOverlayCoordinator: 0xc96512700> Adding SwitcherScene overlay for: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main>, animated: NO
+predeterminado	01:15:52.589507-0500	nehelper	Caching 1 UUID(s) for com.shinobiigarju.app
+predeterminado	01:15:52.589673-0500	CommCenter	UUID cache miss for com.shinobiigarju.app
+predeterminado	01:15:52.591025-0500	storekitd	[ReceiptManager] Handling app install for (
+    "com.shinobiigarju.app"
+)
+predeterminado	01:15:52.591150-0500	storekitd	[ReceiptManager] Clearing app receipt for com.shinobiigarju.app
+error	01:15:52.591196-0500	storekitd	[9693DCC9] No Octane data to delete for com.shinobiigarju.app
+predeterminado	01:15:52.609842-0500	CommCenter	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.609894-0500	SpringBoard	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.609910-0500	audiomxd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.612701-0500	backboardd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.760765-0500	SpringBoard	[sceneID:com.shinobiigarju.app-default] Setting deactivation reasons to: '(none)' for reason: updateAllScenesForBand - Assertion removed.
+predeterminado	01:15:52.908706-0500	bluetoothd	SystemUI unknown identifier: 'sceneID:com.shinobiigarju.app-default' / 'com.shinobiigarju.app'
+predeterminado	01:15:52.933962-0500	SpringBoard	[com.shinobiigarju.app] Foreground app will not request ephemeral notifications isAppClip: NO wantsEphemeral notifications: NO
+predeterminado	01:15:52.954746-0500	SpringBoard	SBMainDisplaySceneManager requested idle timer behavior disabled? YES For SceneIDs: sceneID:com.shinobiigarju.app-default
+predeterminado	01:15:52.957086-0500	SpringBoard	[com.shinobiigarju.app] com.shinobiigarju.app application state changed to <RBSProcessState| task:running-active debug:none endowmentNamespace:[
+	com.apple.frontboard.visibility
+	]>
+predeterminado	01:15:52.957127-0500	SpringBoard	[com.shinobiigarju.app] Foreground app will not request ephemeral notifications isAppClip: NO wantsEphemeral notifications: NO
+predeterminado	01:15:52.957830-0500	SpringBoard	Move topics from Opportunistic to Enabled: (
+    "com.shinobiigarju.app"
+)
+predeterminado	01:15:52.958585-0500	SpringBoard	MRNowPlayingAudioFormatController foreground bundle id changed: com.shinobiigarju.app
+predeterminado	01:15:52.958945-0500	SpringBoard	[com.shinobiigarju.app] com.shinobiigarju.app application state changed to <RBSProcessState| task:running-active debug:asserted endowmentNamespace:[
+	com.apple.frontboard.visibility
+	]>
+predeterminado	01:15:52.961437-0500	SpringBoard	[Main (EmbeddedDisplay)] dispatch event:
+<SBTransitionSwitcherModifierEvent: 0xc92b54380; type: MainTransition; transitionID: 47E02D1E-1379-4F6C-B21D-27F5885913FE; phase: Complete; animated: YES; fromAppLayout: 0x0; toAppLayout: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main>; fromEnvironmentMode: home-screen; toEnvironmentMode: application; fromSpaceConfiguration: undefined; toSpaceConfiguration: full; pendingTermination: {(
+)}; morphingPIPLayoutRole: undefined; previousDesktopItems: {(
+)}>
+predeterminado	01:15:52.961622-0500	SpringBoard	[Main (EmbeddedDisplay)] handle response:
+<SBSwitcherModifierEventResponse: 0xc929a5aa0> {
+    <SBPreemptAnimationSwitcherEventResponse: 0xc929a7c60>;
+    <SBSwitcherModifierEventResponse: 0xc929a5ad0> {
+	    <SBInvalidateAdjustedAppLayoutsSwitcherEventResponse: 0xc929a7330>;
+	    <SBSwitcherModifierEventResponse: 0xc929a4570> {
+		    <SBRequestFolderSnapshotsSwitcherEventResponse: 0xc929a4780; snapshotRequested: NO>;
+		    <SBIconOverlayVisibilitySwitcherEventResponse: 0xc94f9f880; visible: NO; appLayout: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main>>;
+		    <SBIconViewVisibilitySwitcherEventResponse: 0xc997990e0; visible: YES; animationSettings: 0x0; appLayout: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main>>;
+		    <SBMatchMoveToIconViewSwitcherEventResponse: 0xc9ab7ff60; active: NO; appLayout: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main>>;
+		};
+	};
+}
+predeterminado	01:15:52.962435-0500	PerfPowerServices	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.962790-0500	PerfPowerServices	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.964785-0500	symptomsd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.964987-0500	watchdogd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.965085-0500	watchdogd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.965301-0500	dasd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.965312-0500	symptomsd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.965728-0500	dasd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:52.966887-0500	gamepolicyd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.967263-0500	gamepolicyd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-NotVisible
+predeterminado	01:15:52.970490-0500	gamepolicyd	Identified app com.shinobiigarju.app GM:false DPS:false SEM:Unsupported MMA:false
+predeterminado	01:15:52.971961-0500	dmd	Received xpc stream event (distributed notification matching) with name: com.apple.LaunchServices.applicationRegistered user info: {
+    bundleIDs =     (
+        "com.shinobiigarju.app"
+    );
+    isPlaceholder = 0;
+}
+predeterminado	01:15:52.973321-0500	WirelessRadioManagerd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:52.974550-0500	WirelessRadioManagerd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.006504-0500	dmd	Requested application com.shinobiigarju.app has policy OK, associated categories:DH1003 associated sites:(null) equivalent bundle identifiers:com.shinobiigarju.app
+predeterminado	01:15:53.053718-0500	locationd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.053986-0500	locationd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.055140-0500	locationd	{"msg":"RBS #AppMonitor process monitor update handler invoked", "pid":8233, "bundleID":"com.shinobiigarju.app", "state":"RunningScheduled"}
+predeterminado	01:15:53.055258-0500	locationd	{"msg":"RBS #AppMonitor Post Application State Change Notification", "notification":"ForegroundRunning", "pid":8233, "bundleId":"com.shinobiigarju.app"}
+predeterminado	01:15:53.055912-0500	locationd	{"msg":"#Warning #ClientResolution the passed keyPath is not registered. Resolving to #nullCKP", "InputCKP":"icom.shinobiigarju.app:"}
+predeterminado	01:15:53.057971-0500	locationd	{"msg":"#CLIUA AppMonitor notification", "notification":"ForegroundRunning", "pid":8233, "bundleId":"com.shinobiigarju.app", "ClientKey":"icom.shinobiigarju.app:"}
+predeterminado	01:15:53.058034-0500	locationd	{"msg":"#CLIUA Marking change", "clientKey":"icom.shinobiigarju.app:", "reason":"Process state from RunningBoard", "AssertionLevel":"kCLClientInUseLevelDirectUserEngagement", "coming":1}
+predeterminado	01:15:53.058516-0500	locationd	{"msg":"#CLIUA updating AssertionRecord", "ClientKey":"icom.shinobiigarju.app:", "AssertionLevel":"kCLClientInUseLevelNotInUse"}
+predeterminado	01:15:53.058969-0500	locationd	{"msg":"#CLIUA AssertionRecord updated", "ClientKey":"icom.shinobiigarju.app:", "AssertionLevel":"kCLClientInUseLevelDirectUserEngagement"}
+predeterminado	01:15:53.059006-0500	locationd	{"msg":"#CLIUA in-use level changed for client", "ClientKey":"icom.shinobiigarju.app:"}
+predeterminado	01:15:53.059041-0500	locationd	{"msg":"#Warning #ClientResolution the passed keyPath is not registered. Resolving to #nullCKP", "InputCKP":"icom.shinobiigarju.app:"}
+predeterminado	01:15:53.062868-0500	IDSCredentialsAgent	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.063087-0500	IDSCredentialsAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.064292-0500	useractivityd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.065037-0500	useractivityd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.065551-0500	replayd	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.066497-0500	replayd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.066999-0500	wifid	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.067346-0500	wifid	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.071091-0500	UserEventAgent	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:53.071429-0500	UserEventAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:53.072928-0500	wifid	-[WiFiUserInteractionMonitor setApplicationRunningState:foregroundState:andNetworkingState:forBundleId:]: com.shinobiigarju.app entered foreground
+predeterminado	01:15:53.074212-0500	wifid	WiFiDeviceManagerCatsSetLowLatencyApp: CATSUpdate en0: fgApp:com.shinobiigarju.app b=0x0 rc=0
+predeterminado	01:15:53.074253-0500	wifid	WiFiDeviceManagerCatsSetForegroundApp: CATSUpdate en0: fgApp:com.shinobiigarju.app hs=1 t=1 rc=0
+error	01:15:53.426412-0500	kernel	Sandbox: ShinobiIgaRyu(8233) deny(1) sysctl-read kern.bootargs
+predeterminado	01:15:53.459312-0500	symptomsd	com.shinobiigarju.app: Foreground: true
+predeterminado	01:15:53.634700-0500	installd	0x16f0af000 -[MILaunchServicesOperationManager _onQueue_removePendingLaunchServicesOperationForUUID:dueToLSSave:]: Removing operation after LS save: <MILaunchServicesRegisterOperation: 20BA1E2D-5D03-4FF9-8D83-1E612CC42AB8:20 com.shinobiigarju.app/MIInstallationDomainSystemShared personas:[0B148290-DE8C-4008-B7A0-8652A7FC3A20]>
+predeterminado	01:15:53.708928-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:53.718354-0500	itunescloudd	Handling app install changed notification - apps={(
+    "com.shinobiigarju.app"
+)}, registration=installed
+predeterminado	01:15:53.725830-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:53.737483-0500	misagent	Sending 73577416-471a-42fc-a0fe-5ef25aa662e9 - iOS Team Provisioning Profile: com.shinobiigarju.app
+predeterminado	01:15:53.843373-0500	webbookmarksd	com.shinobiigarju.app/Unknown Persona:5:8:3:1:applicationsDidInstall <LSApplicationProxy: 0xbc8cf0240> com.shinobiigarju.app file:///private/var/containers/Bundle/Application/558CFE99-5CCE-48CA-AA9E-F2897D4992A4/ShinobiIgaRyu.app/ <com.shinobiigarju.app <installed >:0>
+predeterminado	01:15:54.282876-0500	symptomsd	SymptomAnalytics ServiceImpl: FAE perform query for perfpowermetric (pid 8032) on LiveUsage predicate hasProcess.procName IN {"backboardd", "com.shinobiigarju.app"} OR hasProcess.bundleName IN {"backboardd", "com.shinobiigarju.app"} sort (null) actions {
+    "<null>" = "<null>";
+    "hasProcess.extensionName" = copyRelationship;
+    "hasProcess.bundleName" = copyRelationship;
+    fetchOffset = 0;
+    "hasProcess.firstTimeStamp" = copyRelationship;
+    fetchLimit = 150;
+    refreshUsage = refreshUsage;
+    "hasProcess.procName" = copyRelationship;
+} properties (null)
+predeterminado	01:15:54.504590-0500	wifid	__WiFiLQAMgrLogStats(<redacted>:Moving): InfraUptime:923.3secs Channel: 2 Bandwidth: 20Mhz Rssi: -43 {-45 -43} Cca: 26 (S:0 O:9 I:16) Snr: 35 BcnPer: 68.8% (48, 71.5%) TxFrameCnt: 34 TxPer: 2.9% TxReTrans: 8 TxRetryRatio: 23.5% RxFrameCnt: 32 RxRetryFrames: 4 RxRetryRatio: 12.5% TxRate: 229410 RxRate: 77420 FBRate: 137640 TxFwFrms: 48 TxFwFail: 0 Noise: -98 {-98 -98 0} time: 68.4secs fgApp: com.shinobiigarju.app V: T
+predeterminado	01:15:55.528984-0500	ShinobiIgaRyu	[ {"framework": "Photos", "swizzle":[ {"class":"PHAsset", "methods": { "prefixes":["fetch","enumerate"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread"], "performance issue type":["hang"] }, {"class":"PHFetchResult", "methods": { "prefixes":["fetch","enumerate"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread"], "performance issue type":["hang"] } ] }, {"framework": "CoreLocation", "swizzle":[ {"class":"CLLocationManager", "instance methods": { "names":["authorizationStatus", "monitoredRegions", "accuracyAuthorization"] }, "class methods": { "names":["locationServicesEnabled"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"CoreImage", "swizzle":[ {"class":"CIContext", "instance methods": { "names":["createCGImage:fromRect:", "initWithOptions:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"HealthKit", "swizzle":[ {"class":"HKHealthStore", "instance methods": { "names":["authorizationStatusForType:"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"CoreData", "swizzle":[ {"class":"NSManagedObjectContext", "instance methods": { "names":["performBlockAndWait:", "executeFetchRequest:error:", "mergeChangesFromContextDidSaveNotification:","save:", "countForFetchRequest:error:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["Database access on main thread", "Database access on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"CoreML", "swizzle":[ {"class":"MLModel", "class methods": { "names":["modelWithContentsOfURL:error:"] }, "duplicate detection type":"AllFrames", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"Foundation", "swizzle":[ {"class":"NSOperation", "instance methods": { "names":["waitUntilFinished", "waitUntilFinishedOrTimeout:"] }, "duplicate detection type":"AllFrames", "antipattern type":["waiting for operation completion on main thread", "waiting for operation completion on main thread"], "performance issue type":["hang", "launch"] }, {"class":"NSThread", "class methods": { "names":["sleepForTimeInterval:"] }, "duplicate detection type":"AllFrames", "antipattern type":["Sleep", "Sleep"], "performance issue type":["hang", "launch"] }, {"class":"NSBundle", "instance methods": { "names":["bundlePath", "bundleIdentifier", "loadAndReturnError:"] }, "class methods": { "names":["bundleWithIdentifier:", "allFrameworks", "allBundles", "pathForResource:ofType:inDirectory:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] }, {"class":"NSKeyedArchiver", "class methods": { "names":["archivedDataWithRootObject:", "archivedDataWithRootObject:requiringSecureCoding:error:", "archiveRootObject:toFile:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] }, {"class":"NSKeyedUnarchiver", "class methods": { "names":["unarchiveTopLevelObjectWithData:error:", "decodeObjectForKey:", "unarchiveObjectWithData:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] }, {"class":"NSFileManager", "methods": { "prefixes":["remove", "create", "move", "copy"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "Excessive IO on any thread", "IO on main thread"], "performance issue type":["hang", "disk write", "launch"] }, {"class":"NSFileManager", "instance methods": { "names":["synchronouslyGetFileProviderServicesForItemAtURL:completionHandler:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] }, {"class":"NSData", "methods": { "prefixes":["initWithContents", "dataWithContents"] }, "instance methods": { "names":["enumerateByteRangesUsingBlock:"] }, "duplicate detection type":"NonSystemFramesOnlyFrameworkSupplemented", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"AVFCore", "swizzle":[ {"class":"AVAsset", "class methods": { "names":["assetWithURL:"] }, "duplicate detection type":"NonSystemFramesOnly", "antipattern type":["IO on main thread", "IO on main thread"], "performance issue type":["hang", "launch"] }, {"class":"AVAsset", "instance methods": { "names":["mediaSelectionGroupForMediaCharacteristic:"] }, "duplicate detection type":"AllFrames", "antipattern type":["Conditional waiting on main thread", "Conditional waiting on main thread"], "performance issue type":["hang", "launch"] }, {"class":"AVAsset", "instance methods": { "names":["tracksWithMediaType:"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] }, {"class":"AVURLAsset", "instance methods": { "names":["tracks"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"AVFAudio", "swizzle":[ {"class":"AVAudioSession", "instance methods": { "names":["setActive:withOptions:error:", "category", "setCategory:mode:options:error:", "setCategory:mode:routeSharingPolicy:options:error:", "setCategory:withOptions:error:", "setCategory:error:", "currentRoute", "outputVolume", "setAllowHapticsAndSystemSoundsDuringRecording:error:", "isPiPAvailable"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"StoreKit", "swizzle":[ {"class":"SKPaymentQueue", "class methods": { "names":["canMakePayments"] }, "duplicate detection type":"AllFrames", "antipattern type":["Semaphore on main thread", "Semaphore on main thread"], "performance issue type":["hang", "launch"] }, {"class":"SKPaymentQueue", "instance methods": { "names":["storefront"] }, "duplicate detection type":"AllFrames", "antipattern type":["XPC on main thread", "XPC on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"CoreTelephony", "swizzle":[ {"class":"CTCellularPlanProvisioning", "instance methods": { "names":["supportsCellularPlan"] }, "duplicate detection type":"AllFrames", "antipattern type":["Semaphore on main thread", "Semaphore on main thread"], "performance issue type":["hang", "launch"] } ] }, {"framework":"Vision", "swizzle":[ {"class":"VNImageRequestHandler", "methods": { "prefixes":["performRequest"] }, "duplicate detection type":"AllFrames", "antipattern type":["Computer vision tasks on main thread", "Computer vision tasks on main thread"], "performance issue type":["hang", "launch"] } ] } ]
+predeterminado	01:15:55.545608-0500	ShinobiIgaRyu	[0x107f19380] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon.system
+predeterminado	01:15:55.545658-0500	ShinobiIgaRyu	[0x107f198c0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+predeterminado	01:15:55.606791-0500	ShinobiIgaRyu	[com.shinobiigarju.app] Creating a user notification center
+predeterminado	01:15:55.737610-0500	ShinobiIgaRyu	Creating new assertion because there is no existing background assertion.
+predeterminado	01:15:55.737751-0500	ShinobiIgaRyu	Creating new background assertion
+predeterminado	01:15:55.738074-0500	ShinobiIgaRyu	Created new background assertion <BKSProcessAssertion: 0x107f1af10>
+predeterminado	01:15:55.738152-0500	ShinobiIgaRyu	Initializing connection
+predeterminado	01:15:55.738189-0500	ShinobiIgaRyu	Removing all cached process handles
+predeterminado	01:15:55.738243-0500	ShinobiIgaRyu	Sending handshake request attempt #1 to server
+predeterminado	01:15:55.738250-0500	ShinobiIgaRyu	[C:1] Alloc com.apple.frontboard.systemappservices
+predeterminado	01:15:55.738348-0500	ShinobiIgaRyu	Creating connection to com.apple.runningboard
+predeterminado	01:15:55.738359-0500	ShinobiIgaRyu	[0x158600140] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+predeterminado	01:15:55.738430-0500	ShinobiIgaRyu	[0x158600000] activating connection: mach=false listener=false peer=false name=(anonymous)
+predeterminado	01:15:55.738743-0500	runningboardd	Setting client for [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] as ready
+predeterminado	01:15:55.739815-0500	ShinobiIgaRyu	Cache loaded with 6237 pre-cached in CacheData and 80 items in CacheExtra.
+predeterminado	01:15:55.739823-0500	SpringBoard	Fetching initialization context for: com.shinobiigarju.app
+predeterminado	01:15:55.739928-0500	SpringBoard	Returning cached initialization context for com.shinobiigarju.app
+predeterminado	01:15:55.739939-0500	SpringBoard	Returning cached initialization context for com.shinobiigarju.app
+predeterminado	01:15:55.741045-0500	ShinobiIgaRyu	Handshake succeeded
+predeterminado	01:15:55.741058-0500	ShinobiIgaRyu	Identity resolved as app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>
+predeterminado	01:15:55.741739-0500	runningboardd	Acquiring assertion targeting [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] from originator [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] with description <RBSAssertionDescriptor| "Shared Background Assertion 0 for com.shinobiigarju.app" ID:34-8233-108201 target:8233 attributes:[
+	<RBSLegacyAttribute| requestedReason:FinishTask reason:FinishTask flags:( PreventTaskSuspend )>,
+	<RBSAcquisitionCompletionAttribute| policy:AfterValidation>
+	]>
+predeterminado	01:15:55.741822-0500	runningboardd	Assertion 34-8233-108201 (target:[app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]) will be created as inactive as start-time-defining assertions exist
+predeterminado	01:15:55.741972-0500	ShinobiIgaRyu	Incrementing reference count for background assertion <BKSProcessAssertion: 0x107f1af10>
+predeterminado	01:15:55.741981-0500	ShinobiIgaRyu	Created background task <_UIBackgroundTaskInfo: 0x1585acc40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 66009 (elapsed = 0).
+predeterminado	01:15:55.741987-0500	ShinobiIgaRyu	Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+predeterminado	01:15:55.742472-0500	backboardd	Connection added: IOHIDEventSystemConnection uuid:8E4B1EA8-BBBD-4515-8300-4BB9E1D83549 pid:8233 process:ShinobiIgaRyu type:Passive entitlements:0x0 caller:BackBoardServices: <redacted> + 280 attributes:{
+    HighFrequency = 1;
+    bundleID = "com.shinobiigarju.app";
+    pid = 8233;
+} state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+predeterminado	01:15:55.742877-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+predeterminado	01:15:55.743482-0500	backboardd	Adding client connection: <BKHIDClientConnection: 0xd021499c0; IOHIDEventSystemConnectionRef: 0xd05514000; vpid: 8233(v5536); taskPort: 0xD9BD7; bundleID: com.shinobiigarju.app> for client: IOHIDEventSystemConnection uuid:8E4B1EA8-BBBD-4515-8300-4BB9E1D83549 pid:8233 process:ShinobiIgaRyu type:Passive entitlements:0x0 caller:BackBoardServices: <redacted> + 280 attributes:{
+    HighFrequency = 1;
+    bundleID = "com.shinobiigarju.app";
+    pid = 8233;
+} state:0x0 events:0 mask:0x0 dropped:0 dropStatus:0 droppedMask:0x0 lastDroppedTime:NONE
+predeterminado	01:15:55.744160-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+predeterminado	01:15:55.744288-0500	ShinobiIgaRyu	Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+predeterminado	01:15:55.746525-0500	ShinobiIgaRyu	Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+predeterminado	01:15:55.746643-0500	ShinobiIgaRyu	activating monitor for service com.apple.frontboard.open
+predeterminado	01:15:55.746666-0500	ShinobiIgaRyu	activating monitor for service com.apple.frontboard.workspace-service
+predeterminado	01:15:55.746737-0500	ShinobiIgaRyu	Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+predeterminado	01:15:55.746772-0500	ShinobiIgaRyu	FBSWorkspace registering source: com.apple.frontboard.systemappservices
+predeterminado	01:15:55.748184-0500	ShinobiIgaRyu	Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+predeterminado	01:15:55.748575-0500	ShinobiIgaRyu	FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x15868c420; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+predeterminado	01:15:55.748694-0500	ShinobiIgaRyu	<FBSWorkspaceScenesClient:0x158596c60 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+predeterminado	01:15:55.748716-0500	ShinobiIgaRyu	<FBSWorkspaceScenesClient:0x158596c60 com.apple.frontboard.systemappservices> sent handshake
+predeterminado	01:15:55.748722-0500	ShinobiIgaRyu	Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+predeterminado	01:15:55.748728-0500	SpringBoard	[app<com.shinobiigarju.app>:8233] Connection established.
+predeterminado	01:15:55.748733-0500	ShinobiIgaRyu	Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x15868cac0>
+predeterminado	01:15:55.748745-0500	SpringBoard	[app<com.shinobiigarju.app>:8233] created proxy of <BSXPCServiceConnectionProxy<FBSWorkspaceServiceServerInterface>: 0xc935f2d10>
+predeterminado	01:15:55.748766-0500	SpringBoard	[app<com.shinobiigarju.app>:8233] Connection to remote process established!
+predeterminado	01:15:55.748773-0500	ShinobiIgaRyu	Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+predeterminado	01:15:55.748974-0500	ShinobiIgaRyu	Evaluated capturing state as 0 on <UIScreen: 0x158600780> for initial
+predeterminado	01:15:55.748991-0500	ShinobiIgaRyu	Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+predeterminado	01:15:55.748997-0500	ShinobiIgaRyu	Evaluated capturing state as 0 on <UIScreen: 0x158600780> for CADisplay KVO
+predeterminado	01:15:55.749123-0500	SpringBoard	[0xc9e9d18c0:(FBSceneManager):sceneID:com.shinobiigarju.app-default] Sending scene action [Logical Activate][0xf3af] to process 0xc9e82ba80 (watchdog: 16.76s)
+predeterminado	01:15:55.749130-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+predeterminado	01:15:55.749170-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+predeterminado	01:15:55.749228-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+predeterminado	01:15:55.749685-0500	SpringBoard	[0xc9e9d18c0:(FBSceneManager):sceneID:com.shinobiigarju.app-default] Sending scene create.
+predeterminado	01:15:55.749694-0500	ShinobiIgaRyu	Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+predeterminado	01:15:55.749732-0500	SpringBoard	Application process state changed for com.shinobiigarju.app: <SBApplicationProcessState: 0xc9f4b8d40; pid: 8233; taskState: Running; visibility: Foreground>
+predeterminado	01:15:55.749743-0500	ShinobiIgaRyu	Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+predeterminado	01:15:55.749754-0500	ShinobiIgaRyu	Read CategoryName: per-app = 1, category name = (null)
+predeterminado	01:15:55.749783-0500	ShinobiIgaRyu	Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+predeterminado	01:15:55.749789-0500	ShinobiIgaRyu	Read CategoryName: per-app = 0, category name = (null)
+predeterminado	01:15:55.749993-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932bf20-com.apple.SpringBoard.SceneWorkspace.PrototypeTools] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750000-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+predeterminado	01:15:55.750006-0500	SpringBoard	SceneWorkspaceDelegate[0xc993299c0-com.apple.SpringBoard.SceneWorkspace.DruidUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750072-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932ae80-com.apple.SpringBoard.SceneWorkspace.FullKeyboardAccessUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750078-0500	ShinobiIgaRyu	Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+predeterminado	01:15:55.750085-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932bdc0-com.apple.SpringBoard.SceneWorkspace.AudioHUD] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750097-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932bb00-com.apple.SpringBoard.SceneWorkspace.PerfPowerHUD] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750114-0500	SpringBoard	SceneWorkspaceDelegate[0xc99329c80-com.apple.SpringBoard.SceneWorkspace.InputUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750119-0500	SpringBoard	SceneWorkspaceDelegate[0xc99197680-com.apple.SpringBoard.SceneWorkspace.GlitchHUD] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750132-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932b440-com.apple.SpringBoard.SceneWorkspace.AssistiveTouchUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750149-0500	SpringBoard	SceneWorkspaceDelegate[0xc99329b20-com.apple.SpringBoard.SceneWorkspace.OverlayUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750166-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932a640-com.apple.SpringBoard.SceneWorkspace.VoiceControlUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750180-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932b840-com.apple.SpringBoard.SceneWorkspace.EyedropperUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750188-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+predeterminado	01:15:55.750193-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932bc60-com.apple.SpringBoard.SceneWorkspace.InternalPerfPowerHUD] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750247-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932b9a0-com.apple.SpringBoard.SceneWorkspace.Moments] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750260-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932b600-com.apple.SpringBoard.SceneWorkspace.AccessibilityUIServerUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750264-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+predeterminado	01:15:55.750272-0500	SpringBoard	SceneWorkspaceDelegate[0xc9932a460-com.apple.SpringBoard.SceneWorkspace.LiveTranscriptionUI] client did connect with handshake: <FBSceneClientHandshake:0xc9f4bafe0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] remnants=0>
+predeterminado	01:15:55.750293-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+predeterminado	01:15:55.750338-0500	ShinobiIgaRyu	Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+predeterminado	01:15:55.750371-0500	ShinobiIgaRyu	Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+predeterminado	01:15:55.750402-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+predeterminado	01:15:55.750421-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+predeterminado	01:15:55.750556-0500	ShinobiIgaRyu	Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+predeterminado	01:15:55.750813-0500	ShinobiIgaRyu	Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+predeterminado	01:15:55.891829-0500	ShinobiIgaRyu	UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+predeterminado	01:15:55.891926-0500	ShinobiIgaRyu	UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+predeterminado	01:15:55.892024-0500	ShinobiIgaRyu	Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+predeterminado	01:15:56.060487-0500	ShinobiIgaRyu	Registering for test daemon availability notify post.
+predeterminado	01:15:56.060544-0500	ShinobiIgaRyu	notify_get_state check indicated test daemon not ready.
+predeterminado	01:15:56.067894-0500	ShinobiIgaRyu	notify_get_state check indicated test daemon not ready.
+predeterminado	01:15:56.068033-0500	ShinobiIgaRyu	notify_get_state check indicated test daemon not ready.
+predeterminado	01:15:56.068114-0500	ShinobiIgaRyu	Selected display: name=LCD (primary), id=1
+predeterminado	01:15:56.070216-0500	ShinobiIgaRyu	Deactivation reason added: 5; deactivation reasons: 1024 -> 1056; animating application lifecycle event: 1
+predeterminado	01:15:56.070816-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.075861-0500	ShinobiIgaRyu	Should send trait collection or coordinate space update, interface style 2 -> 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.076158-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.088895-0500	ShinobiIgaRyu	Initializing: <_UIHomeAffordanceSceneNotifier: 0x1586ed650>; with scene: <UIWindowScene: 0x107f194c0>
+predeterminado	01:15:56.088960-0500	ShinobiIgaRyu	0x1586c5c50 setDelegate:<0x1586c5d10 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.shinobiigarju.app-default
+predeterminado	01:15:56.089153-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.089179-0500	ShinobiIgaRyu	[0x1586ed6c0] Initialized with scene: <UIWindowScene: 0x107f194c0>; behavior: <_UIEventDeferringBehavior_iOS: 0x15868ed80>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+predeterminado	01:15:56.089765-0500	ShinobiIgaRyu	[C:2] Alloc com.apple.backboard.hid-services.xpc
+predeterminado	01:15:56.089771-0500	ShinobiIgaRyu	[0x158600c80] activating connection: mach=false listener=false peer=false name=(anonymous)
+predeterminado	01:15:56.089783-0500	ShinobiIgaRyu	policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x158485440; process scope; status: none> was:none
+predeterminado	01:15:56.089864-0500	ShinobiIgaRyu	BKSHIDEventObserver - connection activation
+predeterminado	01:15:56.089889-0500	ShinobiIgaRyu	Setting default evaluation strategy for UIUserInterfaceIdiomPhone to LastOneWins
+predeterminado	01:15:56.090400-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.090491-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.090785-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+falla	01:15:56.090836-0500	ShinobiIgaRyu	`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+predeterminado	01:15:56.090858-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.090923-0500	ShinobiIgaRyu	sceneOfRecord: sceneID: sceneID:com.shinobiigarju.app-default  persistentID: 1BCE4F90-2C8E-4036-9F08-2AAFE76DB459
+predeterminado	01:15:56.091002-0500	ShinobiIgaRyu	Ignoring already applied deactivation reason: 5; deactivation reasons: 1056
+predeterminado	01:15:56.091104-0500	ShinobiIgaRyu	Deactivation reason added: 11; deactivation reasons: 1056 -> 3104; animating application lifecycle event: 1
+predeterminado	01:15:56.091315-0500	ShinobiIgaRyu	startConnection
+predeterminado	01:15:56.091329-0500	ShinobiIgaRyu	[0x158601a40] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+predeterminado	01:15:56.091341-0500	ShinobiIgaRyu	You've implemented -[<UIApplicationDelegate> application:performFetchWithCompletionHandler:], but you still need to add "fetch" to the list of your supported UIBackgroundModes in your Info.plist.
+predeterminado	01:15:56.091396-0500	ShinobiIgaRyu	You've implemented -[<UIApplicationDelegate> application:didReceiveRemoteNotification:fetchCompletionHandler:], but you still need to add "remote-notification" to the list of your supported UIBackgroundModes in your Info.plist.
+predeterminado	01:15:56.091691-0500	ShinobiIgaRyu	_setUpFeatureFlags called with release level 2
+predeterminado	01:15:56.091763-0500	SpringBoard	RX com.shinobiigarju.app(8233) startArbitration
+    expectedState:(null)
+    focusContext:<private>
+    hostingPIDs:<private> usingFence:Y withSuppression:0
+predeterminado	01:15:56.091844-0500	SpringBoard	set focusRequestedHandle:<com.shinobiigarju.app focus:(null) run:Y hosting:() level:0 active:N wantedState:Disabled #suppr:0 iavHeight:0 onScreen:N>
+predeterminado	01:15:56.091912-0500	SpringBoard	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.160657-0500	ShinobiIgaRyu	networkd_settings_read_from_file initialized networkd settings by reading plist directly
+predeterminado	01:15:56.160893-0500	ShinobiIgaRyu	networkd_settings_read_from_file initialized networkd settings by reading plist directly
+predeterminado	01:15:56.177596-0500	backboardd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.190906-0500	ShinobiIgaRyu	<UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459) Scene updated orientation preferences: none -> ( Pu )
+predeterminado	01:15:56.194195-0500	ShinobiIgaRyu	Key window API is scene-level: YES
+predeterminado	01:15:56.194282-0500	ShinobiIgaRyu	UIWindowScene: 0x107f194c0: Window became key in scene: UIWindow: 0x1585d4400; contextId: 0x28B4D11: reason: UIWindowScene: 0x107f194c0: Window requested to become key in scene: 0x1585d4400
+predeterminado	01:15:56.194308-0500	ShinobiIgaRyu	Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x107f194c0; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x1585d4400; reason: UIWindowScene: 0x107f194c0: Window requested to become key in scene: 0x1585d4400
+predeterminado	01:15:56.194325-0500	ShinobiIgaRyu	Window did become application key: UIWindow: 0x1585d4400; contextId: 0x28B4D11; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.194334-0500	ShinobiIgaRyu	[0x1586ed6c0] Begin local event deferring requested for token: 0x158486f40; environments: 1; reason: UIWindowScene: 0x107f194c0: Begin event deferring in keyboardFocus for window: 0x1585d4400
+predeterminado	01:15:56.194742-0500	ShinobiIgaRyu	BKSHIDEventDeliveryManager - connection activation
+predeterminado	01:15:56.194935-0500	SpringBoard	RX com.shinobiigarju.app(8233) setClientFocusContext
+    focusContext:<contextID:42683665 sceneID:com.shinobiigarju.app-default>
+predeterminado	01:15:56.195301-0500	backboardd	new deferring rules for pid:8233: [[8233-1]; <keyboardFocus; builtin; …vices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default>; () -> <token: 0x28B4D11; pid: 8233>; reason: …gin event deferring in keyboardFocus for window: 0x1585d4400]
+predeterminado	01:15:56.195432-0500	backboardd	[keyboardFocus 0xd0841eb20] setRules:forPID(8233): [[8233-1]; <keyboardFocus; builtin; com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default>; () -> <token: 0x28B4D11; pid: 8233>; reason: UIWindowScene: 0x107f194c0: Begin event deferring in keyboardFocus for window: 0x1585d4400]
+predeterminado	01:15:56.195554-0500	SpringBoard	[coordinator] gen:1956 handling new keyboard arbiter request pid: 8233 sceneIdentity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.195566-0500	SpringBoard	arbiter: arbiter requested pid 8233 / com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.195601-0500	SpringBoard	[coordinator] using arbiter suggested pid 8233 + scene: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.195800-0500	SpringBoard	[coordinator] informing scene controller 'com.apple.springboard' of focusTarget: <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>
+predeterminado	01:15:56.195827-0500	SpringBoard	[com.apple.springboard] coalition says I have focus; enforcing policy: {
+    keyboardFocusTarget: <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>;
+    selectionPolicy: KeyboardArbiter;
+    shouldSuppressRemoteDeferring: 0;
+}
+predeterminado	01:15:56.195832-0500	SpringBoard	rules: (keyboardFocus) outbound target changed from:<com.apple.frontboard.systemappservices/FBSceneManager:searchScreen pid:7633> to <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>
+predeterminado	01:15:56.195837-0500	SpringBoard	rules: (keyboardFocus) defer (<com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard pid:35>) -> <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>
+predeterminado	01:15:56.196424-0500	backboardd	[keyboardFocus 0xd0841ea80] setRules:forPID(8233): [[8233-1]; <keyboardFocus; builtin; com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default>; () -> <token: 0x28B4D11; pid: 8233>; reason: UIWindowScene: 0x107f194c0: Begin event deferring in keyboardFocus for window: 0x1585d4400]
+predeterminado	01:15:56.196649-0500	SpringBoard	[coordinator] new enforced policy: {
+    keyboardFocusTarget: <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>;
+    selectionPolicy: KeyboardArbiter;
+    shouldSuppressRemoteDeferring: 0;
+}
+predeterminado	01:15:56.196667-0500	SpringBoard	[coordinator] keyboard arbiter suggested <pid: 8233; sceneIdentity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default> and we replied <com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default pid:8233>
+predeterminado	01:15:56.197025-0500	ShinobiIgaRyu	Deactivation reason removed: 10; deactivation reasons: 3104 -> 2080; animating application lifecycle event: 1
+predeterminado	01:15:56.197040-0500	ShinobiIgaRyu	Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+predeterminado	01:15:56.197046-0500	ShinobiIgaRyu	Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+predeterminado	01:15:56.197072-0500	ShinobiIgaRyu	Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+predeterminado	01:15:56.208091-0500	SpringBoard	set currentFocus PID:8233 sceneIdentity:com.shinobiigarju.app-default
+predeterminado	01:15:56.208173-0500	SpringBoard	rules: (scene setting) ADDED keyboardFocus environment to scene: sceneID:com.shinobiigarju.app-default
+predeterminado	01:15:56.209527-0500	ShinobiIgaRyu	establishing connection to agent
+predeterminado	01:15:56.209546-0500	ShinobiIgaRyu	[0x158c182d0] Session created.
+predeterminado	01:15:56.209564-0500	backboardd	new scene host settings: contextID:28B4D11 <sceneID:com.shinobiigarju.app-default> unspecified -> foreground
+predeterminado	01:15:56.210237-0500	ShinobiIgaRyu	[0x158c182d0] Session created from connection [0x158c843c0]
+predeterminado	01:15:56.210246-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.210253-0500	ShinobiIgaRyu	[0x158c843c0] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+predeterminado	01:15:56.210259-0500	ShinobiIgaRyu	[0x158c182d0] Session activated
+predeterminado	01:15:56.210459-0500	SpringBoard	[0xc9e9d18c0:(FBSceneManager):sceneID:com.shinobiigarju.app-default] Scene action [Logical Activate][0xf3af] completed with success: 1
+predeterminado	01:15:56.210614-0500	ShinobiIgaRyu	Create activity from XPC object <nw_activity 50:1 [997EAA20-9BFE-4F8A-A2B4-D10A34E6EFFE] (reporting strategy default)>
+predeterminado	01:15:56.210621-0500	ShinobiIgaRyu	Create activity from XPC object <nw_activity 50:2 [C6272A96-C586-481C-8502-3E19C4019593] (reporting strategy default)>
+predeterminado	01:15:56.210632-0500	ShinobiIgaRyu	Set activity <nw_activity 50:1 [997EAA20-9BFE-4F8A-A2B4-D10A34E6EFFE] (reporting strategy default)> as the global parent
+predeterminado	01:15:56.210717-0500	ShinobiIgaRyu	AggregateDictionary is deprecated and has been removed. Please migrate to Core Analytics.
+predeterminado	01:15:56.210731-0500	backboardd	new deferring rules for pid:35: [
+    [35-873]; <keyboardFocus; builtin; …board.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: 0x4C2215A; pid: 35>; reason: …gin event deferring in keyboardFocus for window: 0xc9b553c00,
+    [35-2]; <system; builtin; SBMainSystemGestures>; () -> <token: 0xE5125C5A; pid: 35>; reason: systemGestureSymbol-Main,
+    [35-1]; <system; builtin>; () -> <token: 0xE5125C5A; pid: 35>; reason: systemGestures-Main,
+    [35-874]; <keyboardFocus; …board.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: …vices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; pid: 8233>; reason: SpringBoard<com.apple.springboard>: enforcing outbound,
+    [35-4]; <keyboardFocus; SBKeyboardFocus>; () -> <token: …board.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>; reason: SB incoming to root scene (symbol),
+    [35-5]; <systemKeyCommandOverlay>; () -> <token: 0x1D9A6E20; pid: 35>; reason: systemKeyCommandOverlayEnvironment to root scene,
+    [35-3];
+predeterminado	01:15:56.210819-0500	ShinobiIgaRyu	Ending background task with UIBackgroundTaskIdentifier: 1
+predeterminado	01:15:56.210827-0500	ShinobiIgaRyu	Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x1585acc40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 66009 (elapsed = 1), _expireHandler: (null)
+predeterminado	01:15:56.210998-0500	ShinobiIgaRyu	Decrementing reference count for assertion <BKSProcessAssertion: 0x107f1af10> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x1585acc40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 66009 (elapsed = 1))
+predeterminado	01:15:56.211011-0500	ShinobiIgaRyu	Will invalidate assertion: <BKSProcessAssertion: 0x107f1af10> for task identifier: 1
+predeterminado	01:15:56.211019-0500	backboardd	[keyboardFocus 0xd0841eb20] setRules:forPID(35): [
+    [35-873]; <keyboardFocus; builtin; com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: 0x4C2215A; pid: 35>; reason: SBWindowScene: 0xc99168f00: Begin event deferring in keyboardFocus for window: 0xc9b553c00,
+    [35-874]; <keyboardFocus; com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; pid: 8233>; reason: SpringBoard<com.apple.springboard>: enforcing outbound,
+    [35-4]; <keyboardFocus; SBKeyboardFocus>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>; reason: SB incoming to root scene (symbol),
+    [35-3]; <keyboardFocus>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>; reason: SB incoming to root scene
+]
+predeterminado	01:15:56.211062-0500	ShinobiIgaRyu	Event Timing Profile for Touch: ok, path="/System/Library/EventTimingProfiles/D84.Touch.plist"
+predeterminado	01:15:56.211075-0500	ShinobiIgaRyu	Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/D84.Pencil.plist"
+predeterminado	01:15:56.211110-0500	ShinobiIgaRyu	Target list changed: <CADisplay:LCD primary>
+predeterminado	01:15:56.211139-0500	ShinobiIgaRyu	sceneOfRecord: sceneID: sceneID:com.shinobiigarju.app-default  persistentID: 1BCE4F90-2C8E-4036-9F08-2AAFE76DB459
+predeterminado	01:15:56.211469-0500	backboardd	[keyboardFocus 0xd0841ea80] setRules:forPID(35): [
+    [35-873]; <keyboardFocus; builtin; com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: 0x4C2215A; pid: 35>; reason: SBWindowScene: 0xc99168f00: Begin event deferring in keyboardFocus for window: 0xc9b553c00,
+    [35-874]; <keyboardFocus; com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; pid: 8233>; reason: SpringBoard<com.apple.springboard>: enforcing outbound,
+    [35-4]; <keyboardFocus; SBKeyboardFocus>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>; reason: SB incoming to root scene (symbol),
+    [35-3]; <keyboardFocus>; () -> <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>; reason: SB incoming to root scene
+]
+predeterminado	01:15:56.211530-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] scene content state changed: ready
+predeterminado	01:15:56.211908-0500	runningboardd	Invalidating assertion 34-8233-108201 (target:[app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]) from originator [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:56.211927-0500	runningboardd	Acquiring assertion targeting [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233](UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default) from originator [osservice<com.apple.SpringBoard>:35] with description <RBSAssertionDescriptor| "injecting  inherited from 'UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard'" ID:34-35-108203 target:8233<UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default> attributes:[
+	<RBSHereditaryGrant| endowmentNamespace:com.apple.boardservices.endpoint-injection UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>,
+	<RBSHereditaryGrant| endowmentNamespace:com.apple.frontboard.visibility UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>
+	]>
+predeterminado	01:15:56.212054-0500	runningboardd	Assertion 34-35-108203 (target:[app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233](UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default)) will be created as active
+predeterminado	01:15:56.212287-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] Setting parent scene: (FBSceneManager):com.apple.springboard
+predeterminado	01:15:56.212349-0500	runningboardd	Calculated state for app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>: running-active (role: UserInteractiveFocal) (endowments: <private>)
+predeterminado	01:15:56.212450-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.212488-0500	runningboardd	Inheritance changeset: <RBSInheritanceChangeSet| gained:{(
+    <RBSInheritance| environment:UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default name:com.apple.frontboard.visibility origID:34-35-108203 payload 1791397758226323928>
+)} lost:{(
+)}>
+predeterminado	01:15:56.212496-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] propagating 5 settings from (FBSceneManager):com.apple.springboard
+predeterminado	01:15:56.212641-0500	backboardd	chain did update (setDeferringRules) <keyboardFocus; display: null; compatibilityDisplay: builtin> containsEndOfChain: YES; [
+    <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>,
+    <token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; pid: 8233>,
+    <token: 0x28B4D11; pid: 8233>
+]
+predeterminado	01:15:56.212654-0500	backboardd	chain did update (setDeferringRules) <keyboardFocus; display: builtin> containsEndOfChain: YES; [
+    <token: com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard; pid: 35>,
+    <token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; pid: 8233>,
+    <token: 0x28B4D11; pid: 8233>
+]
+predeterminado	01:15:56.212831-0500	backboardd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.212847-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] Removing parent scene.
+predeterminado	01:15:56.212871-0500	SpringBoard	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.213011-0500	runningboardd	Invalidating assertion 34-35-108203 (target:[app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233](UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default)) from originator [osservice<com.apple.SpringBoard>:35]
+predeterminado	01:15:56.213052-0500	runningboardd	Acquiring assertion targeting [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233](UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default) from originator [osservice<com.apple.SpringBoard>:35] with description <RBSAssertionDescriptor| "injecting  inherited from 'UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard'" ID:34-35-108204 target:8233<UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default> attributes:[
+	<RBSHereditaryGrant| endowmentNamespace:com.apple.boardservices.endpoint-injection UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>,
+	<RBSHereditaryGrant| endowmentNamespace:com.apple.frontboard.visibility UIScene:com.apple.frontboard.systemappservices/FBSceneManager:com.apple.springboard>
+	]>
+predeterminado	01:15:56.213161-0500	runningboardd	Assertion 34-35-108204 (target:[app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233](UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default)) will be created as active
+predeterminado	01:15:56.213171-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] Setting parent scene: (FBSceneManager):com.apple.springboard
+predeterminado	01:15:56.213341-0500	audiomxd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.213377-0500	SpringBoard	[(FBSceneManager):sceneID:com.shinobiigarju.app-default] propagating 5 settings from (FBSceneManager):com.apple.springboard
+predeterminado	01:15:56.213499-0500	runningboardd	Inheritance changeset: <RBSInheritanceChangeSet| gained:{(
+    <RBSInheritance| environment:UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default name:com.apple.frontboard.visibility origID:34-35-108204 payload 1791397758226323928>
+)} lost:{(
+)}>
+predeterminado	01:15:56.213622-0500	CommCenter	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.213711-0500	ShinobiIgaRyu	policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x158485440; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default; status: ancestor> was:none
+predeterminado	01:15:56.214004-0500	SpringBoard	[Main (EmbeddedDisplay)] dispatch event:
+<SBSceneReadySwitcherModifierEvent: 0xc90339470; type: SceneReady; appLayout: <SBAppLayout: 0xc8fae8f00; primary: com.shinobiigarju.app:default; environment: main> {
+    configuration = full;
+    environment = main;
+    centerConfiguration = undefined;
+    preferredDisplayOrdinal = 0;
+    continuousExposeIdentifier = com.shinobiigarju.app;
+    layoutItems = {
+        primary = <SBDisplayItem: 0xc985676c0; type: App; bundleIdentifier: com.shinobiigarju.app; uniqueIdentifier: sceneID:com.shinobiigarju.app-default>;
+    }
+}>
+predeterminado	01:15:56.214076-0500	ShinobiIgaRyu	Setting client identifier GAX_com.apple.accessibility.gax.client_client_to_GAX_BB
+predeterminado	01:15:56.214147-0500	ShinobiIgaRyu	Starting server (<AXIPCServer: 0x1586eebc0>. Serivce Name:com.apple.accessibility.gax.client. Running:NO Server Port:0. Clients:(null). Entitlements:(null). RunLoopSource:0x0) on thread (<_NSMainThread: 0x107f125d0>{number = 1, name = main}:name::main:1)
+predeterminado	01:15:56.221951-0500	gamepolicyd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-NotVisible
+predeterminado	01:15:56.222145-0500	replayd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.222167-0500	watchdogd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.222666-0500	IDSCredentialsAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.222858-0500	dasd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.223086-0500	WirelessRadioManagerd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.223537-0500	SpringBoard	Front display did change: <SBApplication: 0xc99947400; com.shinobiigarju.app>
+predeterminado	01:15:56.224679-0500	UserEventAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.224720-0500	PerfPowerServices	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.225176-0500	locationd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.225219-0500	useractivityd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.225513-0500	symptomsd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.225617-0500	wifid	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.227677-0500	ShinobiIgaRyu	Realizing settings extension SBUISecureRenderingSettingsExtension on FBSSceneSettings
+predeterminado	01:15:56.228681-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.228970-0500	ShinobiIgaRyu	Not push traits update to screen for new style 2, <UIWindowScene: 0x107f194c0> (1BCE4F90-2C8E-4036-9F08-2AAFE76DB459)
+predeterminado	01:15:56.229053-0500	ShinobiIgaRyu	sceneOfRecord: sceneID: sceneID:com.shinobiigarju.app-default  persistentID: 1BCE4F90-2C8E-4036-9F08-2AAFE76DB459
+predeterminado	01:15:56.229084-0500	ShinobiIgaRyu	Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+predeterminado	01:15:56.229154-0500	ShinobiIgaRyu	Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+predeterminado	01:15:56.229247-0500	ShinobiIgaRyu	Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+predeterminado	01:15:56.229289-0500	ShinobiIgaRyu	Creating hang event with BundleID: com.shinobiigarju.app
+predeterminado	01:15:56.229614-0500	ShinobiIgaRyu	Updating event->rollingFGTimestamp from INVALID_FOREGROUND_TIMESTAMP to 1584245513937
+predeterminado	01:15:56.229876-0500	ShinobiIgaRyu	Updating configuration of monitor M8233-1
+predeterminado	01:15:56.230557-0500	ShinobiIgaRyu	Creating side-channel connection to com.apple.runningboard
+predeterminado	01:15:56.230644-0500	ShinobiIgaRyu	[0x158c85e00] activating connection: mach=true listener=false peer=false name=com.apple.hangtracermonitor
+predeterminado	01:15:56.230717-0500	ShinobiIgaRyu	[0x158c85f40] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+predeterminado	01:15:56.230854-0500	ShinobiIgaRyu	Skip setting user action callback for 3rd party apps
+predeterminado	01:15:56.231937-0500	ShinobiIgaRyu	[0x158c85e00] invalidated because the current process cancelled the connection by calling xpc_connection_cancel()
+predeterminado	01:15:56.232743-0500	ShinobiIgaRyu	startConnection
+predeterminado	01:15:56.232937-0500	ShinobiIgaRyu	Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x107f194c0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.233052-0500	ShinobiIgaRyu	[0x1586ed6c0] Scene target of event deferring environments did update: scene: 0x107f194c0; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+predeterminado	01:15:56.233066-0500	ShinobiIgaRyu	Scene became target of keyboard event deferring environment: UIWindowScene: 0x107f194c0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default
+predeterminado	01:15:56.233079-0500	ShinobiIgaRyu	Stack[KeyWindow] 0x1586c6010: Migrate scenes from LastOneWins -> SystemShellManaged
+predeterminado	01:15:56.233103-0500	ShinobiIgaRyu	Setting default evaluation strategy for UIUserInterfaceIdiomPhone to SystemShellManaged
+predeterminado	01:15:56.233185-0500	ShinobiIgaRyu	Hit the server for a process handle 3b574e300002029 that resolved to: [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233]
+predeterminado	01:15:56.233198-0500	ShinobiIgaRyu	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, unknown-NotVisible
+predeterminado	01:15:56.233748-0500	ShinobiIgaRyu	handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+predeterminado	01:15:56.234266-0500	ShinobiIgaRyu	forceReloadInputViews
+predeterminado	01:15:56.234272-0500	ShinobiIgaRyu	Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+predeterminado	01:15:56.234282-0500	ShinobiIgaRyu	isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+predeterminado	01:15:56.237621-0500	SpringBoard	Received RB Notification for CPU Role change of process(8233) 'com.shinobiigarju.app'. Changed from (unknown) to UserInteractiveFocal at Wed Mar 25 01:15:56 2026
+predeterminado	01:15:56.237773-0500	backboardd	Was notified gax client did load: com.shinobiigarju.app. pid:8233 send right name: 7237b
+predeterminado	01:15:56.238218-0500	backboardd	Was notified that client did become active. ID:com.shinobiigarju.app PID:8233
+predeterminado	01:15:56.238845-0500	backboardd	Session apps are (null). Effective app is com.shinobiigarju.app.
+predeterminado	01:15:56.242837-0500	SpringBoard	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.243284-0500	cameracaptured	<<<< FigCaptureDisplayLayoutMonitor >>>> -[FigCaptureDisplayLayoutMonitor _parseFBSDisplayLayout:]: <FigCaptureDisplayLayoutMonitor: 0x6f2c80ea0 Main Display> <FBSDisplayLayout: 0x6f39f5940; displayIdentity: Main> {    bounds = {{0, 0}, {430, 932}};    interfaceOrientation = "portrait (1)";    backlightLevel = 100;    backlightState = 2;    elements = {        <SBSDisplayLayoutElement: 0x6f8c8a760; sceneID:com.shinobiigarju.app-default; bundleID: com.shinobiigarju.app; frame: {{0, 0}, {430, 932}}; level: 1; hasKeyboardFocus; role: primary>;    }    timestamp = 25 March 2026 at 1:15:56 AM GMT-5;}
+predeterminado	01:15:56.243371-0500	cameracaptured	<<<< FigCaptureDisplayLayoutMonitor >>>> -[FigCaptureDisplayLayoutMonitor _updateObserversWithLayout:]: <FigCaptureDisplayLayoutMonitor: 0x6f2c80ea0 Main Display> <FigCaptureDisplayLayout: 0x6f39f6240 03-25-2026 01:15:56, Main Display, foreground:[com.shinobiigarju.app]>
+predeterminado	01:15:56.247581-0500	backboardd	Layout ID: sceneID:com.shinobiigarju.app-default Bundle ID: com.shinobiigarju.app Role: 1
+predeterminado	01:15:56.247606-0500	SpringBoard	Received RB Notification for CPU Role change of process(8233) 'com.shinobiigarju.app'. Changed from (unknown) to UserInteractiveFocal at Wed Mar 25 01:15:56 2026
+predeterminado	01:15:56.247613-0500	backboardd	Layout ID: sceneID:com.shinobiigarju.app-default Bundle ID: com.shinobiigarju.app Role: 1
+predeterminado	01:15:56.248250-0500	backboardd	Layout ID: sceneID:com.shinobiigarju.app-default Bundle ID: com.shinobiigarju.app Role: 1
+predeterminado	01:15:56.251935-0500	bluetoothd	SystemUI unknown identifier: 'sceneID:com.shinobiigarju.app-default' / 'com.shinobiigarju.app'
+predeterminado	01:15:56.262778-0500	ShinobiIgaRyu	[0x158c84dc0] activating connection: mach=true listener=false peer=false name=com.apple.hangtracerd
+predeterminado	01:15:56.263142-0500	hangtracerd	Initialization complete now watching hangs for ShinobiIgaRyu(8233) | UIKit-runloop
+predeterminado	01:15:56.264236-0500	SpringBoard	SBMainDisplaySceneManager requested idle timer behavior disabled? YES For SceneIDs: sceneID:com.shinobiigarju.app-default
+predeterminado	01:15:56.309881-0500	runningboardd	Inheritance changeset: <RBSInheritanceChangeSet| gained:{(
+)} lost:{(
+    <RBSInheritance| environment:UIScene:com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default name:com.apple.frontboard.visibility origID:34-35-108203 payload 1791397758226323928>
+)}>
+falla	01:15:56.437299-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause hangs.","antipattern trigger":"-[NSBundle bundleIdentifier]","message type":"suppressable","issue type":1,"category type":17,"subcategory type":3,"show in console":"0"}'74 E2 41 86 10 87 30 E4 BB 34 16 FC A1 D2 A7 D6 1C 13 00 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 74 E2 41 86 10 87 30 E4 BB 34 16 FC A1 D2 A7 D6 4C 12 00 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 E4 58 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 D8 59 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 F8 57 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 DC 77 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 44 5F 15 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 7C A7 02 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 10 84 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 B0 DE 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C C8 34 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 10 99 05 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 54 40 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C BC 3F 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 68 20 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C DC 58 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C D8 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+falla	01:15:56.445734-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause slow launches.","antipattern trigger":"-[NSBundle bundleIdentifier]","message type":"suppressable","issue type":4,"category type":17,"subcategory type":3,"show in console":"0"}'74 E2 41 86 10 87 30 E4 BB 34 16 FC A1 D2 A7 D6 1C 13 00 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 74 E2 41 86 10 87 30 E4 BB 34 16 FC A1 D2 A7 D6 4C 12 00 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 E4 58 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 D8 59 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 F8 57 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 DC 77 01 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 44 5F 15 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 7C A7 02 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 10 84 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 B0 DE 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C C8 34 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 10 99 05 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 54 40 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C BC 3F 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 68 20 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C DC 58 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C D8 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+falla	01:15:56.451493-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause slow launches.","antipattern trigger":"dlopen","message type":"suppressable","issue type":4,"category type":17,"subcategory type":3,"show in console":"0"}'F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 D4 22 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 EC 46 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 64 46 01 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 64 22 01 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 40 45 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 C0 3B 01 00 F2 06 20 7A 4D 58 3E 17 AF 5A E2 5F 68 53 21 E7 B4 1F 00 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 C8 81 09 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 00 3C 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 F4 2D 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 BC 2B 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 B4 29 02 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 1C 6D 00 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 E4 34 00 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 3C 19 1B 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 B0 DE 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C C8 34 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 10 99 05 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 54 40 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C BC 3F 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 68 20 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C DC 58 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C D8 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+falla	01:15:56.538624-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause slow launches.","antipattern trigger":"dlopen","message type":"suppressable","issue type":4,"category type":17,"subcategory type":3,"show in console":"0"}'43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 20 97 02 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 70 BC 48 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 94 51 47 00 43 58 DA F9 77 58 35 42 A1 E1 9F 18 55 34 A9 11 B0 DE 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C C8 34 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 10 99 05 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 54 40 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C BC 3F 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 68 20 02 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C DC 58 01 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C D8 4D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+falla	01:15:56.548326-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause hangs.","antipattern trigger":"-[NSBundle bundleIdentifier]","message type":"suppressable","issue type":1,"category type":17,"subcategory type":3,"show in console":"0"}'2C 25 1A 35 6A D1 3A C5 A0 FE 1E 16 0F 26 EB 91 14 57 01 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 4C 76 04 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 28 76 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 64 6F 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 20 78 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 40 6E 04 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 60 56 00 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 28 4E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+falla	01:15:56.618297-0500	ShinobiIgaRyu	__delegate_identifier__:Performance Diagnostics__:::____message__:{"message":"Performing I/O on the main thread can cause slow launches.","antipattern trigger":"-[NSBundle bundleIdentifier]","message type":"suppressable","issue type":4,"category type":17,"subcategory type":3,"show in console":"0"}'2C 25 1A 35 6A D1 3A C5 A0 FE 1E 16 0F 26 EB 91 14 57 01 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 4C 76 04 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C E0 E2 01 00 61 8E 66 9F 4A D9 38 EB 97 2D 7E EC E0 89 B1 4C 90 77 00 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 28 76 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 64 6F 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 20 78 04 00 C7 68 F9 63 A0 CC 3F 5C A1 D3 2E 06 D5 3A 23 81 40 6E 04 00 85 0C 5B 33 5D AF 30 E1 B8 DF E0 63 10 CC 4D 47 60 56 00 00 8A CD B5 80 8A B7 38 C0 A5 86 E6 67 AD B1 C1 1C 28 4E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00'
+predeterminado	01:15:56.774606-0500	SpringBoard	[app<com.shinobiigarju.app>:8233] Dropping launch assertion.
+predeterminado	01:15:56.774997-0500	runningboardd	Invalidating assertion 34-35-108196 (target:app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>) from originator [osservice<com.apple.SpringBoard>:35]
+predeterminado	01:15:56.841949-0500	ShinobiIgaRyu	App is being debugged, do not track this hang
+predeterminado	01:15:56.841963-0500	ShinobiIgaRyu	Hang detected: 0.61s (debugger attached, not reporting)
+predeterminado	01:15:56.841986-0500	ShinobiIgaRyu	[0x158c84a00] activating connection: mach=true listener=false peer=false name=com.apple.analyticsd
+predeterminado	01:15:56.843310-0500	ShinobiIgaRyu	Read Per-App on Init: Smart invert = (null)
+predeterminado	01:15:56.846333-0500	ShinobiIgaRyu	got GAX status change notification. on: 0
+predeterminado	01:15:56.846462-0500	ShinobiIgaRyu	got GAX status change notification. on: 0
+predeterminado	01:15:56.848555-0500	ShinobiIgaRyu	[0x158c84000] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+predeterminado	01:15:56.877104-0500	ShinobiIgaRyu	Not internal release, disabling SIRL
+predeterminado	01:15:56.877121-0500	ShinobiIgaRyu	SecSecurityClientGet new thread!
+predeterminado	01:15:56.877137-0500	ShinobiIgaRyu	System Keychain Always Supported set via feature flag to disabled
+predeterminado	01:15:56.877177-0500	ShinobiIgaRyu	[0x158c85b80] activating connection: mach=true listener=false peer=false name=com.apple.securityd
+predeterminado	01:15:56.883008-0500	runningboardd	Calculated state for app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>: running-active (role: UserInteractiveFocal) (endowments: <private>)
+predeterminado	01:15:56.883222-0500	powerd	Process runningboardd.34 Released SystemIsActive "app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>34-35-108196:FBApplicationProcess" age:00:00:04  id:51539646514 [System: PrevIdle SysAct]
+predeterminado	01:15:56.883748-0500	audiomxd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.883793-0500	backboardd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.883810-0500	CommCenter	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.883829-0500	SpringBoard	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.884524-0500	gamepolicyd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-NotVisible
+predeterminado	01:15:56.884839-0500	replayd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.884984-0500	IDSCredentialsAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.885818-0500	dasd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.886447-0500	WirelessRadioManagerd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.886914-0500	PerfPowerServices	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.887262-0500	UserEventAgent	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.887881-0500	wifid	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.887949-0500	ShinobiIgaRyu	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, unknown-NotVisible
+predeterminado	01:15:56.888164-0500	useractivityd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.888252-0500	locationd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.888494-0500	symptomsd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+predeterminado	01:15:56.888518-0500	watchdogd	Received state update for 8233 (app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>, running-active-Visible
+error	01:15:56.901550-0500	ShinobiIgaRyu	[TypeError: undefined is not a function]
+error	01:15:56.901871-0500	ShinobiIgaRyu	[TypeError: undefined is not a function]
+error	01:15:56.901906-0500	ShinobiIgaRyu	Unhandled JS Exception: TypeError: undefined is not a function
+error	01:15:56.901999-0500	ShinobiIgaRyu	[TypeError: undefined is not a function]
+error	01:15:56.902024-0500	ShinobiIgaRyu	[TypeError: undefined is not a function]
+error	01:15:56.902065-0500	ShinobiIgaRyu	{ [TypeError: Cannot read property 'ErrorBoundary' of undefined]
+  componentStack: '\n    at ContextNavigator (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:100554:24)\n    at ExpoRoot (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:100522:28)\n    at App (<anonymous>)\n    at RCTView (<anonymous>)\n    at View (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:36047:19)\n    at AppContainer (/Users/johanrincon/Library/Developer/Xcode/DerivedData/ShinobiIgaRyu-bjlzorakpatbgtfjumfmsnwecpqb/Build/Products/Release-iphoneos/main.jsbundle:35971:24)',
+  isComponentError: true }
+predeterminado	01:15:57.228014-0500	backboardd	App layout has 1 elements from same app 1: (
+    "<SBSDisplayLayoutElement: 0xd06cc4150; sceneID:com.shinobiigarju.app-default; bundleID: com.shinobiigarju.app; frame: {{0, 0}, {430, 932}}; level: 1; hasKeyboardFocus; role: primary>"
+)
+predeterminado	01:15:59.518573-0500	wifid	__WiFiLQAMgrLogStats(<redacted>:Moving): InfraUptime:928.3secs Channel: 2 Bandwidth: 20Mhz Rssi: -44 {-45 -44} Cca: 35 (S:2 O:9 I:23) Snr: 35 BcnPer: 85.4% (48, 71.6%) TxFrameCnt: 12 TxPer: 0.0% TxReTrans: 3 TxRetryRatio: 25.0% RxFrameCnt: 10 RxRetryFrames: 0 RxRetryRatio: 0.0% TxRate: 229410 RxRate: 86020 FBRate: 137640 TxFwFrms: 13 TxFwFail: 0 Noise: -98 {-98 -98 0} time: 73.4secs fgApp: com.shinobiigarju.app V: T
+predeterminado	01:16:00.055583-0500	symptomsd	SymptomAnalytics ServiceImpl: FAE perform query for perfpowermetric (pid 8032) on LiveUsage predicate hasProcess.procName IN {"backboardd", "com.shinobiigarju.app"} OR hasProcess.bundleName IN {"backboardd", "com.shinobiigarju.app"} sort (null) actions {
+    "<null>" = "<null>";
+    "hasProcess.extensionName" = copyRelationship;
+    "hasProcess.bundleName" = copyRelationship;
+    fetchOffset = 0;
+    "hasProcess.firstTimeStamp" = copyRelationship;
+    fetchLimit = 150;
+    refreshUsage = refreshUsage;
+    "hasProcess.procName" = copyRelationship;
+} properties (null)
+error	01:16:01.292361-0500	SpringBoard	[<_UIKeyboardArbiterClientHandle: 0xc99cc38e0; [app<com.shinobiigarju.app(0B148290-DE8C-4008-B7A0-8652A7FC3A20)>:8233] <<UIKBArbiterClientFocusContext: 0xc9aeccbc0; contextID = 28b4d11; sceneIdentity = com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.shinobiigarju.app-default >>; hosting PIDs {(
+)}; level 0.000000; active NO [wants NO]; suppression 0; iav 0.000000; on screen NO; isAcquiringFocus: YES>] Acquiring focus timer elapsed, clearing acquiring focus state
+predeterminado	01:16:04.537386-0500	wifid	__WiFiLQAMgrLogStats(<redacted>:Moving): InfraUptime:933.3secs Channel: 2 Bandwidth: 20Mhz Rssi: -43 {-44 -43} Cca: 40 (S:6 O:12 I:21) Snr: 35 BcnPer: 81.2% (48, 71.7%) TxFrameCnt: 10 TxPer: 0.0% TxReTrans: 6 TxRetryRatio: 60.0% RxFrameCnt: 12 RxRetryFrames: 0 RxRetryRatio: 0.0% TxRate: 0 RxRate: 0 FBRate: 0 TxFwFrms: 32 TxFwFail: 1 Noise: -98 {-98 -98 0} time: 78.5secs fgApp: com.shinobiigarju.app V: T
+predeterminado	01:16:09.553096-0500	wifid	__WiFiLQAMgrLogStats(<redacted>:Stationary): InfraUptime:938.3secs Channel: 2 Bandwidth: 20Mhz Rssi: -43 {-43 -42} Cca: 42 (S:3 O:16 I:22) Snr: 35 BcnPer: 39.1% (46, 71.8%) TxFrameCnt: 10 TxPer: 0.0% TxReTrans: 2 TxRetryRatio: 20.0% RxFrameCnt: 17 RxRetryFrames: 1 RxRetryRatio: 5.9% TxRate: 216660 RxRate: 77420 FBRate: 130000 TxFwFrms: 14 TxFwFail: 0 Noise: -98 {-98 -98 0} time: 2.1secs fgApp: com.shinobiigarju.app V: T
+predeterminado	01:16:14.580063-0500	wifid	__WiFiLQAMgrLogStats(<redacted>:Moving): InfraUptime:943.4secs Channel: 2 Bandwidth: 20Mhz Rssi: -43 {-43 -42} Cca: 42 (S:3 O:16 I:22) Snr: 35 BcnPer: 49.0% (49, 71.8%) TxFrameCnt: 46 TxPer: 2.2% TxReTrans: 4 TxRetryRatio: 8.7% RxFrameCnt: 38 RxRetryFrames: 1 RxRetryRatio: 2.6% TxRate: 229410 RxRate: 103230 FBRate: 137640 TxFwFrms: 25 TxFwFail: 0 Noise: -98 {-98 -98 0} time: 4.9secs fgApp: com.shinobiigarju.app V: T
