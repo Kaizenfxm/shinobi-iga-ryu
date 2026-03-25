@@ -3122,14 +3122,9 @@ export function EntrenamientoPanel() {
         <View style={{ gap: 6 }}>
           <View style={trnStyles.subSectionHeader}>
             <Text style={trnStyles.subSectionTitle}>CATEGORÍAS Y EJERCICIOS</Text>
-            <View style={{ flexDirection: "row", gap: 6 }}>
-              <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()} hitSlop={6}>
-                <Ionicons name="folder-outline" size={14} color="#000" />
-              </Pressable>
-              <Pressable style={trnStyles.addBtn} onPress={() => openItemForm()} hitSlop={6}>
-                <Ionicons name="add" size={16} color="#000" />
-              </Pressable>
-            </View>
+            <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()} hitSlop={6}>
+              <Ionicons name="folder-outline" size={14} color="#000" />
+            </Pressable>
           </View>
           {exerciseCategories.length === 0 && exercises.length === 0 ? (
             <Text style={trnStyles.emptyHint}>Sin categorías ni ejercicios aún</Text>
@@ -3491,7 +3486,7 @@ export function EntrenamientoPanel() {
                 </Pressable>
                 <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.cat.id; setActionSheet(null); openItemForm(undefined, id); }}>
                   <Ionicons name="add-circle-outline" size={18} color="#D4AF37" />
-                  <Text style={[trnStyles.actionSheetText, { color: "#D4AF37" }]}>Nuevo ejercicio aquí</Text>
+                  <Text style={[trnStyles.actionSheetText, { color: "#D4AF37" }]}>Nuevo ejercicio de {actionSheet.cat.name}</Text>
                 </Pressable>
                 <View style={trnStyles.actionSheetDivider} />
                 <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.cat.id; setActionSheet(null); deleteCat(id); }}>
