@@ -76,6 +76,10 @@ export const knowledgeItemsTable = pgTable("knowledge_items", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  reqBeltDiscipline: varchar("req_belt_discipline", { length: 50 }),
+  reqBeltMinOrder: integer("req_belt_min_order"),
+  reqMinWins: integer("req_min_wins"),
+  reqMinAttendances: integer("req_min_attendances"),
 });
 
 export const exercisePrerequisitesTable = pgTable("exercise_prerequisites", {

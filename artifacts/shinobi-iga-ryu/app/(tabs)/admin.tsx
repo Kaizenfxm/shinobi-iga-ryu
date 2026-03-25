@@ -2913,10 +2913,10 @@ export function EntrenamientoPanel() {
         setItemLevel("");
         setItemDuration("");
         setItemCategoryId(ki.categoryId);
-        setItemReqBeltDisc("");
-        setItemReqBeltOrder(null);
-        setItemReqMinWins("");
-        setItemReqMinAttendances("");
+        setItemReqBeltDisc(ki.reqBeltDiscipline ?? "");
+        setItemReqBeltOrder(ki.reqBeltMinOrder ?? null);
+        setItemReqMinWins(ki.reqMinWins ? String(ki.reqMinWins) : "");
+        setItemReqMinAttendances(ki.reqMinAttendances ? String(ki.reqMinAttendances) : "");
         setItemPrerequisiteIds(ki.prerequisiteIds ?? []);
       }
     } else {
@@ -2979,6 +2979,10 @@ export function EntrenamientoPanel() {
           });
         }
       } else {
+        const reqBeltDiscipline = itemReqBeltDisc || null;
+        const reqBeltMinOrder = (itemReqBeltDisc && itemReqBeltOrder !== null) ? itemReqBeltOrder : null;
+        const reqMinWins = itemReqMinWins ? parseInt(itemReqMinWins) || null : null;
+        const reqMinAttendances = itemReqMinAttendances ? parseInt(itemReqMinAttendances) || null : null;
         if (editingItem) {
           await trainingApi.updateKnowledge(editingItem.id, {
             title: itemTitle.trim(),
@@ -2987,6 +2991,10 @@ export function EntrenamientoPanel() {
             orderIndex: editingItem.orderIndex,
             categoryId: itemCategoryId,
             prerequisiteIds: itemPrerequisiteIds,
+            reqBeltDiscipline,
+            reqBeltMinOrder,
+            reqMinWins,
+            reqMinAttendances,
           });
         } else {
           const catKnCount = knowledge.filter((k) => k.categoryId === (itemCategoryId ?? null) || (itemCategoryId == null && k.categoryId == null)).length;
@@ -2998,6 +3006,10 @@ export function EntrenamientoPanel() {
             orderIndex: catKnCount,
             categoryId: itemCategoryId || undefined,
             prerequisiteIds: itemPrerequisiteIds.length > 0 ? itemPrerequisiteIds : undefined,
+            reqBeltDiscipline,
+            reqBeltMinOrder,
+            reqMinWins,
+            reqMinAttendances,
           });
         }
       }
@@ -3502,6 +3514,47 @@ export function EntrenamientoPanel() {
                 </>
               ) : (
                 <>
+                  <Text style={[trnStyles.fieldLabel, { marginTop: 12, color: "#D4AF37" }]}>— REQUISITOS DE DESBLOQUEO —</Text>
+
+                  <Text style={trnStyles.fieldLabel}>CINTURÓN REQUERIDO — DISCIPLINA</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                    {[{ value: "", label: "Ninguno" }, { value: "ninjutsu", label: "Ninjutsu" }, { value: "jiujitsu", label: "Jiujitsu" }].map((opt) => (
+                      <Pressable
+                        key={opt.value}
+                        style={[trnStyles.chipBtn, itemReqBeltDisc === opt.value && trnStyles.chipBtnActive]}
+                        onPress={() => { setItemReqBeltDisc(opt.value); setItemReqBeltOrder(null); }}
+                      >
+                        <Text style={[trnStyles.chipText, itemReqBeltDisc === opt.value && trnStyles.chipTextActive]}>{opt.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  {itemReqBeltDisc ? (
+                    <>
+                      <Text style={trnStyles.fieldLabel}>CINTURÓN MÍNIMO</Text>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {beltDefs.filter((b) => b.discipline === itemReqBeltDisc).sort((a, b) => a.orderIndex - b.orderIndex).map((b) => (
+                          <Pressable
+                            key={b.id}
+                            style={[trnStyles.chipBtn, itemReqBeltOrder === b.orderIndex && trnStyles.chipBtnActive]}
+                            onPress={() => setItemReqBeltOrder(b.orderIndex)}
+                          >
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: b.color }} />
+                              <Text style={[trnStyles.chipText, itemReqBeltOrder === b.orderIndex && trnStyles.chipTextActive]}>{b.name}</Text>
+                            </View>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </>
+                  ) : null}
+
+                  <Text style={trnStyles.fieldLabel}>MIN. VICTORIAS</Text>
+                  <TextInput style={trnStyles.input} value={itemReqMinWins} onChangeText={setItemReqMinWins} placeholder="0 = sin requisito" placeholderTextColor="#444" keyboardType="numeric" />
+
+                  <Text style={trnStyles.fieldLabel}>MIN. CLASES ASISTIDAS</Text>
+                  <TextInput style={trnStyles.input} value={itemReqMinAttendances} onChangeText={setItemReqMinAttendances} placeholder="0 = sin requisito" placeholderTextColor="#444" keyboardType="numeric" />
+
                   <Text style={[trnStyles.fieldLabel, { marginTop: 12, color: "#D4AF37" }]}>— CONOCIMIENTO PRERREQUISITO —</Text>
                   <Text style={{ color: "#555", fontSize: 11, fontFamily: "NotoSansJP_400Regular", marginBottom: 6 }}>El alumno debe leer estos conocimientos primero:</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>

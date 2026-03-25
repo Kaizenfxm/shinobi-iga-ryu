@@ -819,6 +819,7 @@ trainingRouter.post("/admin/training/knowledge", requireProfesorOrAdmin, async (
     }
 
     const prerequisiteIds: number[] | undefined = req.body.prerequisiteIds;
+    const { reqBeltDiscipline, reqBeltMinOrder, reqMinWins, reqMinAttendances } = req.body;
 
     const [item] = await db
       .insert(knowledgeItemsTable)
@@ -831,6 +832,10 @@ trainingRouter.post("/admin/training/knowledge", requireProfesorOrAdmin, async (
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
         knowledgeCategoryId: categoryId ?? null,
+        reqBeltDiscipline: reqBeltDiscipline || null,
+        reqBeltMinOrder: reqBeltMinOrder ?? null,
+        reqMinWins: reqMinWins ?? null,
+        reqMinAttendances: reqMinAttendances ?? null,
       })
       .returning();
 
@@ -855,7 +860,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireProfesorOrAdmin, asyn
       return;
     }
 
-    const { title, content, videoUrl, imageUrl, orderIndex, isActive, categoryId: rawCatId, knowledgeCategoryId: rawKnCatId, prerequisiteIds } = req.body;
+    const { title, content, videoUrl, imageUrl, orderIndex, isActive, categoryId: rawCatId, knowledgeCategoryId: rawKnCatId, prerequisiteIds, reqBeltDiscipline, reqBeltMinOrder, reqMinWins, reqMinAttendances } = req.body;
     const resolvedCategoryId = rawCatId !== undefined ? rawCatId : rawKnCatId;
 
     if (resolvedCategoryId) {
@@ -880,6 +885,10 @@ trainingRouter.put("/admin/training/knowledge/:id", requireProfesorOrAdmin, asyn
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
     if (resolvedCategoryId !== undefined) updates.knowledgeCategoryId = resolvedCategoryId ?? null;
+    if (reqBeltDiscipline !== undefined) updates.reqBeltDiscipline = reqBeltDiscipline || null;
+    if (reqBeltMinOrder !== undefined) updates.reqBeltMinOrder = reqBeltMinOrder ?? null;
+    if (reqMinWins !== undefined) updates.reqMinWins = reqMinWins ?? null;
+    if (reqMinAttendances !== undefined) updates.reqMinAttendances = reqMinAttendances ?? null;
 
     const [updated] = await db
       .update(knowledgeItemsTable)

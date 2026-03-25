@@ -641,6 +641,10 @@ export interface KnowledgeItemData {
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
+  reqBeltDiscipline?: string | null;
+  reqBeltMinOrder?: number | null;
+  reqMinWins?: number | null;
+  reqMinAttendances?: number | null;
   isLocked?: boolean;
   lockReason?: string | null;
   viewedByUser?: boolean;
@@ -700,6 +704,10 @@ export const trainingApi = {
     orderIndex?: number;
     categoryId?: number;
     prerequisiteIds?: number[];
+    reqBeltDiscipline?: string | null;
+    reqBeltMinOrder?: number | null;
+    reqMinWins?: number | null;
+    reqMinAttendances?: number | null;
   }) => apiFetch<{ item: KnowledgeItemData }>("/admin/training/knowledge", { method: "POST", body: data }),
 
   updateKnowledge: (id: number, data: Partial<KnowledgeItemData> & { prerequisiteIds?: number[] }) =>
