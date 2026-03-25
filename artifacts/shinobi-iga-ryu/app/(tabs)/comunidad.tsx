@@ -1797,9 +1797,8 @@ function FighterRankingRow({ rank, entry }: { rank: number; entry: RankingFighte
         <Text style={rkStyles.fightWin}>{wins}V</Text>
         <Text style={rkStyles.fightSep}> · </Text>
         <Text style={rkStyles.fightLoss}>{losses}D</Text>
-        {Number(draws) > 0 && (
-          <><Text style={rkStyles.fightSep}> · </Text><Text style={rkStyles.fightDraw}>{draws}E</Text></>
-        )}
+        <Text style={rkStyles.fightSep}> · </Text>
+        <Text style={rkStyles.fightDraw}>{draws}E</Text>
       </View>
     </View>
   );
