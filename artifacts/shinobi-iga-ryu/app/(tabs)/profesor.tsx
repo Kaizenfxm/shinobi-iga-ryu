@@ -12,8 +12,8 @@ import {
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { adminApi, type UserData } from "@/lib/api";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { adminApi, suggestionsApi, type UserData } from "@/lib/api";
 import {
   FightsPanel,
   NotificationsPanel,
@@ -24,14 +24,6 @@ import {
 
 type ProfesorTab = "peleas" | "notificaciones" | "entrenamiento" | "clases" | "sugerencias";
 
-const TABS: { key: ProfesorTab; label: string; icon: string }[] = [
-  { key: "peleas", label: "Peleas", icon: "boxing-glove" },
-  { key: "notificaciones", label: "Notif.", icon: "bell-outline" },
-  { key: "entrenamiento", label: "Entrena.", icon: "dumbbell" },
-  { key: "clases", label: "Clases", icon: "qrcode" },
-  { key: "sugerencias", label: "Sugerencias", icon: "chat-outline" },
-];
-
 export default function ProfesorScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
@@ -40,6 +32,7 @@ export default function ProfesorScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [suggestionsReloadKey, setSuggestionsReloadKey] = useState(0);
+  const [unreviewedCount, setUnreviewedCount] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -50,13 +43,24 @@ export default function ProfesorScreen() {
     }
   }, []);
 
+  const fetchUnreviewed = useCallback(async () => {
+    try {
+      const { count } = await suggestionsApi.adminUnreviewedCount();
+      setUnreviewedCount(count);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchData().finally(() => setLoading(false));
-  }, [fetchData]);
+    fetchUnreviewed();
+    const interval = setInterval(fetchUnreviewed, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchData, fetchUnreviewed]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchData();
+    await fetchUnreviewed();
     setSuggestionsReloadKey((k) => k + 1);
     setRefreshing(false);
   };
@@ -102,27 +106,63 @@ export default function ProfesorScreen() {
       </View>
 
       <View style={styles.tabBar}>
-        {TABS.map((tab) => (
-          <Pressable
-            key={tab.key}
-            style={[styles.tabButton, activeTab === tab.key && styles.tabButtonActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <MaterialCommunityIcons
-              name={tab.icon as never}
-              size={14}
-              color={activeTab === tab.key ? "#000" : "#666"}
+        <Pressable
+          style={[styles.tabButton, activeTab === "peleas" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("peleas")}
+        >
+          <MaterialCommunityIcons
+            name="sword-cross"
+            size={20}
+            color={activeTab === "peleas" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("notificaciones")}
+        >
+          <Ionicons
+            name="notifications"
+            size={20}
+            color={activeTab === "notificaciones" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "entrenamiento" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("entrenamiento")}
+        >
+          <MaterialCommunityIcons
+            name="dumbbell"
+            size={20}
+            color={activeTab === "entrenamiento" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "clases" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("clases")}
+        >
+          <MaterialCommunityIcons
+            name="calendar-clock"
+            size={20}
+            color={activeTab === "clases" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "sugerencias" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("sugerencias")}
+        >
+          <View style={{ position: "relative" }}>
+            <Ionicons
+              name="chatbubble"
+              size={20}
+              color={activeTab === "sugerencias" ? "#000" : "#666"}
             />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === tab.key && styles.tabButtonTextActive,
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
+            {unreviewedCount > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{unreviewedCount}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
       </View>
 
       <View style={styles.divider} />
@@ -186,18 +226,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#D4AF37",
     borderColor: "#D4AF37",
   },
-  tabButtonText: {
-    fontFamily: "NotoSansJP_500Medium",
-    fontSize: 12,
-    color: "#888",
+  tabBadge: {
+    position: "absolute",
+    top: -6,
+    right: -8,
+    backgroundColor: "#FF3B30",
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
   },
-  tabButtonTextActive: {
-    color: "#000",
+  tabBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontFamily: "NotoSansJP_700Bold",
+    lineHeight: 14,
   },
   divider: {
     height: 1,
     backgroundColor: "#1A1A1A",
-    marginVertical: 8,
+    marginVertical: 16,
   },
   scrollContent: {
     paddingHorizontal: 16,
