@@ -25,7 +25,7 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { BeltStrip } from "@/components/BeltStrip";
-import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, suggestionsApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee, type SuggestionItem } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, suggestionsApi, challengesApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee, type SuggestionItem, type ChallengeItem } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -62,7 +62,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "notificaciones" | "entrenamiento" | "clases" | "configuracion" | "sugerencias";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "retos" | "notificaciones" | "entrenamiento" | "clases" | "configuracion" | "sugerencias";
 
 const TRAINING_SYSTEM_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
@@ -4907,6 +4907,16 @@ export default function AdminScreen() {
           />
         </Pressable>
         <Pressable
+          style={[styles.tabButton, activeTab === "retos" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("retos")}
+        >
+          <MaterialCommunityIcons
+            name="lightning-bolt"
+            size={20}
+            color={activeTab === "retos" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
           style={[styles.tabButton, activeTab === "notificaciones" && styles.tabButtonActive]}
           onPress={() => setActiveTab("notificaciones")}
         >
@@ -4994,6 +5004,8 @@ export default function AdminScreen() {
             const res = await adminApi.getUsers();
             setUsers(res.users);
           }} />
+        ) : activeTab === "retos" ? (
+          <RetosPanel />
         ) : activeTab === "entrenamiento" ? (
           <EntrenamientoPanel />
         ) : activeTab === "clases" ? (
@@ -5013,6 +5025,456 @@ export default function AdminScreen() {
     </View>
   );
 }
+
+const CHALLENGE_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  accepted: "Activo",
+  declined: "Rechazado",
+  completed: "Completado",
+  cancelled: "Cancelado",
+};
+const CHALLENGE_STATUS_COLORS: Record<string, string> = {
+  pending: "#D4AF37",
+  accepted: "#22C55E",
+  declined: "#EF4444",
+  completed: "#3B82F6",
+  cancelled: "#555",
+};
+const ALL_STATUSES = ["pending", "accepted", "declined", "completed", "cancelled"] as const;
+
+export function RetosPanel() {
+  const [challenges, setChallenges] = useState<ChallengeItem[]>([]);
+  const [systems, setSystems] = useState<TrainingSystem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editScheduledAt, setEditScheduledAt] = useState("");
+  const [editSystemId, setEditSystemId] = useState<number>(0);
+  const [editNotes, setEditNotes] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<Set<number>>(new Set());
+
+  const load = useCallback(async () => {
+    try {
+      const [cRes, sRes] = await Promise.all([
+        challengesApi.adminGetAll(),
+        trainingApi.getSystems(),
+      ]);
+      setChallenges(cRes.challenges);
+      setSystems(sRes.systems);
+    } catch (e) {
+      console.error("[RetosPanel] load error:", e instanceof Error ? e.message : e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const openEdit = (c: ChallengeItem) => {
+    setEditingId(c.id);
+    const d = new Date(c.scheduledAt);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setEditScheduledAt(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+    setEditSystemId(c.trainingSystemId);
+    setEditNotes(c.notes ?? "");
+    setEditStatus(c.status);
+  };
+
+  const closeEdit = () => setEditingId(null);
+
+  const handleSave = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    try {
+      await challengesApi.adminUpdate(editingId, {
+        scheduledAt: editScheduledAt ? new Date(editScheduledAt).toISOString() : undefined,
+        trainingSystemId: editSystemId || undefined,
+        notes: editNotes.trim() || null,
+        status: editStatus || undefined,
+      });
+      await load();
+      closeEdit();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al guardar";
+      if (Platform.OS === "web") window.alert(msg);
+      else Alert.alert("Error", msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (c: ChallengeItem) => {
+    const doDelete = async () => {
+      setDeleting((prev) => new Set(prev).add(c.id));
+      try {
+        await challengesApi.adminDelete(c.id);
+        setChallenges((prev) => prev.filter((x) => x.id !== c.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Error al eliminar";
+        if (Platform.OS === "web") window.alert(msg);
+        else Alert.alert("Error", msg);
+      } finally {
+        setDeleting((prev) => { const s = new Set(prev); s.delete(c.id); return s; });
+      }
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}? Esta acción no se puede deshacer.`)) void doDelete();
+    } else {
+      Alert.alert(
+        "Eliminar reto",
+        `¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}? Esta acción no se puede deshacer.`,
+        [{ text: "Cancelar", style: "cancel" }, { text: "Eliminar", style: "destructive", onPress: () => void doDelete() }]
+      );
+    }
+  };
+
+  const filtered = filterStatus === "all" ? challenges : challenges.filter((c) => c.status === filterStatus);
+  const editingChallenge = challenges.find((c) => c.id === editingId);
+
+  if (loading) return <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, gap: 12 }}>
+        <Text style={retosStyles.sectionTitle}>RETOS</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            {(["all", ...ALL_STATUSES] as string[]).map((s) => (
+              <Pressable
+                key={s}
+                style={[retosStyles.filterChip, filterStatus === s && retosStyles.filterChipActive]}
+                onPress={() => setFilterStatus(s)}
+              >
+                <Text style={[retosStyles.filterChipText, filterStatus === s && retosStyles.filterChipTextActive]}>
+                  {s === "all" ? "Todos" : CHALLENGE_STATUS_LABELS[s]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      {filtered.length === 0 ? (
+        <Text style={retosStyles.empty}>Sin retos{filterStatus !== "all" ? ` con estado "${CHALLENGE_STATUS_LABELS[filterStatus]}"` : ""}</Text>
+      ) : (
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          {filtered.map((c) => {
+            const statusColor = CHALLENGE_STATUS_COLORS[c.status] ?? "#555";
+            const isDeleting = deleting.has(c.id);
+            return (
+              <View key={c.id} style={retosStyles.card}>
+                <View style={[retosStyles.cardAccent, { backgroundColor: statusColor }]} />
+                <View style={retosStyles.cardBody}>
+                  <View style={retosStyles.cardRow}>
+                    <Text style={retosStyles.cardParticipants} numberOfLines={1}>
+                      {c.challengerName} <Text style={{ color: "#555" }}>⚔</Text> {c.challengedName}
+                    </Text>
+                    <View style={[retosStyles.statusBadge, { borderColor: statusColor }]}>
+                      <Text style={[retosStyles.statusBadgeText, { color: statusColor }]}>
+                        {CHALLENGE_STATUS_LABELS[c.status] ?? c.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={retosStyles.cardMeta}>
+                    {c.trainingSystemName} · {new Date(c.scheduledAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </Text>
+                  {c.notes ? <Text style={retosStyles.cardNotes} numberOfLines={2}>{c.notes}</Text> : null}
+                  <View style={retosStyles.cardActions}>
+                    <Pressable style={retosStyles.editBtn} onPress={() => openEdit(c)}>
+                      <Ionicons name="pencil" size={13} color="#D4AF37" />
+                      <Text style={retosStyles.editBtnText}>Editar</Text>
+                    </Pressable>
+                    <Pressable style={retosStyles.deleteBtn} onPress={() => handleDelete(c)} disabled={isDeleting}>
+                      {isDeleting
+                        ? <ActivityIndicator size="small" color="#EF4444" />
+                        : <><Ionicons name="trash-outline" size={13} color="#EF4444" /><Text style={retosStyles.deleteBtnText}>Eliminar</Text></>
+                      }
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {editingId !== null && editingChallenge ? (
+        <View style={retosStyles.modalOverlay}>
+          <View style={retosStyles.modalBox}>
+            <Text style={retosStyles.modalTitle}>EDITAR RETO</Text>
+            <Text style={retosStyles.modalSubtitle}>{editingChallenge.challengerName} ⚔ {editingChallenge.challengedName}</Text>
+
+            <Text style={retosStyles.fieldLabel}>ARTE MARCIAL</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {systems.map((s) => (
+                  <Pressable
+                    key={s.id}
+                    style={[retosStyles.filterChip, editSystemId === s.id && retosStyles.filterChipActive]}
+                    onPress={() => setEditSystemId(s.id)}
+                  >
+                    <Text style={[retosStyles.filterChipText, editSystemId === s.id && retosStyles.filterChipTextActive]}>
+                      {s.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+
+            <Text style={retosStyles.fieldLabel}>FECHA Y HORA</Text>
+            <TextInput
+              style={retosStyles.input}
+              value={editScheduledAt}
+              onChangeText={setEditScheduledAt}
+              placeholder="YYYY-MM-DDTHH:MM"
+              placeholderTextColor="#444"
+            />
+
+            <Text style={retosStyles.fieldLabel}>ESTADO</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {ALL_STATUSES.map((s) => (
+                  <Pressable
+                    key={s}
+                    style={[retosStyles.filterChip, editStatus === s && retosStyles.filterChipActive, { borderColor: CHALLENGE_STATUS_COLORS[s] }]}
+                    onPress={() => setEditStatus(s)}
+                  >
+                    <Text style={[retosStyles.filterChipText, editStatus === s && { color: "#000" }, { color: CHALLENGE_STATUS_COLORS[s] }]}>
+                      {CHALLENGE_STATUS_LABELS[s]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+
+            <Text style={retosStyles.fieldLabel}>NOTAS</Text>
+            <TextInput
+              style={[retosStyles.input, { height: 72, textAlignVertical: "top" }]}
+              value={editNotes}
+              onChangeText={setEditNotes}
+              placeholder="Notas opcionales..."
+              placeholderTextColor="#444"
+              multiline
+            />
+
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+              <Pressable style={retosStyles.cancelModalBtn} onPress={closeEdit} disabled={saving}>
+                <Text style={retosStyles.cancelModalText}>Cancelar</Text>
+              </Pressable>
+              <Pressable style={[retosStyles.saveModalBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={retosStyles.saveModalText}>Guardar</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const retosStyles = StyleSheet.create({
+  sectionTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#D4AF37",
+    letterSpacing: 2,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+  },
+  filterChipActive: {
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
+  },
+  filterChipText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#777",
+  },
+  filterChipTextActive: {
+    color: "#000",
+    fontFamily: "NotoSansJP_700Bold",
+  },
+  empty: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#555",
+    textAlign: "center",
+    marginTop: 40,
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  cardAccent: {
+    width: 3,
+  },
+  cardBody: {
+    flex: 1,
+    padding: 12,
+    gap: 4,
+  },
+  cardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  cardParticipants: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#FFF",
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  statusBadgeText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  cardMeta: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#666",
+  },
+  cardNotes: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    fontStyle: "italic",
+  },
+  cardActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderRadius: 2,
+  },
+  editBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    borderRadius: 2,
+  },
+  deleteBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#EF4444",
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    zIndex: 100,
+  },
+  modalBox: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderRadius: 2,
+    padding: 20,
+    width: "100%",
+    maxWidth: 500,
+    gap: 4,
+  },
+  modalTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 14,
+    color: "#D4AF37",
+    letterSpacing: 2,
+    marginBottom: 2,
+  },
+  modalSubtitle: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#777",
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 10,
+    color: "#555",
+    letterSpacing: 1.5,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 2,
+    padding: 10,
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  cancelModalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#333",
+    borderRadius: 2,
+    alignItems: "center",
+  },
+  cancelModalText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#777",
+  },
+  saveModalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: "#D4AF37",
+    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveModalText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#000",
+  },
+});
 
 export function SuggestionsPanel({ reloadKey, onCountChange, readOnly = false }: { reloadKey: number; onCountChange: (delta: number) => void; readOnly?: boolean }) {
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);

@@ -960,6 +960,15 @@ export const challengesApi = {
 
   getCommunityActive: () =>
     apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-active"),
+
+  adminGetAll: () =>
+    apiFetch<{ challenges: ChallengeItem[] }>("/admin/challenges"),
+
+  adminUpdate: (id: number, data: { trainingSystemId?: number; scheduledAt?: string; notes?: string | null; status?: string }) =>
+    apiFetch<{ challenge: ChallengeItem }>(`/admin/challenges/${id}`, { method: "PATCH", body: data }),
+
+  adminDelete: (id: number) =>
+    apiFetch<{ deleted: boolean }>(`/admin/challenges/${id}`, { method: "DELETE" }),
 };
 
 export const eventsApi = {

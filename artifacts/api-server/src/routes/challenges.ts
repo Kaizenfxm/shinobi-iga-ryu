@@ -598,6 +598,105 @@ challengesRouter.post("/challenges/:id/result", requireAuth, async (req, res) =>
   }
 });
 
+challengesRouter.get("/admin/challenges", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const canManage = await isAdminOrProfesor(userId);
+    if (!canManage) { res.status(403).json({ error: "Sin permiso" }); return; }
+
+    const rows = await db
+      .select({
+        id: challengesTable.id,
+        challengerId: challengesTable.challengerId,
+        challengedId: challengesTable.challengedId,
+        trainingSystemId: challengesTable.trainingSystemId,
+        scheduledAt: challengesTable.scheduledAt,
+        notes: challengesTable.notes,
+        status: challengesTable.status,
+        winnerId: challengesTable.winnerId,
+        createdAt: challengesTable.createdAt,
+        trainingSystemName: trainingSystemsTable.name,
+        challengerName: challengerUsers.displayName,
+        challengedName: challengedUsers.displayName,
+      })
+      .from(challengesTable)
+      .innerJoin(trainingSystemsTable, eq(challengesTable.trainingSystemId, trainingSystemsTable.id))
+      .innerJoin(challengerUsers, eq(challengesTable.challengerId, challengerUsers.id))
+      .innerJoin(challengedUsers, eq(challengesTable.challengedId, challengedUsers.id))
+      .orderBy(desc(challengesTable.createdAt));
+
+    res.json({ challenges: rows });
+  } catch (error) {
+    console.error("Admin get challenges error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+challengesRouter.patch("/admin/challenges/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const canManage = await isAdminOrProfesor(userId);
+    if (!canManage) { res.status(403).json({ error: "Sin permiso" }); return; }
+
+    const challengeId = Number(String(req.params.id));
+    const [challenge] = await db
+      .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+
+    const { trainingSystemId, scheduledAt, notes, status } = req.body as {
+      trainingSystemId?: number;
+      scheduledAt?: string;
+      notes?: string | null;
+      status?: string;
+    };
+
+    const validStatuses = ["pending", "accepted", "declined", "completed", "cancelled"];
+    if (status && !validStatuses.includes(status)) {
+      res.status(400).json({ error: "Estado inválido" }); return;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (trainingSystemId) updates.trainingSystemId = trainingSystemId;
+    if (scheduledAt) updates.scheduledAt = new Date(scheduledAt);
+    if (notes !== undefined) updates.notes = notes?.trim() || null;
+    if (status) updates.status = status;
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "Nada que actualizar" }); return;
+    }
+
+    const [updated] = await db.update(challengesTable)
+      .set(updates as Partial<typeof challengesTable.$inferInsert>)
+      .where(eq(challengesTable.id, challengeId))
+      .returning();
+
+    res.json({ challenge: updated });
+  } catch (error) {
+    console.error("Admin update challenge error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
+challengesRouter.delete("/admin/challenges/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const canManage = await isAdminOrProfesor(userId);
+    if (!canManage) { res.status(403).json({ error: "Sin permiso" }); return; }
+
+    const challengeId = Number(String(req.params.id));
+    const [challenge] = await db
+      .select({ id: challengesTable.id })
+      .from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
+    if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
+
+    await db.delete(challengesTable).where(eq(challengesTable.id, challengeId));
+    res.json({ deleted: true });
+  } catch (error) {
+    console.error("Admin delete challenge error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
 challengesRouter.delete("/challenges/:id", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
