@@ -485,6 +485,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ToggleFighterResponse"
+  /admin/training/exercises/reorder:
+    patch:
+      operationId: adminReorderExercises
+      tags: [admin]
+      summary: Batch reorder exercises by updating their orderIndex (admin/profesor only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      orderIndex:
+                        type: integer
+                    required: [id, orderIndex]
+              required: [items]
+      responses:
+        "200":
+          description: Exercises reordered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
   /fights:
     post:
       operationId: addFight
