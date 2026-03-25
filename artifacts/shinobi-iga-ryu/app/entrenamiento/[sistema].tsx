@@ -245,38 +245,44 @@ const UNCATEGORIZED_ID = -1;
 
 function KnowledgeCard({ item, onView }: { item: KnowledgeItem; onView?: () => void }) {
   const [expanded, setExpanded] = useState(false);
-  const viewedRef = useRef(false);
+  const [aprendido, setAprendido] = useState(false);
+  const [markingAprendido, setMarkingAprendido] = useState(false);
   const locked = item.isLocked ?? false;
+  const isDone = item.viewedByUser || aprendido;
 
   const handlePress = () => {
     if (locked) {
       if (Platform.OS === "web") {
         window.alert(item.lockReason ?? "Este conocimiento está bloqueado");
       } else {
-        Alert.alert("Bloqueado", item.lockReason ?? "Debes leer los conocimientos previos primero", [{ text: "Entendido" }]);
+        Alert.alert("Bloqueado", item.lockReason ?? "Debes aprender los conocimientos previos primero", [{ text: "Entendido" }]);
       }
       return;
     }
     setExpanded((v) => !v);
-    if (!expanded && !viewedRef.current && !item.viewedByUser) {
-      viewedRef.current = true;
-      trainingApi.viewKnowledge(item.id)
-        .then(() => { onView?.(); })
-        .catch(() => {});
+  };
+
+  const handleAprendido = async () => {
+    if (isDone || markingAprendido) return;
+    setMarkingAprendido(true);
+    try {
+      await trainingApi.viewKnowledge(item.id);
+      setAprendido(true);
+      onView?.();
+    } catch {
+      // silently ignore
     }
+    setMarkingAprendido(false);
   };
 
   return (
     <View style={[styles.knowledgeCard, locked && styles.knowledgeCardLocked]}>
       <View style={[styles.cardGoldBar, locked && { backgroundColor: "#333" }]} />
-      <Pressable
-        style={styles.exerciseCardTop}
-        onPress={handlePress}
-      >
+      <Pressable style={styles.exerciseCardTop} onPress={handlePress}>
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
           {locked ? (
             <Ionicons name="lock-closed" size={13} color="#555" />
-          ) : item.viewedByUser || (expanded && viewedRef.current) ? (
+          ) : isDone ? (
             <Ionicons name="checkmark-circle" size={13} color="#22C55E" />
           ) : null}
           <Text style={[styles.knowledgeTitle, locked && { color: "#555" }]}>{item.title}</Text>
@@ -292,9 +298,30 @@ function KnowledgeCard({ item, onView }: { item: KnowledgeItem; onView?: () => v
         <Text style={styles.lockReason}>{item.lockReason}</Text>
       ) : null}
       {!locked && expanded ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: 10, marginTop: 4 }}>
           {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
           {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+          {isDone ? (
+            <View style={styles.dominadoConfirmed}>
+              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+              <Text style={styles.dominadoConfirmedText}>Conocimiento aprendido</Text>
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.aprendidoBtn, markingAprendido && { opacity: 0.6 }]}
+              onPress={handleAprendido}
+              disabled={markingAprendido}
+            >
+              {markingAprendido ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <>
+                  <Ionicons name="book-outline" size={16} color="#000" />
+                  <Text style={styles.dominadoBtnText}>Aprendido</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </View>
       ) : null}
     </View>
@@ -314,10 +341,13 @@ function KnowledgeList({ items, onView }: { items: KnowledgeItem[]; onView?: () 
 
 function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: () => void }) {
   const [expanded, setExpanded] = useState(false);
-  const completedRef = useRef(false);
+  const [dominado, setDominado] = useState(false);
+  const [markingDominado, setMarkingDominado] = useState(false);
+  const locked = item.isLocked;
+  const isDone = item.completedByUser || dominado;
 
   const handlePress = () => {
-    if (item.isLocked) {
+    if (locked) {
       if (Platform.OS === "web") {
         window.alert(item.lockReason ?? "Este ejercicio está bloqueado");
       } else {
@@ -326,15 +356,20 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
       return;
     }
     setExpanded((v) => !v);
-    if (!expanded && !completedRef.current && !item.completedByUser) {
-      completedRef.current = true;
-      trainingApi.completeExercise(item.id)
-        .then(() => { onComplete?.(); })
-        .catch(() => {});
-    }
   };
 
-  const locked = item.isLocked;
+  const handleDominado = async () => {
+    if (isDone || markingDominado) return;
+    setMarkingDominado(true);
+    try {
+      await trainingApi.completeExercise(item.id);
+      setDominado(true);
+      onComplete?.();
+    } catch {
+      // silently ignore
+    }
+    setMarkingDominado(false);
+  };
 
   return (
     <View style={[styles.exerciseCard, locked && styles.exerciseCardLocked]}>
@@ -343,7 +378,7 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {locked ? (
               <Ionicons name="lock-closed" size={14} color="#555" />
-            ) : item.completedByUser || (expanded && completedRef.current) ? (
+            ) : isDone ? (
               <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
             ) : null}
             <Text style={[styles.exerciseTitle, locked && { color: "#555" }]}>{item.title}</Text>
@@ -375,9 +410,30 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
         />
       </Pressable>
       {!locked && expanded ? (
-        <View style={{ marginTop: 8 }}>
+        <View style={{ marginTop: 8, gap: 10 }}>
           {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
           {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+          {isDone ? (
+            <View style={styles.dominadoConfirmed}>
+              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+              <Text style={styles.dominadoConfirmedText}>Ejercicio dominado</Text>
+            </View>
+          ) : (
+            <Pressable
+              style={[styles.dominadoBtn, markingDominado && { opacity: 0.6 }]}
+              onPress={handleDominado}
+              disabled={markingDominado}
+            >
+              {markingDominado ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-done-outline" size={16} color="#000" />
+                  <Text style={styles.dominadoBtnText}>Dominado</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </View>
       ) : null}
     </View>
@@ -898,5 +954,46 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 11,
     color: "#555",
+  },
+  dominadoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#D4AF37",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 2,
+    alignSelf: "flex-start",
+    minWidth: 130,
+  },
+  aprendidoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#D4AF37",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 2,
+    alignSelf: "flex-start",
+    minWidth: 130,
+  },
+  dominadoBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#000",
+    letterSpacing: 0.5,
+  },
+  dominadoConfirmed: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+  },
+  dominadoConfirmedText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#22C55E",
   },
 });
