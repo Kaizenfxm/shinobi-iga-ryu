@@ -62,32 +62,6 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       return;
     }
 
-    const exercises = await db
-      .select()
-      .from(exercisesTable)
-      .where(and(eq(exercisesTable.trainingSystemId, system.id), eq(exercisesTable.isActive, true)))
-      .orderBy(asc(exercisesTable.orderIndex), asc(exercisesTable.id));
-
-    const knowledge = await db
-      .select()
-      .from(knowledgeItemsTable)
-      .where(and(eq(knowledgeItemsTable.trainingSystemId, system.id), eq(knowledgeItemsTable.isActive, true)))
-      .orderBy(asc(knowledgeItemsTable.orderIndex), asc(knowledgeItemsTable.id));
-
-    const exerciseCategories = await db
-      .select()
-      .from(exerciseCategoriesTable)
-      .where(and(eq(exerciseCategoriesTable.trainingSystemId, system.id), eq(exerciseCategoriesTable.isActive, true)))
-      .orderBy(asc(exerciseCategoriesTable.orderIndex), asc(exerciseCategoriesTable.id));
-
-    const knowledgeCategories = await db
-      .select()
-      .from(knowledgeCategoriesTable)
-      .where(and(eq(knowledgeCategoriesTable.trainingSystemId, system.id), eq(knowledgeCategoriesTable.isActive, true)))
-      .orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id));
-
-    const exerciseIds = exercises.map((e) => e.id);
-
     const [privilegedRole] = await db
       .select({ id: userRolesTable.id })
       .from(userRolesTable)
@@ -97,6 +71,31 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       ))
       .limit(1);
     const isPrivileged = !!privilegedRole;
+
+    const exercisesWhere = isPrivileged
+      ? eq(exercisesTable.trainingSystemId, system.id)
+      : and(eq(exercisesTable.trainingSystemId, system.id), eq(exercisesTable.isActive, true));
+
+    const knowledgeWhere = isPrivileged
+      ? eq(knowledgeItemsTable.trainingSystemId, system.id)
+      : and(eq(knowledgeItemsTable.trainingSystemId, system.id), eq(knowledgeItemsTable.isActive, true));
+
+    const exerciseCatWhere = isPrivileged
+      ? eq(exerciseCategoriesTable.trainingSystemId, system.id)
+      : and(eq(exerciseCategoriesTable.trainingSystemId, system.id), eq(exerciseCategoriesTable.isActive, true));
+
+    const knowledgeCatWhere = isPrivileged
+      ? eq(knowledgeCategoriesTable.trainingSystemId, system.id)
+      : and(eq(knowledgeCategoriesTable.trainingSystemId, system.id), eq(knowledgeCategoriesTable.isActive, true));
+
+    const [exercises, knowledge, exerciseCategories, knowledgeCategories] = await Promise.all([
+      db.select().from(exercisesTable).where(exercisesWhere).orderBy(asc(exercisesTable.orderIndex), asc(exercisesTable.id)),
+      db.select().from(knowledgeItemsTable).where(knowledgeWhere).orderBy(asc(knowledgeItemsTable.orderIndex), asc(knowledgeItemsTable.id)),
+      db.select().from(exerciseCategoriesTable).where(exerciseCatWhere).orderBy(asc(exerciseCategoriesTable.orderIndex), asc(exerciseCategoriesTable.id)),
+      db.select().from(knowledgeCategoriesTable).where(knowledgeCatWhere).orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id)),
+    ]);
+
+    const exerciseIds = exercises.map((e) => e.id);
 
     const [userBelts, winsResult, attResult, beltDefs, allPrereqs, completions] = await Promise.all([
       db
