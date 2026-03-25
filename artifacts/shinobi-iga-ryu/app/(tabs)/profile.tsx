@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, settingsApi, suggestionsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
+import { profileApi, avatarApi, settingsApi, suggestionsApi, classesApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
 import { scheduleWeightReminder } from "@/lib/notifications";
 import FightRecord from "@/components/FightRecord";
 import { BeltStrip, getDanNumber, getNinjutsuRankTitle } from "@/components/BeltStrip";
@@ -195,10 +195,18 @@ export default function ProfileScreen() {
 
   const { isAlumno, status: membershipStatus, expiresAt: membershipExpiresAt, daysRemaining } = useMembership();
   const [pubSettings, setPubSettings] = useState<{ whatsappAdminNumber: string; paymentLinkUrl: string } | null>(null);
+  const [lastAttendedAt, setLastAttendedAt] = useState<Date | null | undefined>(undefined);
 
   useEffect(() => {
     if (isAlumno && isAuthenticated) {
       settingsApi.getPublic().then(setPubSettings).catch(() => {});
+      classesApi.getMyAttendance().then((res) => {
+        if (res.attendances.length > 0) {
+          setLastAttendedAt(new Date(res.attendances[0].attendedAt));
+        } else {
+          setLastAttendedAt(null);
+        }
+      }).catch(() => { setLastAttendedAt(null); });
     }
   }, [isAlumno, isAuthenticated]);
 
@@ -913,6 +921,21 @@ export default function ProfileScreen() {
             </View>
           )}
 
+          {isAlumno && lastAttendedAt !== undefined && (() => {
+            if (!lastAttendedAt) return null;
+            const daysSince = Math.floor((Date.now() - lastAttendedAt.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysSince < 7) return null;
+            const msg = daysSince >= 14
+              ? "Tu cuerpo pierde condición más rápido de lo que la gana, regresa a tus entrenos. Oss"
+              : "Llevas 1 semana sin entrenar, es hora de retomar";
+            return (
+              <View style={absentBannerStyles.container}>
+                <Ionicons name="flame-outline" size={18} color="#D4AF37" />
+                <Text style={absentBannerStyles.text}>{msg}</Text>
+              </View>
+            );
+          })()}
+
           {isAlumno && (
             <View style={membershipStyles.section}>
               <View style={membershipStyles.header}>
@@ -1440,6 +1463,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#000",
     letterSpacing: 1,
+  },
+});
+
+const absentBannerStyles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "#0D0B00",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderLeftWidth: 3,
+    borderRadius: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  text: {
+    flex: 1,
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    lineHeight: 20,
   },
 });
 
