@@ -141,6 +141,8 @@ const NOTIFICATION_TARGETS = [
   { value: "bogota", label: "Bogotá" },
   { value: "chia", label: "Chía" },
   { value: "luchadores", label: "Luchadores" },
+  { value: "admins", label: "Admins" },
+  { value: "profesores", label: "Profesores" },
 ];
 
 const INIT_USER_FORM = {
@@ -2656,6 +2658,8 @@ const TARGET_LABELS: Record<string, string> = {
   bogota: "Bogotá",
   chia: "Chía",
   luchadores: "Luchadores",
+  admins: "Admins",
+  profesores: "Profesores",
 };
 
 export function NotificationsPanel() {
@@ -2665,7 +2669,7 @@ export function NotificationsPanel() {
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [target, setTarget] = useState("todas");
+  const [targets, setTargets] = useState<string[]>(["todas"]);
 
   const load = useCallback(async () => {
     try {
@@ -2680,6 +2684,16 @@ export function NotificationsPanel() {
 
   useEffect(() => { load(); }, [load]);
 
+  const toggleTarget = (value: string) => {
+    setTargets((prev) => {
+      if (prev.includes(value)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((x) => x !== value);
+      }
+      return [...prev, value];
+    });
+  };
+
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) {
       Alert.alert("Error", "Completa título y mensaje");
@@ -2687,11 +2701,11 @@ export function NotificationsPanel() {
     }
     setSending(true);
     try {
-      const res = await notificationsApi.send(title.trim(), body.trim(), target);
+      const res = await notificationsApi.send(title.trim(), body.trim(), targets);
       setNotifs((prev) => [{ ...res.notification, readAt: null, createdByName: null }, ...prev]);
       setTitle("");
       setBody("");
-      setTarget("todas");
+      setTargets(["todas"]);
       refreshBell();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo enviar");
@@ -2726,17 +2740,20 @@ export function NotificationsPanel() {
         />
         <Text style={styles.notifTargetLabel}>ENVIAR A</Text>
         <View style={styles.notifTargetRow}>
-          {NOTIFICATION_TARGETS.map((t) => (
-            <Pressable
-              key={t.value}
-              style={[styles.notifTargetChip, target === t.value && styles.notifTargetChipActive]}
-              onPress={() => setTarget(t.value)}
-            >
-              <Text style={[styles.notifTargetChipText, target === t.value && styles.notifTargetChipTextActive]}>
-                {t.label}
-              </Text>
-            </Pressable>
-          ))}
+          {NOTIFICATION_TARGETS.map((t) => {
+            const active = targets.includes(t.value);
+            return (
+              <Pressable
+                key={t.value}
+                style={[styles.notifTargetChip, active && styles.notifTargetChipActive]}
+                onPress={() => toggleTarget(t.value)}
+              >
+                <Text style={[styles.notifTargetChipText, active && styles.notifTargetChipTextActive]}>
+                  {t.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
         <Pressable style={styles.notifSendBtn} onPress={handleSend} disabled={sending}>
           {sending ? (
@@ -2763,7 +2780,9 @@ export function NotificationsPanel() {
               <Text style={styles.notifHistoryItemTitle}>{n.title}</Text>
               <View style={styles.notifTargetBadge}>
                 <Text style={styles.notifTargetBadgeText}>
-                  {TARGET_LABELS[n.target] ?? n.target}
+                  {(Array.isArray(n.target) ? n.target : [n.target])
+                    .map((t) => TARGET_LABELS[t] ?? t)
+                    .join(", ")}
                 </Text>
               </View>
             </View>

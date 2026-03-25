@@ -553,7 +553,7 @@ export interface NotificationData {
   id: number;
   title: string;
   body: string;
-  target: string;
+  target: string[];
   createdAt: string;
   createdByName: string | null;
   readAt: string | null;
@@ -563,10 +563,10 @@ export const notificationsApi = {
   getAll: () =>
     apiFetch<{ notifications: NotificationData[]; unreadCount: number }>("/notifications"),
 
-  send: (title: string, body: string, target: string) =>
+  send: (title: string, body: string, targets: string[]) =>
     apiFetch<{ notification: NotificationData }>("/notifications", {
       method: "POST",
-      body: { title, body, target },
+      body: { title, body, targets },
     }),
 
   markAllRead: () =>

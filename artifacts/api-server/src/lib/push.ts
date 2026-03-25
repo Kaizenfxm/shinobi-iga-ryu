@@ -8,12 +8,25 @@ export async function sendExpoPush(
   data?: Record<string, unknown>
 ) {
   try {
-    await fetch("https://exp.host/--/api/v2/push/send", {
+    const response = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ to: token, title, body, data: data ?? {}, sound: "default" }),
     });
-  } catch {}
+    const result = await response.json() as {
+      data?: { status: string; message?: string; details?: { error?: string } };
+    };
+    if (result.data?.status === "error") {
+      const errCode = result.data.details?.error;
+      console.error(`[Push] Delivery error for token ${token.slice(0, 30)}...: ${result.data.message} (${errCode})`);
+      if (errCode === "DeviceNotRegistered" || errCode === "InvalidCredentials") {
+        await db.delete(pushTokensTable).where(eq(pushTokensTable.token, token));
+        console.log(`[Push] Removed stale token: ${token.slice(0, 30)}...`);
+      }
+    }
+  } catch (e) {
+    console.error(`[Push] Network error sending to ${token.slice(0, 30)}...:`, e);
+  }
 }
 
 export async function notifyUser(
@@ -48,40 +61,54 @@ export async function notifyUsers(
 }
 
 export async function notifyTarget(
-  target: string,
+  targets: string[],
   title: string,
   body: string,
   data?: Record<string, unknown>
 ) {
   try {
-    let userIds: number[] = [];
+    const allUserIds = new Set<number>();
 
-    if (target === "todas") {
-      const rows = await db
-        .select({ id: pushTokensTable.userId })
-        .from(pushTokensTable);
-      userIds = [...new Set(rows.map((r) => r.id))];
-    } else if (target === "bogota") {
-      const rows = await db
-        .select({ id: usersTable.id })
-        .from(usersTable)
-        .where(sql`${usersTable.sedes} @> ARRAY['bogota']::text[]`);
-      userIds = rows.map((r) => r.id);
-    } else if (target === "chia") {
-      const rows = await db
-        .select({ id: usersTable.id })
-        .from(usersTable)
-        .where(sql`${usersTable.sedes} @> ARRAY['chia']::text[]`);
-      userIds = rows.map((r) => r.id);
-    } else if (target === "luchadores") {
-      const rows = await db
-        .select({ id: usersTable.id })
-        .from(usersTable)
-        .where(eq(usersTable.isFighter, true));
-      userIds = rows.map((r) => r.id);
+    for (const target of targets) {
+      if (target === "todas") {
+        const rows = await db
+          .select({ id: pushTokensTable.userId })
+          .from(pushTokensTable);
+        rows.forEach((r) => allUserIds.add(r.id));
+      } else if (target === "bogota") {
+        const rows = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(sql`${usersTable.sedes} @> ARRAY['bogota']::text[]`);
+        rows.forEach((r) => allUserIds.add(r.id));
+      } else if (target === "chia") {
+        const rows = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(sql`${usersTable.sedes} @> ARRAY['chia']::text[]`);
+        rows.forEach((r) => allUserIds.add(r.id));
+      } else if (target === "luchadores") {
+        const rows = await db
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.isFighter, true));
+        rows.forEach((r) => allUserIds.add(r.id));
+      } else if (target === "admins") {
+        const rows = await db
+          .select({ userId: userRolesTable.userId })
+          .from(userRolesTable)
+          .where(eq(userRolesTable.role, "admin"));
+        rows.forEach((r) => allUserIds.add(r.userId));
+      } else if (target === "profesores") {
+        const rows = await db
+          .select({ userId: userRolesTable.userId })
+          .from(userRolesTable)
+          .where(eq(userRolesTable.role, "profesor"));
+        rows.forEach((r) => allUserIds.add(r.userId));
+      }
     }
 
-    await notifyUsers(userIds, title, body, data);
+    await notifyUsers([...allUserIds], title, body, data);
   } catch {}
 }
 

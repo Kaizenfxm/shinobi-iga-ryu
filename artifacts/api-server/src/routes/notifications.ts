@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { db, notificationsTable, notificationReadsTable, usersTable } from "@workspace/db";
-import { eq, desc, and, or, inArray, gte, isNull } from "drizzle-orm";
-import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
+import { db, notificationsTable, notificationReadsTable, usersTable, userRolesTable } from "@workspace/db";
+import { eq, desc, and, or, gte, isNull, inArray, sql } from "drizzle-orm";
+import { requireAuth, requireProfesorOrAdmin } from "../middlewares/auth";
 import { notifyTarget } from "../lib/push";
 
 const notificationsRouter = Router();
+
+const VALID_TARGETS = ["todas", "bogota", "chia", "luchadores", "admins", "profesores"] as const;
 
 async function getUserTargetInfo(userId: number) {
   const [user] = await db
@@ -12,27 +14,61 @@ async function getUserTargetInfo(userId: number) {
     .from(usersTable)
     .where(eq(usersTable.id, userId))
     .limit(1);
-  return user ?? { isFighter: false, sedes: [] as string[], createdAt: new Date(0) };
+
+  const roles = await db
+    .select({ role: userRolesTable.role })
+    .from(userRolesTable)
+    .where(eq(userRolesTable.userId, userId));
+
+  const roleSet = new Set(roles.map((r) => r.role));
+
+  return {
+    ...(user ?? { isFighter: false, sedes: [] as string[], createdAt: new Date(0) }),
+    isAdmin: roleSet.has("admin"),
+    isProfesor: roleSet.has("profesor"),
+  };
 }
 
-function buildTargetCondition(isFighter: boolean, sedes: string[], userId: number) {
+function buildTargetCondition(
+  isFighter: boolean,
+  sedes: string[],
+  isAdmin: boolean,
+  isProfesor: boolean,
+  userId: number
+) {
   const allowedTargets = ["todas"];
   if (isFighter) allowedTargets.push("luchadores");
   if (sedes.includes("bogota")) allowedTargets.push("bogota");
   if (sedes.includes("chia")) allowedTargets.push("chia");
+  if (isAdmin) allowedTargets.push("admins");
+  if (isProfesor) allowedTargets.push("profesores");
+
+  const targetsLiteral = allowedTargets.map((t) => `'${t}'`).join(",");
+
   return or(
-    and(inArray(notificationsTable.target, allowedTargets), isNull(notificationsTable.targetUserId)),
+    and(
+      sql`EXISTS (
+        SELECT 1 FROM unnest(string_to_array(${notificationsTable.target}, '|')) AS t(v)
+        WHERE t.v = ANY(ARRAY[${sql.raw(targetsLiteral)}]::text[])
+      )`,
+      isNull(notificationsTable.targetUserId)
+    ),
     eq(notificationsTable.targetUserId, userId)
   );
+}
+
+function parseTargets(raw: string): string[] {
+  if (!raw) return ["todas"];
+  return raw.split("|").filter(Boolean);
 }
 
 notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { isFighter, sedes, createdAt: userCreatedAt } = await getUserTargetInfo(userId);
-    const targetCond = buildTargetCondition(isFighter, sedes as string[], userId);
+    const { isFighter, sedes, createdAt: userCreatedAt, isAdmin, isProfesor } = await getUserTargetInfo(userId);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[], isAdmin, isProfesor, userId);
 
-    const notifications = await db
+    const rows = await db
       .select({
         id: notificationsTable.id,
         title: notificationsTable.title,
@@ -54,6 +90,11 @@ notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
       .where(and(targetCond!, gte(notificationsTable.createdAt, userCreatedAt)))
       .orderBy(desc(notificationsTable.createdAt));
 
+    const notifications = rows.map((n) => ({
+      ...n,
+      target: parseTargets(n.target),
+    }));
+
     const unreadCount = notifications.filter((n) => !n.readAt).length;
 
     res.json({ notifications, unreadCount });
@@ -66,29 +107,42 @@ notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
 notificationsRouter.post("/notifications", requireProfesorOrAdmin, async (req, res) => {
   try {
     const adminId = req.session.userId!;
-    const { title, body, target } = req.body as { title?: string; body?: string; target?: string };
+    const { title, body, targets } = req.body as {
+      title?: string;
+      body?: string;
+      targets?: string[];
+    };
 
     if (!title?.trim() || !body?.trim()) {
       res.status(400).json({ error: "Título y mensaje son requeridos" });
       return;
     }
 
-    const validTargets = ["todas", "bogota", "chia", "luchadores"];
-    const resolvedTarget = validTargets.includes(target ?? "") ? target! : "todas";
+    const resolvedTargets = Array.isArray(targets)
+      ? targets.filter((t) => VALID_TARGETS.includes(t as typeof VALID_TARGETS[number]))
+      : [];
+    if (resolvedTargets.length === 0) resolvedTargets.push("todas");
+
+    const targetStr = resolvedTargets.join("|");
 
     const [notification] = await db
       .insert(notificationsTable)
       .values({
         title: title.trim(),
         body: body.trim(),
-        target: resolvedTarget,
+        target: targetStr,
         createdByUserId: adminId,
       })
       .returning();
 
-    void notifyTarget(resolvedTarget, title.trim(), body.trim());
+    void notifyTarget(resolvedTargets, title.trim(), body.trim());
 
-    res.json({ notification });
+    res.json({
+      notification: {
+        ...notification,
+        target: parseTargets(notification.target),
+      },
+    });
   } catch (error) {
     console.error("Create notification error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -98,8 +152,8 @@ notificationsRouter.post("/notifications", requireProfesorOrAdmin, async (req, r
 notificationsRouter.post("/notifications/read-all", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { isFighter, sedes, createdAt: userCreatedAt } = await getUserTargetInfo(userId);
-    const targetCond = buildTargetCondition(isFighter, sedes as string[], userId);
+    const { isFighter, sedes, createdAt: userCreatedAt, isAdmin, isProfesor } = await getUserTargetInfo(userId);
+    const targetCond = buildTargetCondition(isFighter, sedes as string[], isAdmin, isProfesor, userId);
 
     const relevantNotifs = await db
       .select({ id: notificationsTable.id })
