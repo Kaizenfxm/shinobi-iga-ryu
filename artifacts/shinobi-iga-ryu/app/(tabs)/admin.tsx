@@ -2261,7 +2261,9 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
 
   const [formOpponent, setFormOpponent] = useState("");
   const [formEvent, setFormEvent] = useState("");
-  const [formDate, setFormDate] = useState("");
+  const [formDateObj, setFormDateObj] = useState<Date | null>(null);
+  const [showFightDatePicker, setShowFightDatePicker] = useState<"date" | null>(null);
+  const [tempFightDate, setTempFightDate] = useState<Date>(new Date());
   const [formResult, setFormResult] = useState<"victoria" | "derrota" | "empate">("victoria");
   const [formMethod, setFormMethod] = useState("");
   const [formDiscipline, setFormDiscipline] = useState("mma");
@@ -2297,10 +2299,13 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
     }
   };
 
+  const fightDateToStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
   const resetForm = () => {
     setFormOpponent("");
     setFormEvent("");
-    setFormDate("");
+    setFormDateObj(null);
     setFormResult("victoria");
     setFormMethod("");
     setFormDiscipline("mma");
@@ -2317,7 +2322,8 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
   const openEditForm = (fight: FightData) => {
     setFormOpponent(fight.opponentName);
     setFormEvent(fight.eventName || "");
-    setFormDate(fight.fightDate);
+    const parsedDate = fight.fightDate ? new Date(fight.fightDate + "T12:00:00") : null;
+    setFormDateObj(parsedDate);
     setFormResult(fight.result as "victoria" | "derrota" | "empate");
     setFormMethod(fight.method || "");
     setFormDiscipline(fight.discipline);
@@ -2328,7 +2334,7 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
   };
 
   const handleAddFight = async (userId: number) => {
-    if (!formOpponent.trim() || !formDate.trim()) {
+    if (!formOpponent.trim() || !formDateObj) {
       Alert.alert("Error", "Se requiere oponente y fecha");
       return;
     }
@@ -2337,7 +2343,7 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
       const data: AddFightData = {
         userId,
         opponentName: formOpponent.trim(),
-        fightDate: formDate.trim(),
+        fightDate: fightDateToStr(formDateObj),
         result: formResult,
         discipline: formDiscipline,
       };
@@ -2358,7 +2364,7 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
   };
 
   const handleUpdateFight = async (fightId: number, userId: number) => {
-    if (!formOpponent.trim() || !formDate.trim()) {
+    if (!formOpponent.trim() || !formDateObj) {
       Alert.alert("Error", "Se requiere oponente y fecha");
       return;
     }
@@ -2366,7 +2372,7 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
     try {
       await fightsApi.updateFight(fightId, {
         opponentName: formOpponent.trim(),
-        fightDate: formDate.trim(),
+        fightDate: fightDateToStr(formDateObj),
         result: formResult,
         discipline: formDiscipline,
         eventName: formEvent.trim() || undefined,
@@ -2410,7 +2416,66 @@ export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRe
     <View style={styles.fightFormContainer}>
       <TextInput style={styles.fightFormInput} placeholder="Oponente *" placeholderTextColor="#555" value={formOpponent} onChangeText={setFormOpponent} />
       <TextInput style={styles.fightFormInput} placeholder="Evento (opcional)" placeholderTextColor="#555" value={formEvent} onChangeText={setFormEvent} />
-      <TextInput style={styles.fightFormInput} placeholder="Fecha (YYYY-MM-DD) *" placeholderTextColor="#555" value={formDate} onChangeText={setFormDate} />
+      <Text style={styles.fightFormLabel}>Fecha *</Text>
+      {Platform.OS === "web" ? (
+        <View style={styles.fightDateWebWrapper}>
+          <Ionicons name="calendar-outline" size={14} color="#D4AF37" style={{ marginRight: 6 }} />
+          {React.createElement("input", {
+            type: "date",
+            value: formDateObj ? fightDateToStr(formDateObj) : "",
+            onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+              if (e.target?.value) setFormDateObj(new Date(e.target.value + "T12:00:00"));
+            },
+            style: {
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: "#D4AF37",
+              fontSize: "13px",
+              colorScheme: "dark",
+              cursor: "pointer",
+              width: "100%",
+              padding: 0,
+            },
+          })}
+        </View>
+      ) : (
+        <>
+          <Pressable
+            style={styles.fightDateBtn}
+            onPress={() => { setTempFightDate(formDateObj ?? new Date()); setShowFightDatePicker("date"); }}
+          >
+            <Ionicons name="calendar-outline" size={14} color="#D4AF37" />
+            <Text style={formDateObj ? styles.fightDateBtnText : styles.fightDateBtnPlaceholder}>
+              {formDateObj
+                ? formDateObj.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+                : "Seleccionar fecha..."}
+            </Text>
+          </Pressable>
+          {showFightDatePicker !== null && (
+            <Modal visible transparent animationType="slide">
+              <Pressable style={styles.fightPickerBackdrop} onPress={() => setShowFightDatePicker(null)}>
+                <Pressable onPress={() => {}} style={styles.fightPickerSheet}>
+                  <View style={styles.fightPickerHeader}>
+                    <Pressable onPress={() => setShowFightDatePicker(null)}>
+                      <Text style={styles.fightPickerCancel}>CANCELAR</Text>
+                    </Pressable>
+                    <Text style={styles.fightPickerTitle}>SELECCIONAR FECHA</Text>
+                    <Pressable onPress={() => {
+                      setFormDateObj(new Date(tempFightDate.getFullYear(), tempFightDate.getMonth(), tempFightDate.getDate(), 12, 0));
+                      setShowFightDatePicker(null);
+                    }}>
+                      <Text style={styles.fightPickerConfirm}>CONFIRMAR</Text>
+                    </Pressable>
+                  </View>
+                  <DateTimePicker value={tempFightDate} mode="date" display="spinner" onChange={(_, s) => { if (s) setTempFightDate(s); }} textColor="#FFFFFF" themeVariant="dark" style={{ width: "100%" }} />
+                </Pressable>
+              </Pressable>
+            </Modal>
+          )}
+        </>
+      )}
       <Text style={styles.fightFormLabel}>Resultado</Text>
       <View style={styles.toggleGroup}>
         {(["victoria", "derrota", "empate"] as const).map((r) => (
@@ -6592,6 +6657,35 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: 4,
   },
+  fightDateWebWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  fightDateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#222",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  fightDateBtnText: { color: "#D4AF37", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+  fightDateBtnPlaceholder: { color: "#444", fontFamily: "NotoSansJP_400Regular", fontSize: 13 },
+  fightPickerBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  fightPickerSheet: { backgroundColor: "#111", borderTopWidth: 2, borderTopColor: "#D4AF37", paddingBottom: 40 },
+  fightPickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#1a1a1a" },
+  fightPickerTitle: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, letterSpacing: 1 },
+  fightPickerCancel: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  fightPickerConfirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
   fightAdminCard: {
     backgroundColor: "#0A0A0A",
     borderWidth: 1,
