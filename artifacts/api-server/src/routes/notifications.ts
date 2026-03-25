@@ -48,7 +48,7 @@ function buildTargetCondition(
   return or(
     and(
       sql`EXISTS (
-        SELECT 1 FROM unnest(string_to_array(${notificationsTable.target}, '|')) AS t(v)
+        SELECT 1 FROM jsonb_array_elements_text(${notificationsTable.target}::jsonb) AS t(v)
         WHERE t.v = ANY(ARRAY[${sql.raw(targetsLiteral)}]::text[])
       )`,
       isNull(notificationsTable.targetUserId)
@@ -59,7 +59,14 @@ function buildTargetCondition(
 
 function parseTargets(raw: string): string[] {
   if (!raw) return ["todas"];
-  return raw.split("|").filter(Boolean);
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as string[];
+  } catch {
+    // legacy bare-string fallback (should not occur after migration)
+    return [raw];
+  }
+  return ["todas"];
 }
 
 notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
@@ -123,7 +130,7 @@ notificationsRouter.post("/notifications", requireProfesorOrAdmin, async (req, r
       : [];
     if (resolvedTargets.length === 0) resolvedTargets.push("todas");
 
-    const targetStr = resolvedTargets.join("|");
+    const targetStr = JSON.stringify(resolvedTargets);
 
     const [notification] = await db
       .insert(notificationsTable)
