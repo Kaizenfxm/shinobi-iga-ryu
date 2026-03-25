@@ -1,7 +1,10 @@
-import { Router } from "express";
+import { Router, raw } from "express";
 import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable, exerciseCategoriesTable, knowledgeCategoriesTable } from "@workspace/db";
 import { eq, asc, and } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorageService = new ObjectStorageService();
 
 async function validateExerciseCategoryBelongsToSystem(categoryId: number, trainingSystemId: number): Promise<boolean> {
   const [cat] = await db.select().from(exerciseCategoriesTable).where(eq(exerciseCategoriesTable.id, categoryId)).limit(1);
@@ -110,6 +113,21 @@ trainingRouter.get("/training/systems/:key/knowledge-categories", requireAuth, a
     res.json({ categories });
   } catch (error) {
     console.error("Get knowledge categories error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.post("/admin/training/category-image-upload", requireProfesorOrAdmin, raw({ limit: "15mb", type: "image/*" }), async (req, res) => {
+  try {
+    const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
+    if (!contentType.startsWith("image/")) {
+      res.status(400).json({ error: "Tipo de archivo inválido" });
+      return;
+    }
+    const objectPath = await objectStorageService.uploadBuffer(req.body as Buffer, contentType, 1200, 1200);
+    res.json({ objectPath });
+  } catch (error) {
+    console.error("Category image upload error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

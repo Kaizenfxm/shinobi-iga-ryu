@@ -18,6 +18,7 @@ import {
   Linking,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
@@ -2729,6 +2730,8 @@ export function EntrenamientoPanel() {
   const [catName, setCatName] = useState("");
   const [catDesc, setCatDesc] = useState("");
   const [catOrder, setCatOrder] = useState("0");
+  const [catImageUrl, setCatImageUrl] = useState<string | null>(null);
+  const [catImageUploading, setCatImageUploading] = useState(false);
   const [savingCat, setSavingCat] = useState(false);
 
   const [itemFormVisible, setItemFormVisible] = useState(false);
@@ -2774,13 +2777,42 @@ export function EntrenamientoPanel() {
       setCatName(cat.name);
       setCatDesc(cat.description || "");
       setCatOrder(String(cat.orderIndex));
+      setCatImageUrl(cat.imageUrl || null);
     } else {
       setEditingCat(null);
       setCatName("");
       setCatDesc("");
       setCatOrder("0");
+      setCatImageUrl(null);
     }
     setCatFormVisible(true);
+  };
+
+  const pickCatImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permiso requerido", "Necesitamos acceso a tu galería para seleccionar una imagen.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? "image/jpeg";
+    setCatImageUploading(true);
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const objectPath = await trainingApi.uploadCategoryImageDirect(blob, mimeType);
+      setCatImageUrl(objectPath);
+    } catch (e: unknown) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo subir la imagen");
+    }
+    setCatImageUploading(false);
   };
 
   const saveCat = async () => {
@@ -2789,15 +2821,15 @@ export function EntrenamientoPanel() {
     try {
       if (contentType === "exercises") {
         if (editingCat) {
-          await trainingApi.updateExerciseCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.updateExerciseCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: parseInt(catOrder) || 0 });
         } else {
-          await trainingApi.createExerciseCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.createExerciseCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: parseInt(catOrder) || 0 });
         }
       } else {
         if (editingCat) {
-          await trainingApi.updateKnowledgeCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.updateKnowledgeCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: parseInt(catOrder) || 0 });
         } else {
-          await trainingApi.createKnowledgeCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.createKnowledgeCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: parseInt(catOrder) || 0 });
         }
       }
       setCatFormVisible(false);
@@ -3024,6 +3056,16 @@ export function EntrenamientoPanel() {
             ) : (
               currentCategories.map((cat) => (
                 <View key={cat.id} style={trnStyles.catRow}>
+                  {cat.imageUrl ? (
+                    <Image
+                      source={{ uri: cat.imageUrl.startsWith("/objects/") ? `https://shinobi-iga-ryu-production.up.railway.app/api/storage${cat.imageUrl}` : cat.imageUrl }}
+                      style={trnStyles.catThumb}
+                    />
+                  ) : (
+                    <View style={trnStyles.catThumbPlaceholder}>
+                      <Ionicons name="image-outline" size={14} color="#333" />
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={trnStyles.catName}>{cat.name}</Text>
                     {cat.description ? <Text style={trnStyles.catDesc}>{cat.description}</Text> : null}
@@ -3096,13 +3138,38 @@ export function EntrenamientoPanel() {
                 <Ionicons name="close" size={22} color="#888" />
               </Pressable>
             </View>
+            <Text style={trnStyles.fieldLabel}>IMAGEN</Text>
+            <Pressable
+              style={trnStyles.imagePicker}
+              onPress={() => { void pickCatImage(); }}
+              disabled={catImageUploading}
+            >
+              {catImageUploading ? (
+                <ActivityIndicator color="#D4AF37" size="small" />
+              ) : catImageUrl ? (
+                <Image
+                  source={{ uri: catImageUrl.startsWith("/objects/") ? `https://shinobi-iga-ryu-production.up.railway.app/api/storage${catImageUrl}` : catImageUrl }}
+                  style={trnStyles.imagePreview}
+                />
+              ) : (
+                <View style={{ alignItems: "center", gap: 6 }}>
+                  <Ionicons name="image-outline" size={28} color="#555" />
+                  <Text style={{ color: "#555", fontSize: 12, fontFamily: "NotoSansJP_400Regular" }}>Toca para seleccionar imagen</Text>
+                </View>
+              )}
+            </Pressable>
+            {catImageUrl ? (
+              <Pressable onPress={() => setCatImageUrl(null)} style={{ alignSelf: "flex-end", marginBottom: 8 }}>
+                <Text style={{ color: "#EF4444", fontSize: 11, fontFamily: "NotoSansJP_400Regular" }}>Quitar imagen</Text>
+              </Pressable>
+            ) : null}
             <Text style={trnStyles.fieldLabel}>NOMBRE *</Text>
             <TextInput style={trnStyles.input} value={catName} onChangeText={setCatName} placeholder="Nombre de categoría" placeholderTextColor="#444" />
             <Text style={trnStyles.fieldLabel}>DESCRIPCIÓN</Text>
             <TextInput style={[trnStyles.input, { height: 70 }]} value={catDesc} onChangeText={setCatDesc} placeholder="Descripción (opcional)" placeholderTextColor="#444" multiline />
             <Text style={trnStyles.fieldLabel}>ORDEN</Text>
             <TextInput style={trnStyles.input} value={catOrder} onChangeText={setCatOrder} placeholder="0" placeholderTextColor="#444" keyboardType="numeric" />
-            <Pressable style={[trnStyles.saveBtn, savingCat && { opacity: 0.6 }]} onPress={saveCat} disabled={savingCat}>
+            <Pressable style={[trnStyles.saveBtn, (savingCat || catImageUploading) && { opacity: 0.6 }]} onPress={saveCat} disabled={savingCat || catImageUploading}>
               {savingCat ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
             </Pressable>
           </View>
@@ -3313,6 +3380,37 @@ const trnStyles = StyleSheet.create({
     fontSize: 11,
     color: "#555",
     marginTop: 2,
+  },
+  catThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 2,
+    backgroundColor: "#111",
+  },
+  catThumbPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 2,
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagePicker: {
+    width: "100%",
+    height: 120,
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   iconBtn: {
     padding: 6,

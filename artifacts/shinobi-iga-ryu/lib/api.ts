@@ -683,7 +683,7 @@ export const trainingApi = {
   deleteKnowledge: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/training/knowledge/${id}`, { method: "DELETE" }),
 
-  createExerciseCategory: (data: { trainingSystemId: number; name: string; description?: string; orderIndex?: number }) =>
+  createExerciseCategory: (data: { trainingSystemId: number; name: string; description?: string; imageUrl?: string; orderIndex?: number }) =>
     apiFetch<{ category: ExerciseCategoryData }>("/admin/training/exercise-categories", { method: "POST", body: data }),
 
   updateExerciseCategory: (id: number, data: Partial<ExerciseCategoryData>) =>
@@ -692,7 +692,7 @@ export const trainingApi = {
   deleteExerciseCategory: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/training/exercise-categories/${id}`, { method: "DELETE" }),
 
-  createKnowledgeCategory: (data: { trainingSystemId: number; name: string; description?: string; orderIndex?: number }) =>
+  createKnowledgeCategory: (data: { trainingSystemId: number; name: string; description?: string; imageUrl?: string; orderIndex?: number }) =>
     apiFetch<{ category: KnowledgeCategoryData }>("/admin/training/knowledge-categories", { method: "POST", body: data }),
 
   updateKnowledgeCategory: (id: number, data: Partial<KnowledgeCategoryData>) =>
@@ -700,6 +700,21 @@ export const trainingApi = {
 
   deleteKnowledgeCategory: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/training/knowledge-categories/${id}`, { method: "DELETE" }),
+
+  uploadCategoryImageDirect: async (blob: Blob, mimeType: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/api/admin/training/category-image-upload`, {
+      method: "POST",
+      headers: { "Content-Type": mimeType },
+      body: blob,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error ?? "Upload failed");
+    }
+    const data = await res.json() as { objectPath: string };
+    return data.objectPath;
+  },
 };
 
 export const fightsApi = {
