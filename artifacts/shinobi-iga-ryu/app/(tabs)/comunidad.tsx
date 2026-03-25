@@ -797,8 +797,8 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
     : "#CCC";
 
   const cancelPending = isActive && item.cancelRequestedBy !== null;
-  const iRequestedCancel = cancelPending && item.cancelRequestedBy === currentUserId;
-  const otherRequestedCancel = cancelPending && item.cancelRequestedBy !== currentUserId;
+  const iRequestedCancel = cancelPending && isParticipant && item.cancelRequestedBy === currentUserId;
+  const otherRequestedCancel = cancelPending && isParticipant && item.cancelRequestedBy !== currentUserId;
 
   const borderColor = isCompleted
     ? (item.winnerId === currentUserId ? "#D4AF37" : "#333")
