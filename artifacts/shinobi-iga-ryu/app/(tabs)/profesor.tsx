@@ -182,6 +182,15 @@ export default function ProfesorScreen() {
           <View style={styles.errorBox}>
             <Ionicons name="warning-outline" size={20} color="#FF3B30" />
             <Text style={styles.errorText}>{fetchError}</Text>
+            <Pressable
+              style={styles.retryBtn}
+              onPress={() => {
+                setFetchError(null);
+                fetchData();
+              }}
+            >
+              <Text style={styles.retryBtnText}>Reintentar</Text>
+            </Pressable>
           </View>
         ) : (
           renderPanel()
@@ -278,5 +287,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#FF3B30",
     flex: 1,
+  },
+  retryBtn: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  retryBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#FFF",
   },
 });
