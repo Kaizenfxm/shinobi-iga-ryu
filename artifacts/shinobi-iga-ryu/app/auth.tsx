@@ -99,6 +99,16 @@ export default function AuthScreen() {
       setError("Completa todos los campos");
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Ingresa un correo electrónico válido (ej: nombre@dominio.com)");
+      return;
+    }
+    const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+    if (nameParts.length < 2) {
+      setError("Ingresa tu nombre y apellido completos");
+      return;
+    }
     if (password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres");
       return;

@@ -47,6 +47,18 @@ authRouter.post("/auth/register", async (req, res) => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      res.status(400).json({ error: "Ingresa un correo electrónico válido" });
+      return;
+    }
+
+    const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+    if (nameParts.length < 2) {
+      res.status(400).json({ error: "Ingresa tu nombre y apellido" });
+      return;
+    }
+
     if (password.length < 6) {
       res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
       return;
