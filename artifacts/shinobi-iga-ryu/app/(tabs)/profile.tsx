@@ -18,7 +18,7 @@ import {
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { profileApi, avatarApi, settingsApi, suggestionsApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
 import { scheduleWeightReminder } from "@/lib/notifications";
@@ -158,8 +158,14 @@ const beltCardStyles = StyleSheet.create({
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const { user, logout, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, logout, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
   const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshUser();
+    }, [refreshUser])
+  );
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
