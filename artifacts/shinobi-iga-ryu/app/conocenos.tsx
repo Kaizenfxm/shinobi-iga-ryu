@@ -23,7 +23,7 @@ const GAP = 10;
 const CARD_W = (SCREEN_WIDTH - H_PAD * 2 - GAP) / 2;
 const CARD_H = CARD_W * 2.0;
 
-const SEDE_BG: Record<string, ReturnType<typeof require>> = {
+const SEDE_BG: Record<string, number> = {
   bogota: require("@/assets/images/arts/ninjutsu.jpg"),
   chia: require("@/assets/images/arts/jiujitsu.jpg"),
 };

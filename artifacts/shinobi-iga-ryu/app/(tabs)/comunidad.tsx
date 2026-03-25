@@ -1719,7 +1719,7 @@ function RankingRow({
       </View>
       <View style={[rkStyles.avatar, hasBelts && { marginTop: 2 }]}>
         {avatarUrl ? (
-          <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
+          <Image source={{ uri: getAvatarServingUrl(avatarUrl) ?? undefined }} style={rkStyles.avatarImg} />
         ) : (
           <View style={[rkStyles.avatarImg, rkStyles.avatarFallback]}>
             <Text style={rkStyles.avatarLetter}>{(displayName[0] ?? "?").toUpperCase()}</Text>
@@ -1767,7 +1767,7 @@ function FighterRankingRow({ rank, entry }: { rank: number; entry: RankingFighte
       </View>
       <View style={[rkStyles.avatar, hasBelts && { marginTop: 2 }]}>
         {avatarUrl ? (
-          <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
+          <Image source={{ uri: getAvatarServingUrl(avatarUrl) ?? undefined }} style={rkStyles.avatarImg} />
         ) : (
           <View style={[rkStyles.avatarImg, rkStyles.avatarFallback]}>
             <Text style={rkStyles.avatarLetter}>{(displayName[0] ?? "?").toUpperCase()}</Text>
@@ -1829,7 +1829,7 @@ function ChallengeRankingRow({
         </View>
         <View style={[rkStyles.avatar, hasBelts && { marginTop: 2 }]}>
           {avatarUrl ? (
-            <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
+            <Image source={{ uri: getAvatarServingUrl(avatarUrl) ?? undefined }} style={rkStyles.avatarImg} />
           ) : (
             <View style={[rkStyles.avatarImg, rkStyles.avatarFallback]}>
               <Text style={rkStyles.avatarLetter}>{(displayName[0] ?? "?").toUpperCase()}</Text>

@@ -906,12 +906,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 6,
   },
-  lockReason: {
-    fontFamily: "NotoSansJP_400Regular",
-    fontSize: 11,
-    color: "#555",
-    lineHeight: 16,
-  },
   exerciseTitle: {
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 14,

@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { profileApi, avatarApi, settingsApi, suggestionsApi, classesApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData } from "@/lib/api";
+import { profileApi, avatarApi, settingsApi, suggestionsApi, classesApi, getAvatarServingUrl, type ProfileData, type ProfileBelt, type UserData, type WeightData, type FightStats } from "@/lib/api";
 import { scheduleWeightReminder } from "@/lib/notifications";
 import FightRecord from "@/components/FightRecord";
 import { BeltStrip, getDanNumber, getNinjutsuRankTitle } from "@/components/BeltStrip";
@@ -549,6 +549,8 @@ export default function ProfileScreen() {
     ...user,
     belts: [] as ProfileBelt[],
     fightStats: null as FightStats | null,
+    weightData: null as WeightData | null,
+    hasPayments: false,
   };
   const ninjutsuBelt = data.belts.find((b) => b.discipline === "ninjutsu");
   const jiujitsuBelt = data.belts.find((b) => b.discipline === "jiujitsu");
