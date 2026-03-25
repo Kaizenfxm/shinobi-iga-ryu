@@ -1696,21 +1696,26 @@ function RankingRow({
   avatarUrl,
   stat,
   statLabel,
+  ninjutsuBelt,
+  jiujitsuBelt,
 }: {
   rank: number;
   displayName: string;
   avatarUrl: string | null;
   stat: string;
   statLabel: string;
+  ninjutsuBelt?: { name: string; color: string } | null;
+  jiujitsuBelt?: { name: string; color: string } | null;
 }) {
   const medalColor = rank <= 3 ? MEDAL_COLORS[rank - 1] : "#2a2a2a";
   const isTopThree = rank <= 3;
+  const hasBelts = ninjutsuBelt || jiujitsuBelt;
   return (
-    <View style={rkStyles.row}>
-      <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }]}>
+    <View style={[rkStyles.row, hasBelts && { alignItems: "flex-start" }]}>
+      <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }, hasBelts && { marginTop: 2 }]}>
         <Text style={[rkStyles.rankNum, { color: medalColor }]}>{rank}</Text>
       </View>
-      <View style={rkStyles.avatar}>
+      <View style={[rkStyles.avatar, hasBelts && { marginTop: 2 }]}>
         {avatarUrl ? (
           <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
         ) : (
@@ -1719,8 +1724,28 @@ function RankingRow({
           </View>
         )}
       </View>
-      <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
-      <View style={rkStyles.statPill}>
+      <View style={{ flex: 1 }}>
+        <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
+        {hasBelts && (
+          <View style={rkStyles.beltInline}>
+            {ninjutsuBelt && (
+              <View style={rkStyles.beltChip}>
+                <View style={[rkStyles.beltDot, { backgroundColor: ninjutsuBelt.color }]} />
+                <Text style={rkStyles.beltDiscipline}>NIN</Text>
+                <Text style={rkStyles.beltName}>{ninjutsuBelt.name}</Text>
+              </View>
+            )}
+            {jiujitsuBelt && (
+              <View style={rkStyles.beltChip}>
+                <View style={[rkStyles.beltDot, { backgroundColor: jiujitsuBelt.color }]} />
+                <Text style={rkStyles.beltDiscipline}>BJJ</Text>
+                <Text style={rkStyles.beltName}>{jiujitsuBelt.name}</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+      <View style={[rkStyles.statPill, hasBelts && { marginTop: 2 }]}>
         <Text style={[rkStyles.statNum, isTopThree && { color: medalColor }]}>{stat}</Text>
         <Text style={rkStyles.statLabel}>{statLabel}</Text>
       </View>
@@ -1791,16 +1816,17 @@ function ChallengeRankingRow({
   expanded: boolean;
   onPress: () => void;
 }) {
-  const { displayName, avatarUrl, wins, wonChallenges } = entry;
+  const { displayName, avatarUrl, wins, wonChallenges, ninjutsuBelt, jiujitsuBelt } = entry;
   const medalColor = rank <= 3 ? MEDAL_COLORS[rank - 1] : "#2a2a2a";
   const isTopThree = rank <= 3;
+  const hasBelts = ninjutsuBelt || jiujitsuBelt;
   return (
     <View>
-      <Pressable style={[rkStyles.row, expanded && { backgroundColor: "#0a0a0a" }]} onPress={onPress}>
-        <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }]}>
+      <Pressable style={[rkStyles.row, expanded && { backgroundColor: "#0a0a0a" }, hasBelts && { alignItems: "flex-start" }]} onPress={onPress}>
+        <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }, hasBelts && { marginTop: 2 }]}>
           <Text style={[rkStyles.rankNum, { color: medalColor }]}>{rank}</Text>
         </View>
-        <View style={rkStyles.avatar}>
+        <View style={[rkStyles.avatar, hasBelts && { marginTop: 2 }]}>
           {avatarUrl ? (
             <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
           ) : (
@@ -1809,12 +1835,32 @@ function ChallengeRankingRow({
             </View>
           )}
         </View>
-        <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
-        <View style={rkStyles.statPill}>
+        <View style={{ flex: 1 }}>
+          <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
+          {hasBelts && (
+            <View style={rkStyles.beltInline}>
+              {ninjutsuBelt && (
+                <View style={rkStyles.beltChip}>
+                  <View style={[rkStyles.beltDot, { backgroundColor: ninjutsuBelt.color }]} />
+                  <Text style={rkStyles.beltDiscipline}>NIN</Text>
+                  <Text style={rkStyles.beltName}>{ninjutsuBelt.name}</Text>
+                </View>
+              )}
+              {jiujitsuBelt && (
+                <View style={rkStyles.beltChip}>
+                  <View style={[rkStyles.beltDot, { backgroundColor: jiujitsuBelt.color }]} />
+                  <Text style={rkStyles.beltDiscipline}>BJJ</Text>
+                  <Text style={rkStyles.beltName}>{jiujitsuBelt.name}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+        <View style={[rkStyles.statPill, hasBelts && { marginTop: 2 }]}>
           <Text style={[rkStyles.statNum, isTopThree && { color: medalColor }]}>{wins}</Text>
           <Text style={rkStyles.statLabel}>victorias</Text>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={12} color="#444" style={{ marginLeft: 4 }} />
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={12} color="#444" style={[{ marginLeft: 4 }, hasBelts && { marginTop: 4 }]} />
       </Pressable>
       {expanded && (
         <View style={rkStyles.challengeList}>
@@ -1935,6 +1981,8 @@ function RankingTab() {
             avatarUrl={u.avatarUrl}
             stat={String(u.attendances)}
             statLabel="clases"
+            ninjutsuBelt={u.ninjutsuBelt}
+            jiujitsuBelt={u.jiujitsuBelt}
           />
         ))}
       </RankingSection>

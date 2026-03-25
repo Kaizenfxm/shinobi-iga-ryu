@@ -959,6 +959,8 @@ export interface RankingAttendanceEntry {
   displayName: string;
   avatarUrl: string | null;
   attendances: number;
+  ninjutsuBelt: { name: string; color: string } | null;
+  jiujitsuBelt: { name: string; color: string } | null;
 }
 
 export interface RankingWonChallenge {
@@ -974,6 +976,8 @@ export interface RankingChallengeEntry {
   avatarUrl: string | null;
   wins: number;
   wonChallenges: RankingWonChallenge[];
+  ninjutsuBelt: { name: string; color: string } | null;
+  jiujitsuBelt: { name: string; color: string } | null;
 }
 
 export const rankingApi = {

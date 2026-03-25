@@ -17,12 +17,35 @@ async function getActiveAlumnoIds(): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
+type BeltInfo = { name: string; color: string };
+type BeltEntry = { ninjutsu?: BeltInfo; jiujitsu?: BeltInfo };
+
+async function getBeltsForUsers(userIds: number[]): Promise<Map<number, BeltEntry>> {
+  if (userIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      userId: studentBeltsTable.userId,
+      discipline: studentBeltsTable.discipline,
+      beltName: beltDefinitionsTable.name,
+      beltColor: beltDefinitionsTable.color,
+    })
+    .from(studentBeltsTable)
+    .innerJoin(beltDefinitionsTable, eq(studentBeltsTable.currentBeltId, beltDefinitionsTable.id))
+    .where(inArray(studentBeltsTable.userId, userIds));
+
+  const map = new Map<number, BeltEntry>();
+  for (const row of rows) {
+    const entry = map.get(row.userId) ?? {};
+    if (row.discipline === "ninjutsu") entry.ninjutsu = { name: row.beltName, color: row.beltColor };
+    if (row.discipline === "jiujitsu") entry.jiujitsu = { name: row.beltName, color: row.beltColor };
+    map.set(row.userId, entry);
+  }
+  return map;
+}
+
 rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
   const activeIds = await getActiveAlumnoIds();
-  if (activeIds.length === 0) {
-    res.json({ ranking: [] });
-    return;
-  }
+  if (activeIds.length === 0) { res.json({ ranking: [] }); return; }
 
   const stats = await db
     .select({
@@ -42,24 +65,7 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(inArray(usersTable.id, activeIds));
 
-  const beltRows = await db
-    .select({
-      userId: studentBeltsTable.userId,
-      discipline: studentBeltsTable.discipline,
-      beltName: beltDefinitionsTable.name,
-      beltColor: beltDefinitionsTable.color,
-    })
-    .from(studentBeltsTable)
-    .innerJoin(beltDefinitionsTable, eq(studentBeltsTable.currentBeltId, beltDefinitionsTable.id))
-    .where(inArray(studentBeltsTable.userId, activeIds));
-
-  const beltMap = new Map<number, { ninjutsu?: { name: string; color: string }; jiujitsu?: { name: string; color: string } }>();
-  for (const row of beltRows) {
-    const entry = beltMap.get(row.userId) ?? {};
-    if (row.discipline === "ninjutsu") entry.ninjutsu = { name: row.beltName, color: row.beltColor };
-    if (row.discipline === "jiujitsu") entry.jiujitsu = { name: row.beltName, color: row.beltColor };
-    beltMap.set(row.userId, entry);
-  }
+  const beltMap = await getBeltsForUsers(activeIds);
 
   const ranking = users
     .map((u) => {
@@ -84,10 +90,7 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
 
 rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
   const activeIds = await getActiveAlumnoIds();
-  if (activeIds.length === 0) {
-    res.json({ ranking: [], month: "" });
-    return;
-  }
+  if (activeIds.length === 0) { res.json({ ranking: [], month: "" }); return; }
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -95,18 +98,13 @@ rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
   const monthLabel = now.toLocaleString("es-CO", { month: "long", year: "numeric" });
 
   const stats = await db
-    .select({
-      userId: classAttendancesTable.userId,
-      total: count(classAttendancesTable.id),
-    })
+    .select({ userId: classAttendancesTable.userId, total: count(classAttendancesTable.id) })
     .from(classAttendancesTable)
-    .where(
-      and(
-        inArray(classAttendancesTable.userId, activeIds),
-        sql`${classAttendancesTable.attendedAt} >= ${monthStart.toISOString()}`,
-        sql`${classAttendancesTable.attendedAt} < ${monthEnd.toISOString()}`
-      )
-    )
+    .where(and(
+      inArray(classAttendancesTable.userId, activeIds),
+      sql`${classAttendancesTable.attendedAt} >= ${monthStart.toISOString()}`,
+      sql`${classAttendancesTable.attendedAt} < ${monthEnd.toISOString()}`
+    ))
     .groupBy(classAttendancesTable.userId);
 
   const statsMap = new Map(stats.map((s) => [s.userId, Number(s.total)]));
@@ -116,13 +114,20 @@ rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(inArray(usersTable.id, activeIds));
 
+  const beltMap = await getBeltsForUsers(activeIds);
+
   const ranking = users
-    .map((u) => ({
-      userId: u.id,
-      displayName: u.displayName,
-      avatarUrl: u.avatarUrl,
-      attendances: statsMap.get(u.id) ?? 0,
-    }))
+    .map((u) => {
+      const belts = beltMap.get(u.id);
+      return {
+        userId: u.id,
+        displayName: u.displayName,
+        avatarUrl: u.avatarUrl,
+        attendances: statsMap.get(u.id) ?? 0,
+        ninjutsuBelt: belts?.ninjutsu ?? null,
+        jiujitsuBelt: belts?.jiujitsu ?? null,
+      };
+    })
     .sort((a, b) => b.attendances - a.attendances)
     .filter((u) => u.attendances > 0);
 
@@ -131,10 +136,7 @@ rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
 
 rankingRouter.get("/ranking/challenges", requireAuth, async (req, res) => {
   const activeIds = await getActiveAlumnoIds();
-  if (activeIds.length === 0) {
-    res.json({ ranking: [] });
-    return;
-  }
+  if (activeIds.length === 0) { res.json({ ranking: [] }); return; }
 
   const wonRows = await db
     .select({
@@ -176,15 +178,20 @@ rankingRouter.get("/ranking/challenges", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(inArray(usersTable.id, activeIds));
 
+  const beltMap = await getBeltsForUsers(activeIds);
+
   const ranking = users
     .map((u) => {
       const won = challengesByWinner.get(u.id) ?? [];
+      const belts = beltMap.get(u.id);
       return {
         userId: u.id,
         displayName: u.displayName,
         avatarUrl: u.avatarUrl,
         wins: won.length,
         wonChallenges: won,
+        ninjutsuBelt: belts?.ninjutsu ?? null,
+        jiujitsuBelt: belts?.jiujitsu ?? null,
       };
     })
     .filter((u) => u.wins > 0)
