@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { trainingApi, type TrainingSystemDetail, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
+import { trainingApi, getAvatarServingUrl, type TrainingSystemDetail, type ExerciseCategoryData, type KnowledgeCategoryData } from "@/lib/api";
 import YouTubePlayer from "@/components/YouTubePlayer";
 
 type SubTab = "conocimiento" | "ejercicios";
@@ -64,7 +64,10 @@ const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 function getCategoryImage(name: string, systemKey: string, imageUrl?: string | null): ImageSourcePropType {
-  if (imageUrl) return { uri: imageUrl };
+  if (imageUrl) {
+    const servingUrl = getAvatarServingUrl(imageUrl);
+    if (servingUrl) return { uri: servingUrl };
+  }
   const key = name.toLowerCase().trim();
   if (CATEGORY_IMAGES[key]) return CATEGORY_IMAGES[key];
   return SYSTEM_ART_IMAGES[systemKey] ?? require("@/assets/images/arts/ninjutsu.jpg");
