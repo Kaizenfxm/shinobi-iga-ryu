@@ -1733,21 +1733,33 @@ function RankingSection({
   color,
   loading,
   empty,
+  count,
   children,
 }: {
   title: string;
   color: string;
   loading: boolean;
   empty: boolean;
+  count: number;
   children: React.ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   return (
-    <View style={rkStyles.section}>
-      <Pressable style={rkStyles.sectionHeader} onPress={() => setExpanded((p) => !p)}>
+    <View style={[rkStyles.section, { borderLeftWidth: 3, borderLeftColor: expanded ? color : "#1a1a1a" }]}>
+      <Pressable
+        style={[rkStyles.sectionHeader, { backgroundColor: expanded ? "#0a0a0a" : "#050505" }]}
+        onPress={() => setExpanded((p) => !p)}
+      >
         <View style={[rkStyles.sectionDot, { backgroundColor: color }]} />
         <Text style={[rkStyles.sectionTitle, { color }]}>{title}</Text>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={13} color="#333" style={{ marginLeft: "auto" }} />
+        <View style={rkStyles.chevronWrap}>
+          {!loading && !expanded && count > 0 && (
+            <View style={[rkStyles.countBadge, { backgroundColor: color + "22", borderColor: color + "44" }]}>
+              <Text style={[rkStyles.countBadgeText, { color }]}>{count}</Text>
+            </View>
+          )}
+          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={color} />
+        </View>
       </Pressable>
       {expanded && (
         <View style={rkStyles.sectionBody}>
@@ -1789,7 +1801,7 @@ function RankingTab() {
     <ScrollView style={rkStyles.scroll} contentContainerStyle={rkStyles.scrollContent} showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D4AF37" colors={["#D4AF37"]} />}
     >
-      <RankingSection title="⚔ LUCHADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0}>
+      <RankingSection title="⚔ LUCHADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0} count={fighters.length}>
         {fighters.map((u, i) => (
           <RankingRow
             key={u.userId}
@@ -1807,6 +1819,7 @@ function RankingTab() {
         color="#D4AF37"
         loading={loadingA}
         empty={attendance.length === 0}
+        count={attendance.length}
       >
         {attendance.map((u, i) => (
           <RankingRow
@@ -1820,7 +1833,7 @@ function RankingTab() {
         ))}
       </RankingSection>
 
-      <RankingSection title="忍 RETOS" color="#6A5ACD" loading={loadingC} empty={challenges.length === 0}>
+      <RankingSection title="忍 RETOS" color="#6A5ACD" loading={loadingC} empty={challenges.length === 0} count={challenges.length}>
         {challenges.map((u, i) => (
           <RankingRow
             key={u.userId}
@@ -1839,16 +1852,22 @@ function RankingTab() {
 const rkStyles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
-  section: { marginBottom: 2 },
+  section: { marginBottom: 6, overflow: "hidden" },
   sectionHeader: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    paddingHorizontal: 14, paddingVertical: 10,
-    backgroundColor: "#050505",
-    borderTopWidth: 1, borderTopColor: "#111",
-    borderBottomWidth: 1, borderBottomColor: "#111",
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 14, paddingVertical: 14,
+    borderTopWidth: 1, borderTopColor: "#1a1a1a",
+    borderBottomWidth: 1, borderBottomColor: "#1a1a1a",
   },
-  sectionDot: { width: 4, height: 14, borderRadius: 1 },
-  sectionTitle: { fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 3 },
+  sectionDot: { width: 4, height: 16, borderRadius: 1 },
+  sectionTitle: { fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 3 },
+  countBadge: {
+    marginLeft: "auto",
+    borderWidth: 1, borderRadius: 2,
+    paddingHorizontal: 7, paddingVertical: 2,
+  },
+  countBadgeText: { fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1 },
+  chevronWrap: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 8 },
   sectionBody: { backgroundColor: "#000" },
   emptyText: {
     color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 12,

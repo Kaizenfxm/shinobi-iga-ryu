@@ -54,6 +54,7 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
         draws: Number(s?.draws ?? 0),
       };
     })
+    .filter((u) => u.wins + u.losses + u.draws > 0)
     .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 
   res.json({ ranking });
