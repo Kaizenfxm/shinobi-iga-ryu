@@ -12,8 +12,9 @@ import {
   beltDefinitionsTable,
   classAttendancesTable,
   challengesTable,
+  userRolesTable,
 } from "@workspace/db";
-import { eq, asc, and, count, inArray } from "drizzle-orm";
+import { eq, asc, and, count, inArray, or } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
 
@@ -87,6 +88,16 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
 
     const exerciseIds = exercises.map((e) => e.id);
 
+    const [privilegedRole] = await db
+      .select({ id: userRolesTable.id })
+      .from(userRolesTable)
+      .where(and(
+        eq(userRolesTable.userId, userId),
+        or(eq(userRolesTable.role, "admin"), eq(userRolesTable.role, "profesor"))
+      ))
+      .limit(1);
+    const isPrivileged = !!privilegedRole;
+
     const [userBelts, winsResult, attResult, beltDefs, allPrereqs, completions] = await Promise.all([
       db
         .select({ discipline: studentBeltsTable.discipline, orderIndex: beltDefinitionsTable.orderIndex })
@@ -155,6 +166,17 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
     const exercisesWithMeta = exercises.map((e) => {
       let isLocked = false;
       let lockReason: string | null = null;
+
+      if (isPrivileged) {
+        return {
+          ...e,
+          categoryId: e.exerciseCategoryId,
+          isLocked: false,
+          lockReason: null,
+          completedByUser: completedExerciseIds.has(e.id),
+          prerequisiteIds: prereqMap[e.id] ?? [],
+        };
+      }
 
       if (e.reqBeltDiscipline && e.reqBeltMinOrder !== null && e.reqBeltMinOrder !== undefined) {
         const userOrder = userBeltMap[e.reqBeltDiscipline] ?? -1;

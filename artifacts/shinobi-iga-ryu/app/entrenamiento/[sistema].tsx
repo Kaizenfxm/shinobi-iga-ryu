@@ -164,6 +164,7 @@ export default function EntrenamientoScreen() {
               items={data?.exercises ?? []}
               categories={data?.exerciseCategories ?? []}
               sistemaKey={sistemaKey}
+              onComplete={load}
             />
           )}
         </ScrollView>
@@ -250,7 +251,7 @@ function KnowledgeList({ items }: { items: KnowledgeItem[] }) {
   );
 }
 
-function ExerciseCard({ item }: { item: ExerciseItem }) {
+function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const completedRef = useRef(false);
 
@@ -266,7 +267,9 @@ function ExerciseCard({ item }: { item: ExerciseItem }) {
     setExpanded((v) => !v);
     if (!expanded && !completedRef.current && !item.completedByUser) {
       completedRef.current = true;
-      trainingApi.completeExercise(item.id).catch(() => {});
+      trainingApi.completeExercise(item.id)
+        .then(() => { onComplete?.(); })
+        .catch(() => {});
     }
   };
 
@@ -320,12 +323,12 @@ function ExerciseCard({ item }: { item: ExerciseItem }) {
   );
 }
 
-function ExerciseList({ items }: { items: ExerciseItem[] }) {
+function ExerciseList({ items, onComplete }: { items: ExerciseItem[]; onComplete?: () => void }) {
   if (items.length === 0) return null;
   return (
     <>
       {items.map((item) => (
-        <ExerciseCard key={item.id} item={item} />
+        <ExerciseCard key={item.id} item={item} onComplete={onComplete} />
       ))}
     </>
   );
@@ -410,10 +413,12 @@ function EjerciciosTab({
   items,
   categories,
   sistemaKey,
+  onComplete,
 }: {
   items: ExerciseItem[];
   categories: ExerciseCategoryData[];
   sistemaKey: string;
+  onComplete?: () => void;
 }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
@@ -437,7 +442,7 @@ function EjerciciosTab({
 
   if (categories.length === 0 || selectedCategoryId === null) {
     if (categories.length === 0) {
-      return <View style={styles.listContainer}><ExerciseList items={items} /></View>;
+      return <View style={styles.listContainer}><ExerciseList items={items} onComplete={onComplete} /></View>;
     }
     return (
       <View style={{ gap: 10 }}>
@@ -475,7 +480,7 @@ function EjerciciosTab({
           <Text style={styles.emptyTitle}>Sin ejercicios en esta categoría</Text>
         </View>
       ) : (
-        <ExerciseList items={filteredItems} />
+        <ExerciseList items={filteredItems} onComplete={onComplete} />
       )}
     </View>
   );
