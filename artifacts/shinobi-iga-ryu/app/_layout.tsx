@@ -43,7 +43,7 @@ setupNotificationHandler();
 // Suppress webfontloader's "Nms timeout exceeded" uncaught error on web.
 // Our 2.5s fontsTimedOut fallback already handles the UI; this stops the
 // noise from the underlying library firing at 6 s.
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener("error", (e) => {
     if (e.message && e.message.includes("timeout exceeded")) {
       e.preventDefault();
