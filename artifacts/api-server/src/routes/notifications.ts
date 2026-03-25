@@ -48,7 +48,12 @@ function buildTargetCondition(
   return or(
     and(
       sql`EXISTS (
-        SELECT 1 FROM jsonb_array_elements_text(${notificationsTable.target}::jsonb) AS t(v)
+        SELECT 1 FROM jsonb_array_elements_text(
+          CASE WHEN ${notificationsTable.target} LIKE '[%'
+            THEN ${notificationsTable.target}::jsonb
+            ELSE jsonb_build_array(${notificationsTable.target})
+          END
+        ) AS t(v)
         WHERE t.v = ANY(ARRAY[${sql.raw(targetsLiteral)}]::text[])
       )`,
       isNull(notificationsTable.targetUserId)
