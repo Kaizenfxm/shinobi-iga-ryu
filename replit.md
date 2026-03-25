@@ -143,6 +143,14 @@ Mobile app for a martial arts academy focused on Ninjutsu.
 - YouTube video embed: exercises and knowledge items with videoUrl show an expandable YouTube player inline (no redirect to YouTube)
 - Web: plain iframe with embed URL + modestbranding; Native: react-native-youtube-iframe with WebView
 - Platform-specific files: YouTubePlayer.web.tsx (web iframe) and YouTubePlayer.tsx (native react-native-youtube-iframe)
+- Task #29: Admin EntrenamientoPanel accordion + drag-drop:
+  - Exercises tab: accordion per category (expandable), three-dot menus for category and exercise actions
+  - Drag-and-drop reordering of exercises within a category (iOS native only) via `react-native-reorderable-list` `NestedReorderableList`
+  - `ExerciseItemRow` (base) + `ExerciseItemRowDraggable` (wraps drag hook) — avoids conditional hook violations
+  - PATCH `/admin/training/exercises/reorder` endpoint: accepts `{items: [{id, orderIndex}]}` array
+  - `trainingApi.reorderExercises()` in api.ts; `handleReorderExercises` in admin.tsx
+  - Outer ScrollView wrapped in `ScrollViewContainer` for native compatibility
+  - ORDEN fields removed from category/exercise forms; orderIndex auto-computed from existing length
 
 ### Features - Anthropometric Evaluation (Task #16)
 - `anthropometric_evaluations` table: `userId` (unique FK cascade), `initialWeight`, `currentWeight`, `targetWeight` (all `real`, nullable), `createdAt`, `updatedAt`

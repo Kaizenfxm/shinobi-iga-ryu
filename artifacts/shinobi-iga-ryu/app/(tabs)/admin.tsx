@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { NestedReorderableList, ScrollViewContainer, reorderItems, useReorderableDrag, type ReorderableListRenderItemInfo } from "react-native-reorderable-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
@@ -2726,11 +2727,17 @@ export function EntrenamientoPanel() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [beltDefs, setBeltDefs] = useState<import("@/lib/api").BeltDefinition[]>([]);
 
+  const [expandedCatIds, setExpandedCatIds] = useState<Set<number>>(new Set());
+  const [actionSheet, setActionSheet] = useState<
+    | { type: "cat"; cat: ExerciseCategoryData }
+    | { type: "exercise"; exercise: ExerciseData }
+    | null
+  >(null);
+
   const [catFormVisible, setCatFormVisible] = useState(false);
   const [editingCat, setEditingCat] = useState<ExerciseCategoryData | KnowledgeCategoryData | null>(null);
   const [catName, setCatName] = useState("");
   const [catDesc, setCatDesc] = useState("");
-  const [catOrder, setCatOrder] = useState("0");
   const [catImageUrl, setCatImageUrl] = useState<string | null>(null);
   const [catImageUploading, setCatImageUploading] = useState(false);
   const [savingCat, setSavingCat] = useState(false);
@@ -2740,7 +2747,6 @@ export function EntrenamientoPanel() {
   const [itemTitle, setItemTitle] = useState("");
   const [itemDesc, setItemDesc] = useState("");
   const [itemVideoUrl, setItemVideoUrl] = useState("");
-  const [itemOrder, setItemOrder] = useState("0");
   const [itemLevel, setItemLevel] = useState("");
   const [itemDuration, setItemDuration] = useState("");
   const [itemCategoryId, setItemCategoryId] = useState<number | null>(null);
@@ -2778,18 +2784,25 @@ export function EntrenamientoPanel() {
     loadSystemDetail(sys);
   };
 
+  const toggleCatExpanded = (id: number) => {
+    setExpandedCatIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const openCatForm = (cat?: ExerciseCategoryData | KnowledgeCategoryData) => {
     if (cat) {
       setEditingCat(cat);
       setCatName(cat.name);
       setCatDesc(cat.description || "");
-      setCatOrder(String(cat.orderIndex));
       setCatImageUrl(cat.imageUrl || null);
     } else {
       setEditingCat(null);
       setCatName("");
       setCatDesc("");
-      setCatOrder("0");
       setCatImageUrl(null);
     }
     setCatFormVisible(true);
@@ -2828,15 +2841,15 @@ export function EntrenamientoPanel() {
     try {
       if (contentType === "exercises") {
         if (editingCat) {
-          await trainingApi.updateExerciseCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.updateExerciseCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: editingCat.orderIndex });
         } else {
-          await trainingApi.createExerciseCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.createExerciseCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: exerciseCategories.length });
         }
       } else {
         if (editingCat) {
-          await trainingApi.updateKnowledgeCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.updateKnowledgeCategory(editingCat.id, { name: catName.trim(), description: catDesc.trim() || null, imageUrl: catImageUrl, orderIndex: editingCat.orderIndex });
         } else {
-          await trainingApi.createKnowledgeCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: parseInt(catOrder) || 0 });
+          await trainingApi.createKnowledgeCategory({ trainingSystemId: selectedSystem.id, name: catName.trim(), description: catDesc.trim() || undefined, imageUrl: catImageUrl ?? undefined, orderIndex: knowledgeCategories.length });
         }
       }
       setCatFormVisible(false);
@@ -2877,13 +2890,12 @@ export function EntrenamientoPanel() {
     ]);
   };
 
-  const openItemForm = (item?: ExerciseData | KnowledgeItemData) => {
+  const openItemForm = (item?: ExerciseData | KnowledgeItemData, defaultCategoryId?: number | null) => {
     if (item) {
       setEditingItem(item);
       setItemTitle(item.title);
       setItemDesc(contentType === "exercises" ? ((item as ExerciseData).description || "") : ((item as KnowledgeItemData).content || ""));
       setItemVideoUrl(item.videoUrl || "");
-      setItemOrder(String(item.orderIndex));
       if (contentType === "exercises") {
         const ex = item as ExerciseData;
         setItemLevel(ex.level || "");
@@ -2910,10 +2922,9 @@ export function EntrenamientoPanel() {
       setItemTitle("");
       setItemDesc("");
       setItemVideoUrl("");
-      setItemOrder("0");
       setItemLevel("");
       setItemDuration("");
-      setItemCategoryId(null);
+      setItemCategoryId(defaultCategoryId ?? null);
       setItemReqBeltDisc("");
       setItemReqBeltOrder(null);
       setItemReqMinWins("");
@@ -2937,7 +2948,7 @@ export function EntrenamientoPanel() {
             title: itemTitle.trim(),
             description: itemDesc.trim() || null,
             videoUrl: itemVideoUrl.trim() || null,
-            orderIndex: parseInt(itemOrder) || 0,
+            orderIndex: editingItem.orderIndex,
             level: itemLevel || null,
             durationMinutes: itemDuration ? parseInt(itemDuration) : null,
             categoryId: itemCategoryId,
@@ -2948,12 +2959,13 @@ export function EntrenamientoPanel() {
             prerequisiteIds: itemPrerequisiteIds,
           });
         } else {
+          const catExCount = exercises.filter((e) => e.categoryId === (itemCategoryId ?? null) || (itemCategoryId == null && e.categoryId == null)).length;
           await trainingApi.createExercise({
             trainingSystemId: selectedSystem.id,
             title: itemTitle.trim(),
             description: itemDesc.trim() || undefined,
             videoUrl: itemVideoUrl.trim() || undefined,
-            orderIndex: parseInt(itemOrder) || 0,
+            orderIndex: catExCount,
             level: itemLevel || undefined,
             durationMinutes: itemDuration ? parseInt(itemDuration) : undefined,
             categoryId: itemCategoryId || undefined,
@@ -2970,16 +2982,17 @@ export function EntrenamientoPanel() {
             title: itemTitle.trim(),
             content: itemDesc.trim() || null,
             videoUrl: itemVideoUrl.trim() || null,
-            orderIndex: parseInt(itemOrder) || 0,
+            orderIndex: editingItem.orderIndex,
             categoryId: itemCategoryId,
           });
         } else {
+          const catKnCount = knowledge.filter((k) => k.categoryId === (itemCategoryId ?? null) || (itemCategoryId == null && k.categoryId == null)).length;
           await trainingApi.createKnowledge({
             trainingSystemId: selectedSystem.id,
             title: itemTitle.trim(),
             content: itemDesc.trim() || undefined,
             videoUrl: itemVideoUrl.trim() || undefined,
-            orderIndex: parseInt(itemOrder) || 0,
+            orderIndex: catKnCount,
             categoryId: itemCategoryId || undefined,
           });
         }
@@ -3024,6 +3037,33 @@ export function EntrenamientoPanel() {
 
   const currentCategories = contentType === "exercises" ? exerciseCategories : knowledgeCategories;
   const currentItems = contentType === "exercises" ? exercises : knowledge;
+
+  const exercisesByCat = useMemo(() => {
+    const map = new Map<number | null, ExerciseData[]>();
+    exercises.forEach((ex) => {
+      const key = ex.categoryId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ex);
+    });
+    for (const exs of map.values()) {
+      exs.sort((a, b) => a.orderIndex - b.orderIndex);
+    }
+    return map;
+  }, [exercises]);
+
+  const handleReorderExercises = async (catExercises: ExerciseData[], fromIndex: number, toIndex: number) => {
+    const reordered = reorderItems(catExercises, fromIndex, toIndex);
+    const withNewOrder = reordered.map((e, idx) => ({ ...e, orderIndex: idx }));
+    setExercises((prev) => {
+      const updatedIds = new Set(withNewOrder.map((e) => e.id));
+      return [...prev.filter((e) => !updatedIds.has(e.id)), ...withNewOrder];
+    });
+    try {
+      await trainingApi.reorderExercises(withNewOrder.map((e) => ({ id: e.id, orderIndex: e.orderIndex })));
+    } catch {
+      if (selectedSystem) void loadSystemDetail(selectedSystem);
+    }
+  };
 
   if (loadingSystems) {
     return <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />;
@@ -3078,6 +3118,124 @@ export function EntrenamientoPanel() {
 
       {loadingDetail ? (
         <ActivityIndicator color="#D4AF37" style={{ marginTop: 20 }} />
+      ) : contentType === "exercises" ? (
+        <View style={{ gap: 6 }}>
+          <View style={trnStyles.subSectionHeader}>
+            <Text style={trnStyles.subSectionTitle}>CATEGORÍAS Y EJERCICIOS</Text>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()} hitSlop={6}>
+                <Ionicons name="folder-outline" size={14} color="#000" />
+              </Pressable>
+              <Pressable style={trnStyles.addBtn} onPress={() => openItemForm()} hitSlop={6}>
+                <Ionicons name="add" size={16} color="#000" />
+              </Pressable>
+            </View>
+          </View>
+          {exerciseCategories.length === 0 && exercises.length === 0 ? (
+            <Text style={trnStyles.emptyHint}>Sin categorías ni ejercicios aún</Text>
+          ) : null}
+          {exerciseCategories.map((cat) => {
+            const catExercises = exercisesByCat.get(cat.id) ?? [];
+            const isExpanded = expandedCatIds.has(cat.id);
+            return (
+              <View key={cat.id} style={trnStyles.accordionWrap}>
+                <Pressable style={trnStyles.accordionHeader} onPress={() => toggleCatExpanded(cat.id)}>
+                  {cat.imageUrl ? (
+                    <Image source={{ uri: getAvatarServingUrl(cat.imageUrl) ?? cat.imageUrl }} style={trnStyles.catThumb} />
+                  ) : (
+                    <View style={trnStyles.catThumbPlaceholder}>
+                      <Ionicons name="folder-outline" size={14} color="#333" />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={trnStyles.catName}>{cat.name}</Text>
+                    {cat.description ? <Text style={trnStyles.catDesc}>{cat.description}</Text> : null}
+                  </View>
+                  <Text style={trnStyles.catExerciseCount}>{catExercises.length}</Text>
+                  <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color="#444" />
+                  <Pressable style={trnStyles.dotBtn} hitSlop={10} onPress={() => setActionSheet({ type: "cat", cat: cat as ExerciseCategoryData })}>
+                    <Ionicons name="ellipsis-vertical" size={16} color="#555" />
+                  </Pressable>
+                </Pressable>
+                {isExpanded ? (
+                  <View style={trnStyles.accordionBody}>
+                    {catExercises.length === 0 ? (
+                      <View style={trnStyles.accordionEmpty}>
+                        <Text style={trnStyles.emptyHint}>Sin ejercicios aquí</Text>
+                        <Pressable onPress={() => openItemForm(undefined, cat.id)}>
+                          <Text style={{ color: "#D4AF37", fontSize: 12, fontFamily: "NotoSansJP_400Regular" }}>+ Agregar</Text>
+                        </Pressable>
+                      </View>
+                    ) : Platform.OS !== "web" ? (
+                      <NestedReorderableList
+                        data={catExercises}
+                        onReorder={({ from, to }) => { void handleReorderExercises(catExercises, from, to); }}
+                        renderItem={({ item }: ReorderableListRenderItemInfo<ExerciseData>) => (
+                          <ExerciseItemRowDraggable
+                            exercise={item}
+                            onDotPress={() => setActionSheet({ type: "exercise", exercise: item })}
+                          />
+                        )}
+                        keyExtractor={(item) => String(item.id)}
+                      />
+                    ) : (
+                      catExercises.map((ex) => (
+                        <ExerciseItemRow
+                          key={ex.id}
+                          exercise={ex}
+                          onDotPress={() => setActionSheet({ type: "exercise", exercise: ex })}
+                        />
+                      ))
+                    )}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+          {(() => {
+            const uncatExercises = exercisesByCat.get(null) ?? [];
+            if (uncatExercises.length === 0) return null;
+            const isExpanded = expandedCatIds.has(-1);
+            return (
+              <View style={trnStyles.accordionWrap}>
+                <Pressable style={trnStyles.accordionHeader} onPress={() => toggleCatExpanded(-1)}>
+                  <View style={trnStyles.catThumbPlaceholder}>
+                    <Ionicons name="ellipsis-horizontal" size={14} color="#333" />
+                  </View>
+                  <Text style={[trnStyles.catName, { flex: 1 }]}>Sin categoría</Text>
+                  <Text style={trnStyles.catExerciseCount}>{uncatExercises.length}</Text>
+                  <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color="#444" />
+                  <View style={{ width: 28 }} />
+                </Pressable>
+                {isExpanded ? (
+                  <View style={trnStyles.accordionBody}>
+                    {Platform.OS !== "web" ? (
+                      <NestedReorderableList
+                        data={uncatExercises}
+                        onReorder={({ from, to }) => { void handleReorderExercises(uncatExercises, from, to); }}
+                        renderItem={({ item }: ReorderableListRenderItemInfo<ExerciseData>) => (
+                          <ExerciseItemRowDraggable
+                            exercise={item}
+                            onDotPress={() => setActionSheet({ type: "exercise", exercise: item })}
+                          />
+                        )}
+                        keyExtractor={(item) => String(item.id)}
+                      />
+                    ) : (
+                      uncatExercises.map((ex) => (
+                        <ExerciseItemRow
+                          key={ex.id}
+                          exercise={ex}
+                          onDotPress={() => setActionSheet({ type: "exercise", exercise: ex })}
+                        />
+                      ))
+                    )}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })()}
+        </View>
       ) : (
         <>
           <View style={trnStyles.subSection}>
@@ -3088,15 +3246,12 @@ export function EntrenamientoPanel() {
               </Pressable>
             </View>
             {currentCategories.length === 0 ? (
-              <Text style={trnStyles.emptyHint}>Sin categorías — todo aparece sin agrupar</Text>
+              <Text style={trnStyles.emptyHint}>Sin categorías</Text>
             ) : (
               currentCategories.map((cat) => (
                 <View key={cat.id} style={trnStyles.catRow}>
                   {cat.imageUrl ? (
-                    <Image
-                      source={{ uri: getAvatarServingUrl(cat.imageUrl) ?? cat.imageUrl }}
-                      style={trnStyles.catThumb}
-                    />
+                    <Image source={{ uri: getAvatarServingUrl(cat.imageUrl) ?? cat.imageUrl }} style={trnStyles.catThumb} />
                   ) : (
                     <View style={trnStyles.catThumbPlaceholder}>
                       <Ionicons name="image-outline" size={14} color="#333" />
@@ -3116,12 +3271,9 @@ export function EntrenamientoPanel() {
               ))
             )}
           </View>
-
           <View style={trnStyles.subSection}>
             <View style={trnStyles.subSectionHeader}>
-              <Text style={trnStyles.subSectionTitle}>
-                {contentType === "exercises" ? "EJERCICIOS" : "ITEMS DE CONOCIMIENTO"}
-              </Text>
+              <Text style={trnStyles.subSectionTitle}>ITEMS DE CONOCIMIENTO</Text>
               <Pressable style={trnStyles.addBtn} onPress={() => openItemForm()}>
                 <Ionicons name="add" size={16} color="#000" />
               </Pressable>
@@ -3130,26 +3282,17 @@ export function EntrenamientoPanel() {
               <Text style={trnStyles.emptyHint}>Sin contenido aún</Text>
             ) : (
               currentItems.map((item) => {
-                const catId = contentType === "exercises"
-                  ? (item as ExerciseData).categoryId
-                  : (item as KnowledgeItemData).categoryId;
+                const catId = (item as KnowledgeItemData).categoryId;
                 const catLabel = currentCategories.find((c) => c.id === catId)?.name;
                 return (
                   <View key={item.id} style={trnStyles.itemRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={trnStyles.itemTitle}>{item.title}</Text>
-                      <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
-                        {catLabel ? (
-                          <View style={trnStyles.itemTag}>
-                            <Text style={trnStyles.itemTagText}>{catLabel}</Text>
-                          </View>
-                        ) : null}
-                        {contentType === "exercises" && (item as ExerciseData).level ? (
-                          <View style={[trnStyles.itemTag, { borderColor: "#D4AF3755" }]}>
-                            <Text style={[trnStyles.itemTagText, { color: "#D4AF37" }]}>{(item as ExerciseData).level}</Text>
-                          </View>
-                        ) : null}
-                      </View>
+                      {catLabel ? (
+                        <View style={trnStyles.itemTag}>
+                          <Text style={trnStyles.itemTagText}>{catLabel}</Text>
+                        </View>
+                      ) : null}
                     </View>
                     <Pressable onPress={() => openItemForm(item)} style={trnStyles.iconBtn}>
                       <Ionicons name="pencil" size={14} color="#D4AF37" />
@@ -3203,8 +3346,6 @@ export function EntrenamientoPanel() {
             <TextInput style={trnStyles.input} value={catName} onChangeText={setCatName} placeholder="Nombre de categoría" placeholderTextColor="#444" />
             <Text style={trnStyles.fieldLabel}>DESCRIPCIÓN</Text>
             <TextInput style={[trnStyles.input, { height: 70 }]} value={catDesc} onChangeText={setCatDesc} placeholder="Descripción (opcional)" placeholderTextColor="#444" multiline />
-            <Text style={trnStyles.fieldLabel}>ORDEN</Text>
-            <TextInput style={trnStyles.input} value={catOrder} onChangeText={setCatOrder} placeholder="0" placeholderTextColor="#444" keyboardType="numeric" />
             <Pressable style={[trnStyles.saveBtn, (savingCat || catImageUploading) && { opacity: 0.6 }]} onPress={saveCat} disabled={savingCat || catImageUploading}>
               {savingCat ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
             </Pressable>
@@ -3331,8 +3472,6 @@ export function EntrenamientoPanel() {
                   </View>
                 </>
               ) : null}
-              <Text style={trnStyles.fieldLabel}>ORDEN</Text>
-              <TextInput style={trnStyles.input} value={itemOrder} onChangeText={setItemOrder} placeholder="0" placeholderTextColor="#444" keyboardType="numeric" />
               <Pressable style={[trnStyles.saveBtn, savingItem && { opacity: 0.6 }]} onPress={saveItem} disabled={savingItem}>
                 {savingItem ? <ActivityIndicator color="#000" size="small" /> : <Text style={trnStyles.saveBtnText}>Guardar</Text>}
               </Pressable>
@@ -3340,8 +3479,76 @@ export function EntrenamientoPanel() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal visible={actionSheet !== null} transparent animationType="slide" onRequestClose={() => setActionSheet(null)}>
+        <Pressable style={trnStyles.overlay} onPress={() => setActionSheet(null)}>
+          <Pressable style={trnStyles.actionSheetContainer} onPress={() => {}}>
+            {actionSheet?.type === "cat" ? (
+              <>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const c = actionSheet.cat; setActionSheet(null); openCatForm(c); }}>
+                  <Ionicons name="pencil-outline" size={18} color="#FFF" />
+                  <Text style={trnStyles.actionSheetText}>Editar categoría</Text>
+                </Pressable>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.cat.id; setActionSheet(null); openItemForm(undefined, id); }}>
+                  <Ionicons name="add-circle-outline" size={18} color="#D4AF37" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#D4AF37" }]}>Nuevo ejercicio aquí</Text>
+                </Pressable>
+                <View style={trnStyles.actionSheetDivider} />
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.cat.id; setActionSheet(null); deleteCat(id); }}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#EF4444" }]}>Eliminar categoría</Text>
+                </Pressable>
+              </>
+            ) : actionSheet?.type === "exercise" ? (
+              <>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const ex = actionSheet.exercise; setActionSheet(null); openItemForm(ex); }}>
+                  <Ionicons name="pencil-outline" size={18} color="#FFF" />
+                  <Text style={trnStyles.actionSheetText}>Editar ejercicio</Text>
+                </Pressable>
+                <View style={trnStyles.actionSheetDivider} />
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.exercise.id; setActionSheet(null); deleteItem(id); }}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#EF4444" }]}>Eliminar ejercicio</Text>
+                </Pressable>
+              </>
+            ) : null}
+            <View style={trnStyles.actionSheetDivider} />
+            <Pressable style={trnStyles.actionSheetOption} onPress={() => setActionSheet(null)}>
+              <Text style={[trnStyles.actionSheetText, { color: "#555", flex: 1, textAlign: "center" }]}>Cancelar</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
+}
+
+function ExerciseItemRow({ exercise, drag, onDotPress }: { exercise: ExerciseData; drag?: (() => void) | null; onDotPress: () => void }) {
+  return (
+    <View style={trnStyles.exerciseItemRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={trnStyles.itemTitle}>{exercise.title}</Text>
+        {exercise.level ? (
+          <View style={[trnStyles.itemTag, { borderColor: "#D4AF3755", alignSelf: "flex-start" }]}>
+            <Text style={[trnStyles.itemTagText, { color: "#D4AF37" }]}>{exercise.level}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Pressable style={trnStyles.dotBtn} hitSlop={10} onPress={onDotPress}>
+        <Ionicons name="ellipsis-vertical" size={16} color="#555" />
+      </Pressable>
+      {drag ? (
+        <Pressable onLongPress={drag} delayLongPress={150} style={trnStyles.dragHandle}>
+          <Ionicons name="reorder-three-outline" size={22} color="#444" />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function ExerciseItemRowDraggable({ exercise, onDotPress }: { exercise: ExerciseData; onDotPress: () => void }) {
+  const drag = useReorderableDrag();
+  return <ExerciseItemRow exercise={exercise} drag={drag} onDotPress={onDotPress} />;
 }
 
 const trnStyles = StyleSheet.create({
@@ -3625,6 +3832,84 @@ const trnStyles = StyleSheet.create({
     fontFamily: "NotoSansJP_700Bold",
     fontSize: 14,
     letterSpacing: 1,
+  },
+  accordionWrap: {
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  accordionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#080808",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+  },
+  accordionBody: {
+    backgroundColor: "#050505",
+    borderTopWidth: 1,
+    borderTopColor: "#1A1A1A",
+  },
+  accordionEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  exerciseItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#111",
+  },
+  dotBtn: {
+    padding: 4,
+  },
+  dragHandle: {
+    padding: 4,
+    marginLeft: 2,
+  },
+  catExerciseCount: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#444",
+    marginRight: 2,
+  },
+  actionSheetContainer: {
+    backgroundColor: "#111",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 32,
+    gap: 2,
+  },
+  actionSheetOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+  },
+  actionSheetText: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 15,
+    color: "#FFF",
+    flex: 1,
+  },
+  actionSheetDivider: {
+    height: 1,
+    backgroundColor: "#1E1E1E",
+    marginVertical: 2,
   },
 });
 
@@ -4515,6 +4800,7 @@ export default function AdminScreen() {
 
       <View style={styles.divider} />
 
+      <ScrollViewContainer>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -4554,6 +4840,7 @@ export default function AdminScreen() {
           <NotificationsPanel />
         )}
       </ScrollView>
+      </ScrollViewContainer>
     </View>
   );
 }
