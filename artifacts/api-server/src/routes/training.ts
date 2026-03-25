@@ -438,6 +438,26 @@ trainingRouter.post("/training/exercises/:id/complete", requireAuth, async (req,
   }
 });
 
+trainingRouter.delete("/training/exercises/:id/complete", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+    const userId = req.session.userId!;
+
+    await db
+      .delete(userExerciseCompletionsTable)
+      .where(and(
+        eq(userExerciseCompletionsTable.userId, userId),
+        eq(userExerciseCompletionsTable.exerciseId, id)
+      ));
+
+    res.json({ uncompleted: true });
+  } catch (error) {
+    console.error("Uncomplete exercise error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 trainingRouter.post("/admin/training/category-image-upload", requireProfesorOrAdmin, raw({ limit: "15mb", type: "image/*" }), async (req, res) => {
   try {
     const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();

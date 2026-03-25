@@ -669,6 +669,9 @@ export const trainingApi = {
   completeExercise: (id: number) =>
     apiFetch<{ completed: boolean }>(`/training/exercises/${id}/complete`, { method: "POST" }),
 
+  uncompleteExercise: (id: number) =>
+    apiFetch<{ uncompleted: boolean }>(`/training/exercises/${id}/complete`, { method: "DELETE" }),
+
   createExercise: (data: {
     trainingSystemId: number;
     title: string;

@@ -341,10 +341,9 @@ function KnowledgeList({ items, onView }: { items: KnowledgeItem[]; onView?: () 
 
 function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: () => void }) {
   const [expanded, setExpanded] = useState(false);
-  const [dominado, setDominado] = useState(false);
-  const [markingDominado, setMarkingDominado] = useState(false);
+  const [localDone, setLocalDone] = useState(item.completedByUser ?? false);
+  const [marking, setMarking] = useState(false);
   const locked = item.isLocked;
-  const isDone = item.completedByUser || dominado;
 
   const handlePress = () => {
     if (locked) {
@@ -359,16 +358,29 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
   };
 
   const handleDominado = async () => {
-    if (isDone || markingDominado) return;
-    setMarkingDominado(true);
+    if (localDone || marking) return;
+    setMarking(true);
     try {
       await trainingApi.completeExercise(item.id);
-      setDominado(true);
+      setLocalDone(true);
       onComplete?.();
     } catch {
       // silently ignore
     }
-    setMarkingDominado(false);
+    setMarking(false);
+  };
+
+  const handleDesmarcar = async () => {
+    if (!localDone || marking) return;
+    setMarking(true);
+    try {
+      await trainingApi.uncompleteExercise(item.id);
+      setLocalDone(false);
+      onComplete?.();
+    } catch {
+      // silently ignore
+    }
+    setMarking(false);
   };
 
   return (
@@ -378,7 +390,7 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {locked ? (
               <Ionicons name="lock-closed" size={14} color="#555" />
-            ) : isDone ? (
+            ) : localDone ? (
               <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
             ) : null}
             <Text style={[styles.exerciseTitle, locked && { color: "#555" }]}>{item.title}</Text>
@@ -413,18 +425,27 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
         <View style={{ marginTop: 8, gap: 10 }}>
           {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
           {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
-          {isDone ? (
+          {localDone ? (
             <View style={styles.dominadoConfirmed}>
-              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-              <Text style={styles.dominadoConfirmedText}>Ejercicio dominado</Text>
+              {marking ? (
+                <ActivityIndicator size="small" color="#555" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+                  <Text style={styles.dominadoConfirmedText}>Ejercicio dominado</Text>
+                  <Pressable onPress={handleDesmarcar} style={styles.desmarcarBtn}>
+                    <Text style={styles.desmarcarText}>Desmarcar</Text>
+                  </Pressable>
+                </>
+              )}
             </View>
           ) : (
             <Pressable
-              style={[styles.dominadoBtn, markingDominado && { opacity: 0.6 }]}
+              style={[styles.dominadoBtn, marking && { opacity: 0.6 }]}
               onPress={handleDominado}
-              disabled={markingDominado}
+              disabled={marking}
             >
-              {markingDominado ? (
+              {marking ? (
                 <ActivityIndicator size="small" color="#000" />
               ) : (
                 <>
@@ -995,5 +1016,16 @@ const styles = StyleSheet.create({
     fontFamily: "NotoSansJP_400Regular",
     fontSize: 13,
     color: "#22C55E",
+  },
+  desmarcarBtn: {
+    marginLeft: "auto",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  desmarcarText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    textDecorationLine: "underline",
   },
 });
