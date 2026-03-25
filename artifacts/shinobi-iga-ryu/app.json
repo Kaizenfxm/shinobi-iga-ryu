@@ -25,7 +25,8 @@
     },
     "android": {
       "package": "com.shinobiigarju.app",
-      "versionCode": 8
+      "versionCode": 8,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -39,7 +40,13 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "iosDisplayInForeground": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
