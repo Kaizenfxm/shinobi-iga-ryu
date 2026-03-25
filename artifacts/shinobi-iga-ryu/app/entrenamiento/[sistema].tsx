@@ -114,7 +114,7 @@ export default function EntrenamientoScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: isWeb ? 20 : insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: isWeb ? 67 : insets.top + 16 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={20} color="#888" />
         </Pressable>
