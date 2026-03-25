@@ -13,6 +13,10 @@ export async function sendExpoPush(
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ to: token, title, body, data: data ?? {}, sound: "default" }),
     });
+    if (!response.ok) {
+      console.error(`[Push] HTTP ${response.status} from Expo API for token ${token.slice(0, 30)}...`);
+      return;
+    }
     const result = await response.json() as {
       data?: { status: string; message?: string; details?: { error?: string } };
     };

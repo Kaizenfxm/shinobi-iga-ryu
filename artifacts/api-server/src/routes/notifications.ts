@@ -131,7 +131,7 @@ notificationsRouter.post("/notifications", requireProfesorOrAdmin, async (req, r
     }
 
     const resolvedTargets = Array.isArray(targets)
-      ? targets.filter((t) => VALID_TARGETS.includes(t as typeof VALID_TARGETS[number]))
+      ? [...new Set(targets.filter((t) => VALID_TARGETS.includes(t as typeof VALID_TARGETS[number])))]
       : [];
     if (resolvedTargets.length === 0) resolvedTargets.push("todas");
 

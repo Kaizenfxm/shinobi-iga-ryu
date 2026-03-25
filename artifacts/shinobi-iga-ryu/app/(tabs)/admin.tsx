@@ -2687,7 +2687,7 @@ export function NotificationsPanel() {
   const toggleTarget = (value: string) => {
     setTargets((prev) => {
       if (prev.includes(value)) {
-        if (prev.length === 1) return prev;
+        if (prev.length === 1) return value === "todas" ? prev : ["todas"];
         return prev.filter((x) => x !== value);
       }
       return [...prev, value];
