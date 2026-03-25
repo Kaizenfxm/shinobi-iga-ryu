@@ -4215,7 +4215,7 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: isWeb ? 67 : insets.top + 16 }]}>
         <Image source={require("@/assets/images/logo.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
         <Text style={styles.headerTitle}>PANEL DE ADMIN</Text>
       </View>

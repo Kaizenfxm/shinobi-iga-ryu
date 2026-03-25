@@ -2094,7 +2094,7 @@ export default function ComunidadScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.headerContainer, { paddingTop: isWeb ? 16 : insets.top + 8 }]}>
+      <View style={[styles.headerContainer, { paddingTop: isWeb ? 67 : insets.top + 16 }]}>
         <View style={styles.logoRow}>
           <Pressable onPress={() => router.push("/conocenos")}>
             <Image source={require("@/assets/images/logo.png")} style={styles.logoImage} resizeMode="contain" />
