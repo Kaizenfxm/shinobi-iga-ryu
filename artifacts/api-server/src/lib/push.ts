@@ -19,9 +19,11 @@ export async function sendExpoPush(
     if (result.data?.status === "error") {
       const errCode = result.data.details?.error;
       console.error(`[Push] Delivery error for token ${token.slice(0, 30)}...: ${result.data.message} (${errCode})`);
-      if (errCode === "DeviceNotRegistered" || errCode === "InvalidCredentials") {
+      if (errCode === "DeviceNotRegistered") {
         await db.delete(pushTokensTable).where(eq(pushTokensTable.token, token));
         console.log(`[Push] Removed stale token: ${token.slice(0, 30)}...`);
+      } else if (errCode === "InvalidCredentials") {
+        console.error(`[Push] InvalidCredentials — check APNs/FCM config, token NOT removed.`);
       }
     }
   } catch (e) {
