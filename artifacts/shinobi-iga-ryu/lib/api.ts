@@ -950,6 +950,8 @@ export interface RankingFighterEntry {
   wins: number;
   losses: number;
   draws: number;
+  ninjutsuBelt: { name: string; color: string } | null;
+  jiujitsuBelt: { name: string; color: string } | null;
 }
 
 export interface RankingAttendanceEntry {

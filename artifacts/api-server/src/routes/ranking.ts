@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, usersTable, fightsTable, classAttendancesTable, challengesTable } from "@workspace/db";
+import { db, usersTable, fightsTable, classAttendancesTable, challengesTable, studentBeltsTable, beltDefinitionsTable } from "@workspace/db";
 import { eq, and, sql, count, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
@@ -42,9 +42,29 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
     .from(usersTable)
     .where(inArray(usersTable.id, activeIds));
 
+  const beltRows = await db
+    .select({
+      userId: studentBeltsTable.userId,
+      discipline: studentBeltsTable.discipline,
+      beltName: beltDefinitionsTable.name,
+      beltColor: beltDefinitionsTable.color,
+    })
+    .from(studentBeltsTable)
+    .innerJoin(beltDefinitionsTable, eq(studentBeltsTable.currentBeltId, beltDefinitionsTable.id))
+    .where(inArray(studentBeltsTable.userId, activeIds));
+
+  const beltMap = new Map<number, { ninjutsu?: { name: string; color: string }; jiujitsu?: { name: string; color: string } }>();
+  for (const row of beltRows) {
+    const entry = beltMap.get(row.userId) ?? {};
+    if (row.discipline === "ninjutsu") entry.ninjutsu = { name: row.beltName, color: row.beltColor };
+    if (row.discipline === "jiujitsu") entry.jiujitsu = { name: row.beltName, color: row.beltColor };
+    beltMap.set(row.userId, entry);
+  }
+
   const ranking = users
     .map((u) => {
       const s = statsMap.get(u.id);
+      const belts = beltMap.get(u.id);
       return {
         userId: u.id,
         displayName: u.displayName,
@@ -52,6 +72,8 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
         wins: Number(s?.wins ?? 0),
         losses: Number(s?.losses ?? 0),
         draws: Number(s?.draws ?? 0),
+        ninjutsuBelt: belts?.ninjutsu ?? null,
+        jiujitsuBelt: belts?.jiujitsu ?? null,
       };
     })
     .filter((u) => u.wins + u.losses + u.draws > 0)

@@ -1728,6 +1728,69 @@ function RankingRow({
   );
 }
 
+function FighterRankingRow({
+  rank,
+  entry,
+  expanded,
+  onPress,
+}: {
+  rank: number;
+  entry: RankingFighterEntry;
+  expanded: boolean;
+  onPress: () => void;
+}) {
+  const { displayName, avatarUrl, wins, losses, draws, ninjutsuBelt, jiujitsuBelt } = entry;
+  const medalColor = rank <= 3 ? MEDAL_COLORS[rank - 1] : "#2a2a2a";
+  const isTopThree = rank <= 3;
+  const hasBelts = ninjutsuBelt || jiujitsuBelt;
+  return (
+    <View>
+      <Pressable style={[rkStyles.row, expanded && { backgroundColor: "#0a0a0a" }]} onPress={onPress}>
+        <View style={[rkStyles.rankBadge, { borderColor: medalColor, backgroundColor: isTopThree ? medalColor + "15" : "transparent" }]}>
+          <Text style={[rkStyles.rankNum, { color: medalColor }]}>{rank}</Text>
+        </View>
+        <View style={rkStyles.avatar}>
+          {avatarUrl ? (
+            <Image source={{ uri: getAvatarServingUrl(avatarUrl) }} style={rkStyles.avatarImg} />
+          ) : (
+            <View style={[rkStyles.avatarImg, rkStyles.avatarFallback]}>
+              <Text style={rkStyles.avatarLetter}>{(displayName[0] ?? "?").toUpperCase()}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={rkStyles.name} numberOfLines={1}>{displayName}</Text>
+        <View style={rkStyles.fightRecord}>
+          <Text style={rkStyles.fightWin}>{wins}V</Text>
+          <Text style={rkStyles.fightSep}> · </Text>
+          <Text style={rkStyles.fightLoss}>{losses}D</Text>
+          {draws > 0 && <><Text style={rkStyles.fightSep}> · </Text><Text style={rkStyles.fightDraw}>{draws}E</Text></>}
+        </View>
+        {hasBelts && (
+          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={12} color="#444" style={{ marginLeft: 4 }} />
+        )}
+      </Pressable>
+      {expanded && hasBelts && (
+        <View style={rkStyles.beltPanel}>
+          {ninjutsuBelt && (
+            <View style={rkStyles.beltChip}>
+              <View style={[rkStyles.beltDot, { backgroundColor: ninjutsuBelt.color }]} />
+              <Text style={rkStyles.beltDiscipline}>忍</Text>
+              <Text style={rkStyles.beltName}>{ninjutsuBelt.name}</Text>
+            </View>
+          )}
+          {jiujitsuBelt && (
+            <View style={rkStyles.beltChip}>
+              <View style={[rkStyles.beltDot, { backgroundColor: jiujitsuBelt.color }]} />
+              <Text style={rkStyles.beltDiscipline}>柔</Text>
+              <Text style={rkStyles.beltName}>{jiujitsuBelt.name}</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function RankingSection({
   title,
   color,
@@ -1783,6 +1846,7 @@ function RankingTab() {
   const [loadingA, setLoadingA] = useState(true);
   const [loadingC, setLoadingC] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedFighter, setExpandedFighter] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     await Promise.allSettled([
@@ -1803,13 +1867,12 @@ function RankingTab() {
     >
       <RankingSection title="⚔ LUCHADORES" color="#C41E3A" loading={loadingF} empty={fighters.length === 0} count={fighters.length}>
         {fighters.map((u, i) => (
-          <RankingRow
+          <FighterRankingRow
             key={u.userId}
             rank={i + 1}
-            displayName={u.displayName}
-            avatarUrl={u.avatarUrl}
-            stat={`${u.wins}V ${u.losses}D${u.draws > 0 ? ` ${u.draws}E` : ""}`}
-            statLabel="récord"
+            entry={u}
+            expanded={expandedFighter === u.userId}
+            onPress={() => setExpandedFighter(expandedFighter === u.userId ? null : u.userId)}
           />
         ))}
       </RankingSection>
@@ -1894,6 +1957,21 @@ const rkStyles = StyleSheet.create({
   statPill: { alignItems: "flex-end" },
   statNum: { color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 14 },
   statLabel: { color: "#333", fontFamily: "NotoSansJP_400Regular", fontSize: 9, letterSpacing: 1 },
+  fightRecord: { flexDirection: "row", alignItems: "center" },
+  fightWin: { fontFamily: "NotoSansJP_700Bold", fontSize: 13, color: "#22C55E" },
+  fightLoss: { fontFamily: "NotoSansJP_700Bold", fontSize: 13, color: "#EF4444" },
+  fightDraw: { fontFamily: "NotoSansJP_700Bold", fontSize: 13, color: "#F97316" },
+  fightSep: { fontFamily: "NotoSansJP_400Regular", fontSize: 11, color: "#333" },
+  beltPanel: {
+    flexDirection: "row", gap: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: "#050505",
+    borderBottomWidth: 1, borderBottomColor: "#0d0d0d",
+  },
+  beltChip: { flexDirection: "row", alignItems: "center", gap: 6 },
+  beltDot: { width: 8, height: 8, borderRadius: 4 },
+  beltDiscipline: { fontFamily: "NotoSerifJP_700Bold", fontSize: 13, color: "#888" },
+  beltName: { fontFamily: "NotoSansJP_400Regular", fontSize: 11, color: "#666", letterSpacing: 0.5 },
 });
 
 export default function ComunidadScreen() {
