@@ -272,6 +272,93 @@ trainingRouter.post("/training/exercises/:id/complete", requireAuth, async (req,
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
     const userId = req.session.userId!;
 
+    const [exercise] = await db
+      .select()
+      .from(exercisesTable)
+      .where(eq(exercisesTable.id, id))
+      .limit(1);
+
+    if (!exercise) {
+      res.status(404).json({ error: "Ejercicio no encontrado" });
+      return;
+    }
+
+    const [privilegedRole] = await db
+      .select({ id: userRolesTable.id })
+      .from(userRolesTable)
+      .where(and(
+        eq(userRolesTable.userId, userId),
+        or(eq(userRolesTable.role, "admin"), eq(userRolesTable.role, "profesor"))
+      ))
+      .limit(1);
+    const isPrivileged = !!privilegedRole;
+
+    if (!isPrivileged) {
+      if (!exercise.isActive) {
+        res.status(403).json({ error: "Ejercicio no disponible" });
+        return;
+      }
+
+      const [userBelts, winsResult, attResult, prereqs, completions] = await Promise.all([
+        db
+          .select({ discipline: studentBeltsTable.discipline, orderIndex: beltDefinitionsTable.orderIndex })
+          .from(studentBeltsTable)
+          .innerJoin(beltDefinitionsTable, eq(beltDefinitionsTable.id, studentBeltsTable.currentBeltId))
+          .where(eq(studentBeltsTable.userId, userId)),
+        db
+          .select({ count: count() })
+          .from(challengesTable)
+          .where(and(eq(challengesTable.winnerId, userId), eq(challengesTable.status, "completed"))),
+        db
+          .select({ count: count() })
+          .from(classAttendancesTable)
+          .where(eq(classAttendancesTable.userId, userId)),
+        db
+          .select({ prerequisiteExerciseId: exercisePrerequisitesTable.prerequisiteExerciseId })
+          .from(exercisePrerequisitesTable)
+          .where(eq(exercisePrerequisitesTable.exerciseId, id)),
+        db
+          .select({ exerciseId: userExerciseCompletionsTable.exerciseId })
+          .from(userExerciseCompletionsTable)
+          .where(eq(userExerciseCompletionsTable.userId, userId)),
+      ]);
+
+      const userBeltMap: Record<string, number> = {};
+      for (const b of userBelts) userBeltMap[b.discipline] = b.orderIndex;
+
+      const userWins = winsResult[0]?.count ?? 0;
+      const userAttendances = attResult[0]?.count ?? 0;
+      const completedIds = new Set<number>(completions.map((c) => c.exerciseId));
+
+      if (exercise.reqBeltDiscipline && exercise.reqBeltMinOrder !== null && exercise.reqBeltMinOrder !== undefined) {
+        const userOrder = userBeltMap[exercise.reqBeltDiscipline] ?? -1;
+        if (userOrder < exercise.reqBeltMinOrder) {
+          res.status(403).json({ error: "No cumples el requisito de cinturón" });
+          return;
+        }
+      }
+
+      if (exercise.reqMinWins !== null && exercise.reqMinWins !== undefined && exercise.reqMinWins > 0) {
+        if (userWins < exercise.reqMinWins) {
+          res.status(403).json({ error: "No cumples el requisito de victorias" });
+          return;
+        }
+      }
+
+      if (exercise.reqMinAttendances !== null && exercise.reqMinAttendances !== undefined && exercise.reqMinAttendances > 0) {
+        if (userAttendances < exercise.reqMinAttendances) {
+          res.status(403).json({ error: "No cumples el requisito de asistencias" });
+          return;
+        }
+      }
+
+      const missingPrereqs = prereqs.filter((p) => !completedIds.has(p.prerequisiteExerciseId));
+      if (missingPrereqs.length > 0) {
+        res.status(403).json({ error: "No has completado los ejercicios prerrequisitos" });
+        return;
+      }
+    }
+
     await db
       .insert(userExerciseCompletionsTable)
       .values({ userId, exerciseId: id })
