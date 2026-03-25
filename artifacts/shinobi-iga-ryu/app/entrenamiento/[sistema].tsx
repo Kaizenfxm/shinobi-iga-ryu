@@ -239,17 +239,39 @@ function CategoryCard({
 
 const UNCATEGORIZED_ID = -1;
 
+function KnowledgeCard({ item }: { item: KnowledgeItem }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View style={styles.knowledgeCard}>
+      <View style={styles.cardGoldBar} />
+      <Pressable
+        style={styles.exerciseCardTop}
+        onPress={() => setExpanded((v) => !v)}
+      >
+        <Text style={[styles.knowledgeTitle, { flex: 1, marginTop: 4 }]}>{item.title}</Text>
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={14}
+          color="#555"
+          style={{ marginTop: 4 }}
+        />
+      </Pressable>
+      {expanded ? (
+        <View style={{ gap: 8 }}>
+          {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
+          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function KnowledgeList({ items }: { items: KnowledgeItem[] }) {
   if (items.length === 0) return null;
   return (
     <>
       {items.map((item) => (
-        <View key={item.id} style={styles.knowledgeCard}>
-          <View style={styles.cardGoldBar} />
-          <Text style={styles.knowledgeTitle}>{item.title}</Text>
-          {item.content ? <Text style={styles.knowledgeContent}>{item.content}</Text> : null}
-          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
-        </View>
+        <KnowledgeCard key={item.id} item={item} />
       ))}
     </>
   );
@@ -341,21 +363,33 @@ function ExerciseList({ items, onComplete }: { items: ExerciseItem[]; onComplete
 function ConocimientoTab({
   items,
   categories,
-  sistemaKey,
 }: {
   items: KnowledgeItem[];
   categories: KnowledgeCategoryData[];
   sistemaKey: string;
 }) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  };
 
   const uncategorized = useMemo(() => items.filter((i) => i.categoryId === null), [items]);
 
-  const filteredItems = useMemo(() => {
-    if (selectedCategoryId === null) return [];
-    if (selectedCategoryId === UNCATEGORIZED_ID) return uncategorized;
-    return items.filter((i) => i.categoryId === selectedCategoryId);
-  }, [items, selectedCategoryId, uncategorized]);
+  const itemsByCat = useMemo(() => {
+    const map = new Map<number, KnowledgeItem[]>();
+    items.forEach((i) => {
+      if (i.categoryId !== null) {
+        if (!map.has(i.categoryId)) map.set(i.categoryId, []);
+        map.get(i.categoryId)!.push(i);
+      }
+    });
+    return map;
+  }, [items]);
 
   if (categories.length === 0 && items.length === 0) {
     return (
@@ -367,48 +401,48 @@ function ConocimientoTab({
     );
   }
 
-  if (categories.length === 0 || selectedCategoryId === null) {
-    if (categories.length === 0) {
-      return <View style={styles.listContainer}><KnowledgeList items={items} /></View>;
-    }
-    return (
-      <View style={{ gap: 10 }}>
-        <Text style={styles.gridLabel}>CATEGORÍAS</Text>
-        <View style={styles.catGrid}>
-          {categories.map((cat) => (
-            <CategoryCard
-              key={cat.id}
-              category={cat}
-              sistemaKey={sistemaKey}
-              onPress={() => setSelectedCategoryId(cat.id)}
-            />
-          ))}
-          {uncategorized.length > 0 && (
-            <GeneralesCard count={uncategorized.length} onPress={() => setSelectedCategoryId(UNCATEGORIZED_ID)} />
-          )}
-        </View>
-      </View>
-    );
+  if (categories.length === 0) {
+    return <View style={styles.listContainer}><KnowledgeList items={items} /></View>;
   }
-
-  const selectedCat = selectedCategoryId === UNCATEGORIZED_ID
-    ? { name: "Generales" }
-    : categories.find((c) => c.id === selectedCategoryId);
 
   return (
     <View style={styles.listContainer}>
-      <Pressable style={styles.backToCats} onPress={() => setSelectedCategoryId(null)}>
-        <Ionicons name="arrow-back" size={14} color="#D4AF37" />
-        <Text style={styles.backToCatsText}>Categorías</Text>
-        {selectedCat ? <Text style={styles.backToCatsCurrent}> / {selectedCat.name}</Text> : null}
-      </Pressable>
-      {filteredItems.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>Sin contenido en esta categoría</Text>
+      {categories.map((cat) => {
+        const catItems = itemsByCat.get(cat.id) ?? [];
+        const isExpanded = expandedIds.has(cat.id);
+        return (
+          <View key={cat.id} style={styles.knowledgeCatAccordion}>
+            <Pressable style={styles.knowledgeCatHeader} onPress={() => toggleExpand(cat.id)}>
+              <Text style={styles.knowledgeCatTitle}>{cat.name}</Text>
+              <Text style={styles.knowledgeCatCount}>{catItems.length}</Text>
+              <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={14} color="#555" />
+            </Pressable>
+            {isExpanded ? (
+              <View style={{ gap: 6, paddingTop: 6 }}>
+                {catItems.length === 0 ? (
+                  <Text style={[styles.knowledgeContent, { textAlign: "center", paddingVertical: 12 }]}>Sin contenido en esta categoría</Text>
+                ) : (
+                  <KnowledgeList items={catItems} />
+                )}
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+      {uncategorized.length > 0 ? (
+        <View style={styles.knowledgeCatAccordion}>
+          <Pressable style={styles.knowledgeCatHeader} onPress={() => toggleExpand(UNCATEGORIZED_ID)}>
+            <Text style={styles.knowledgeCatTitle}>Generales</Text>
+            <Text style={styles.knowledgeCatCount}>{uncategorized.length}</Text>
+            <Ionicons name={expandedIds.has(UNCATEGORIZED_ID) ? "chevron-up" : "chevron-down"} size={14} color="#555" />
+          </Pressable>
+          {expandedIds.has(UNCATEGORIZED_ID) ? (
+            <View style={{ gap: 6, paddingTop: 6 }}>
+              <KnowledgeList items={uncategorized} />
+            </View>
+          ) : null}
         </View>
-      ) : (
-        <KnowledgeList items={filteredItems} />
-      )}
+      ) : null}
     </View>
   );
 }
@@ -787,5 +821,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#777",
     lineHeight: 20,
+  },
+  knowledgeCatAccordion: {
+    backgroundColor: "#080808",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderRadius: 2,
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  knowledgeCatHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+    borderTopWidth: 2,
+    borderTopColor: "#D4AF37",
+  },
+  knowledgeCatTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 13,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  knowledgeCatCount: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
   },
 });

@@ -2731,6 +2731,8 @@ export function EntrenamientoPanel() {
   const [actionSheet, setActionSheet] = useState<
     | { type: "cat"; cat: ExerciseCategoryData }
     | { type: "exercise"; exercise: ExerciseData }
+    | { type: "kcat"; kcat: KnowledgeCategoryData }
+    | { type: "kitem"; kitem: KnowledgeItemData }
     | null
   >(null);
 
@@ -3051,6 +3053,19 @@ export function EntrenamientoPanel() {
     return map;
   }, [exercises]);
 
+  const knowledgeByCat = useMemo(() => {
+    const map = new Map<number | null, KnowledgeItemData[]>();
+    knowledge.forEach((ki) => {
+      const key = ki.categoryId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ki);
+    });
+    for (const items of map.values()) {
+      items.sort((a, b) => a.orderIndex - b.orderIndex);
+    }
+    return map;
+  }, [knowledge]);
+
   const handleReorderExercises = async (catExercises: ExerciseData[], fromIndex: number, toIndex: number) => {
     const reordered = reorderItems(catExercises, fromIndex, toIndex);
     const withNewOrder = reordered.map((e, idx) => ({ ...e, orderIndex: idx }));
@@ -3232,75 +3247,92 @@ export function EntrenamientoPanel() {
           })()}
         </View>
       ) : (
-        <>
-          <View style={trnStyles.subSection}>
-            <View style={trnStyles.subSectionHeader}>
-              <Text style={trnStyles.subSectionTitle}>CATEGORÍAS</Text>
-              <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()}>
-                <Ionicons name="add" size={16} color="#000" />
-              </Pressable>
-            </View>
-            {currentCategories.length === 0 ? (
-              <Text style={trnStyles.emptyHint}>Sin categorías</Text>
-            ) : (
-              currentCategories.map((cat) => (
-                <View key={cat.id} style={trnStyles.catRow}>
+        <View style={{ gap: 6 }}>
+          <View style={trnStyles.subSectionHeader}>
+            <Text style={trnStyles.subSectionTitle}>CATEGORÍAS Y CONOCIMIENTO</Text>
+            <Pressable style={trnStyles.addBtn} onPress={() => openCatForm()} hitSlop={6}>
+              <Ionicons name="folder-outline" size={14} color="#000" />
+            </Pressable>
+          </View>
+          {knowledgeCategories.length === 0 && knowledge.length === 0 ? (
+            <Text style={trnStyles.emptyHint}>Sin categorías ni conocimiento aún</Text>
+          ) : null}
+          {knowledgeCategories.map((cat) => {
+            const catItems = knowledgeByCat.get(cat.id) ?? [];
+            const isExpanded = expandedCatIds.has(cat.id);
+            return (
+              <View key={cat.id} style={trnStyles.accordionWrap}>
+                <Pressable style={trnStyles.accordionHeader} onPress={() => toggleCatExpanded(cat.id)}>
                   {cat.imageUrl ? (
                     <Image source={{ uri: getAvatarServingUrl(cat.imageUrl) ?? cat.imageUrl }} style={trnStyles.catThumb} />
                   ) : (
                     <View style={trnStyles.catThumbPlaceholder}>
-                      <Ionicons name="image-outline" size={14} color="#333" />
+                      <Ionicons name="folder-outline" size={14} color="#333" />
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
                     <Text style={trnStyles.catName}>{cat.name}</Text>
                     {cat.description ? <Text style={trnStyles.catDesc}>{cat.description}</Text> : null}
                   </View>
-                  <Pressable onPress={() => openCatForm(cat)} style={trnStyles.iconBtn}>
-                    <Ionicons name="pencil" size={14} color="#D4AF37" />
+                  <Text style={trnStyles.catExerciseCount}>{catItems.length}</Text>
+                  <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color="#444" />
+                  <Pressable style={trnStyles.dotBtn} hitSlop={10} onPress={() => setActionSheet({ type: "kcat", kcat: cat })}>
+                    <Ionicons name="ellipsis-vertical" size={16} color="#555" />
                   </Pressable>
-                  <Pressable onPress={() => deleteCat(cat.id)} style={trnStyles.iconBtn}>
-                    <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                  </Pressable>
-                </View>
-              ))
-            )}
-          </View>
-          <View style={trnStyles.subSection}>
-            <View style={trnStyles.subSectionHeader}>
-              <Text style={trnStyles.subSectionTitle}>ITEMS DE CONOCIMIENTO</Text>
-              <Pressable style={trnStyles.addBtn} onPress={() => openItemForm()}>
-                <Ionicons name="add" size={16} color="#000" />
-              </Pressable>
-            </View>
-            {currentItems.length === 0 ? (
-              <Text style={trnStyles.emptyHint}>Sin contenido aún</Text>
-            ) : (
-              currentItems.map((item) => {
-                const catId = (item as KnowledgeItemData).categoryId;
-                const catLabel = currentCategories.find((c) => c.id === catId)?.name;
-                return (
-                  <View key={item.id} style={trnStyles.itemRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={trnStyles.itemTitle}>{item.title}</Text>
-                      {catLabel ? (
-                        <View style={trnStyles.itemTag}>
-                          <Text style={trnStyles.itemTagText}>{catLabel}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Pressable onPress={() => openItemForm(item)} style={trnStyles.iconBtn}>
-                      <Ionicons name="pencil" size={14} color="#D4AF37" />
-                    </Pressable>
-                    <Pressable onPress={() => deleteItem(item.id)} style={trnStyles.iconBtn}>
-                      <Ionicons name="trash-outline" size={14} color="#EF4444" />
-                    </Pressable>
+                </Pressable>
+                {isExpanded ? (
+                  <View style={trnStyles.accordionBody}>
+                    {catItems.length === 0 ? (
+                      <View style={trnStyles.accordionEmpty}>
+                        <Text style={trnStyles.emptyHint}>Sin conocimiento aquí</Text>
+                        <Pressable onPress={() => openItemForm(undefined, cat.id)}>
+                          <Text style={{ color: "#D4AF37", fontSize: 12, fontFamily: "NotoSansJP_400Regular" }}>+ Agregar</Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      catItems.map((ki) => (
+                        <KnowledgeItemRow
+                          key={ki.id}
+                          item={ki}
+                          onDotPress={() => setActionSheet({ type: "kitem", kitem: ki })}
+                        />
+                      ))
+                    )}
                   </View>
-                );
-              })
-            )}
-          </View>
-        </>
+                ) : null}
+              </View>
+            );
+          })}
+          {(() => {
+            const uncatItems = knowledgeByCat.get(null) ?? [];
+            if (uncatItems.length === 0) return null;
+            const isExpanded = expandedCatIds.has(-2);
+            return (
+              <View style={trnStyles.accordionWrap}>
+                <Pressable style={trnStyles.accordionHeader} onPress={() => toggleCatExpanded(-2)}>
+                  <View style={trnStyles.catThumbPlaceholder}>
+                    <Ionicons name="ellipsis-horizontal" size={14} color="#333" />
+                  </View>
+                  <Text style={[trnStyles.catName, { flex: 1 }]}>Sin categoría</Text>
+                  <Text style={trnStyles.catExerciseCount}>{uncatItems.length}</Text>
+                  <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color="#444" />
+                  <View style={{ width: 28 }} />
+                </Pressable>
+                {isExpanded ? (
+                  <View style={trnStyles.accordionBody}>
+                    {uncatItems.map((ki) => (
+                      <KnowledgeItemRow
+                        key={ki.id}
+                        item={ki}
+                        onDotPress={() => setActionSheet({ type: "kitem", kitem: ki })}
+                      />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })()}
+        </View>
       )}
 
       <Modal visible={catFormVisible} animationType="slide" transparent onRequestClose={() => setCatFormVisible(false)}>
@@ -3506,6 +3538,34 @@ export function EntrenamientoPanel() {
                   <Text style={[trnStyles.actionSheetText, { color: "#EF4444" }]}>Eliminar ejercicio</Text>
                 </Pressable>
               </>
+            ) : actionSheet?.type === "kcat" ? (
+              <>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const c = actionSheet.kcat; setActionSheet(null); openCatForm(c); }}>
+                  <Ionicons name="pencil-outline" size={18} color="#FFF" />
+                  <Text style={trnStyles.actionSheetText}>Editar categoría</Text>
+                </Pressable>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.kcat.id; setActionSheet(null); openItemForm(undefined, id); }}>
+                  <Ionicons name="add-circle-outline" size={18} color="#D4AF37" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#D4AF37" }]}>Nuevo conocimiento de {actionSheet.kcat.name}</Text>
+                </Pressable>
+                <View style={trnStyles.actionSheetDivider} />
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.kcat.id; setActionSheet(null); deleteCat(id); }}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#EF4444" }]}>Eliminar categoría</Text>
+                </Pressable>
+              </>
+            ) : actionSheet?.type === "kitem" ? (
+              <>
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const ki = actionSheet.kitem; setActionSheet(null); openItemForm(ki); }}>
+                  <Ionicons name="pencil-outline" size={18} color="#FFF" />
+                  <Text style={trnStyles.actionSheetText}>Editar conocimiento</Text>
+                </Pressable>
+                <View style={trnStyles.actionSheetDivider} />
+                <Pressable style={trnStyles.actionSheetOption} onPress={() => { const id = actionSheet.kitem.id; setActionSheet(null); deleteItem(id); }}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  <Text style={[trnStyles.actionSheetText, { color: "#EF4444" }]}>Eliminar conocimiento</Text>
+                </Pressable>
+              </>
             ) : null}
             <View style={trnStyles.actionSheetDivider} />
             <Pressable style={trnStyles.actionSheetOption} onPress={() => setActionSheet(null)}>
@@ -3544,6 +3604,22 @@ function ExerciseItemRow({ exercise, drag, onDotPress }: { exercise: ExerciseDat
 function ExerciseItemRowDraggable({ exercise, onDotPress }: { exercise: ExerciseData; onDotPress: () => void }) {
   const drag = useReorderableDrag();
   return <ExerciseItemRow exercise={exercise} drag={drag} onDotPress={onDotPress} />;
+}
+
+function KnowledgeItemRow({ item, onDotPress }: { item: KnowledgeItemData; onDotPress: () => void }) {
+  return (
+    <View style={trnStyles.exerciseItemRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={trnStyles.itemTitle}>{item.title}</Text>
+        {item.content ? (
+          <Text style={[trnStyles.catDesc, { marginTop: 2 }]} numberOfLines={1}>{item.content}</Text>
+        ) : null}
+      </View>
+      <Pressable style={trnStyles.dotBtn} hitSlop={10} onPress={onDotPress}>
+        <Ionicons name="ellipsis-vertical" size={16} color="#555" />
+      </Pressable>
+    </View>
+  );
 }
 
 const trnStyles = StyleSheet.create({
