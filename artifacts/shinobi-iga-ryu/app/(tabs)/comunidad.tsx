@@ -1754,14 +1754,14 @@ function FighterRankingRow({ rank, entry }: { rank: number; entry: RankingFighte
             {ninjutsuBelt && (
               <View style={rkStyles.beltChip}>
                 <View style={[rkStyles.beltDot, { backgroundColor: ninjutsuBelt.color }]} />
-                <Text style={rkStyles.beltDiscipline}>忍</Text>
+                <Text style={rkStyles.beltDiscipline}>NIN</Text>
                 <Text style={rkStyles.beltName}>{ninjutsuBelt.name}</Text>
               </View>
             )}
             {jiujitsuBelt && (
               <View style={rkStyles.beltChip}>
                 <View style={[rkStyles.beltDot, { backgroundColor: jiujitsuBelt.color }]} />
-                <Text style={rkStyles.beltDiscipline}>柔</Text>
+                <Text style={rkStyles.beltDiscipline}>BJJ</Text>
                 <Text style={rkStyles.beltName}>{jiujitsuBelt.name}</Text>
               </View>
             )}
