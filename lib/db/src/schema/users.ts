@@ -37,7 +37,7 @@ export const appSettingsTable = pgTable("app_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const paymentMethodEnum = pgEnum("payment_method", ["nequi", "daviplata", "banco", "link", "tarjeta"]);
+export const paymentMethodEnum = pgEnum("payment_method", ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"]);
 
 export const paymentHistoryTable = pgTable("payment_history", {
   id: serial("id").primaryKey(),

@@ -727,7 +727,7 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
       return;
     }
 
-    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta"];
+    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"];
     if (!validMethods.includes(paymentMethod)) {
       res.status(400).json({ error: "Método de pago inválido" });
       return;
@@ -779,7 +779,7 @@ adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
 
     const { paymentDate, expiresDate, amount, paymentMethod, notes } = req.body;
 
-    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta"];
+    const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"];
     if (paymentMethod && !validMethods.includes(paymentMethod)) {
       res.status(400).json({ error: "Método de pago inválido" });
       return;

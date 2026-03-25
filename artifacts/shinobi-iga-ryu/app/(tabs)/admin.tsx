@@ -794,6 +794,7 @@ function UsersPanel({
     { value: "banco", label: "Banco" },
     { value: "link", label: "Link de pago" },
     { value: "tarjeta", label: "Tarjeta" },
+    { value: "efectivo", label: "Efectivo" },
   ];
 
   const [paymentHistory, setPaymentHistory] = useState<Record<number, PaymentRecord[]>>({});

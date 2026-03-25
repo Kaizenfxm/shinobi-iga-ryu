@@ -98,7 +98,7 @@ export interface UserData {
   membershipNotes: string | null;
 }
 
-export type PaymentMethod = "nequi" | "daviplata" | "banco" | "link" | "tarjeta";
+export type PaymentMethod = "nequi" | "daviplata" | "banco" | "link" | "tarjeta" | "efectivo";
 
 export interface PaymentRecord {
   id: number;
