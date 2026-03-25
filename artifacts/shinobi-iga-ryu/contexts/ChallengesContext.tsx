@@ -40,7 +40,9 @@ export function ChallengesProvider({ children }: { children: React.ReactNode }) 
         finalStatus = status;
       }
       if (finalStatus !== "granted") return;
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: "03536a1a-7682-4c56-9f66-41a09696cb4e",
+      });
       if (tokenData.data) {
         await challengesApi.registerPushToken(tokenData.data, Platform.OS);
         pushRegisteredRef.current = true;
