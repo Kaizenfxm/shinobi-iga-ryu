@@ -19,15 +19,11 @@ export async function schedulePaymentNotifications(user: UserData): Promise<void
     await Notifications.cancelAllScheduledNotificationsAsync();
 
     const now = Date.now();
-    const expiryCandidate1 = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
-    const expiryCandidate2 = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
-
-    let expiresAt: Date | null = null;
-    if (expiryCandidate1 && expiryCandidate2) {
-      expiresAt = expiryCandidate1 < expiryCandidate2 ? expiryCandidate1 : expiryCandidate2;
-    } else {
-      expiresAt = expiryCandidate1 ?? expiryCandidate2;
-    }
+    const expiresAt: Date | null = user.membershipExpiresAt
+      ? new Date(user.membershipExpiresAt)
+      : user.trialEndsAt
+        ? new Date(user.trialEndsAt)
+        : null;
 
     if (!expiresAt) return;
 

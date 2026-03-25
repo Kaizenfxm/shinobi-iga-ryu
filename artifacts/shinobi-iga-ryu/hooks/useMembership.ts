@@ -31,15 +31,13 @@ export function useMembership(): MembershipInfo {
 
     const now = Date.now();
 
-    const expiryCandidate1 = user.membershipExpiresAt ? new Date(user.membershipExpiresAt) : null;
-    const expiryCandidate2 = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
-
-    let expiresAt: Date | null = null;
-    if (expiryCandidate1 && expiryCandidate2) {
-      expiresAt = expiryCandidate1 < expiryCandidate2 ? expiryCandidate1 : expiryCandidate2;
-    } else {
-      expiresAt = expiryCandidate1 ?? expiryCandidate2;
-    }
+    // membershipExpiresAt (admin-assigned) takes priority over trialEndsAt (3-day trial).
+    // trialEndsAt is only a fallback when no real membership has been set yet.
+    const expiresAt: Date | null = user.membershipExpiresAt
+      ? new Date(user.membershipExpiresAt)
+      : user.trialEndsAt
+        ? new Date(user.trialEndsAt)
+        : null;
 
     let daysRemaining: number | null = null;
     if (expiresAt) {
