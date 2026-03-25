@@ -5122,12 +5122,29 @@ export function RetosPanel() {
       }
     };
     if (Platform.OS === "web") {
-      if (window.confirm(`¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}? Esta acción no se puede deshacer.`)) void doDelete();
+      if (
+        window.confirm(`¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}?`) &&
+        window.confirm("¿Confirmas? Esta acción es irreversible y no se puede deshacer.")
+      ) void doDelete();
     } else {
       Alert.alert(
         "Eliminar reto",
-        `¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}? Esta acción no se puede deshacer.`,
-        [{ text: "Cancelar", style: "cancel" }, { text: "Eliminar", style: "destructive", onPress: () => void doDelete() }]
+        `¿Eliminar el reto entre ${c.challengerName} y ${c.challengedName}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Continuar",
+            style: "destructive",
+            onPress: () => Alert.alert(
+              "¿Confirmas?",
+              "Esta acción es irreversible y no se puede deshacer.",
+              [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Eliminar definitivamente", style: "destructive", onPress: () => void doDelete() },
+              ]
+            ),
+          },
+        ]
       );
     }
   };
