@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, varchar, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
 export const trainingSystemsTable = pgTable("training_systems", {
@@ -54,6 +54,10 @@ export const exercisesTable = pgTable("exercises", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  reqBeltDiscipline: varchar("req_belt_discipline", { length: 50 }),
+  reqBeltMinOrder: integer("req_belt_min_order"),
+  reqMinWins: integer("req_min_wins"),
+  reqMinAttendances: integer("req_min_attendances"),
 });
 
 export const knowledgeItemsTable = pgTable("knowledge_items", {
@@ -73,3 +77,28 @@ export const knowledgeItemsTable = pgTable("knowledge_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const exercisePrerequisitesTable = pgTable("exercise_prerequisites", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id")
+    .references(() => exercisesTable.id, { onDelete: "cascade" })
+    .notNull(),
+  prerequisiteExerciseId: integer("prerequisite_exercise_id")
+    .references(() => exercisesTable.id, { onDelete: "cascade" })
+    .notNull(),
+}, (table) => [
+  uniqueIndex("exercise_prereqs_idx").on(table.exerciseId, table.prerequisiteExerciseId),
+]);
+
+export const userExerciseCompletionsTable = pgTable("user_exercise_completions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => usersTable.id, { onDelete: "cascade" })
+    .notNull(),
+  exerciseId: integer("exercise_id")
+    .references(() => exercisesTable.id, { onDelete: "cascade" })
+    .notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("user_exercise_completions_idx").on(table.userId, table.exerciseId),
+]);

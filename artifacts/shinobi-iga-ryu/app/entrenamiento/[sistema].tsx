@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -191,6 +192,9 @@ type ExerciseItem = {
   level: string | null;
   orderIndex: number;
   categoryId: number | null;
+  isLocked?: boolean;
+  lockReason?: string | null;
+  completedByUser?: boolean;
 };
 
 function CategoryCard({
@@ -246,33 +250,82 @@ function KnowledgeList({ items }: { items: KnowledgeItem[] }) {
   );
 }
 
+function ExerciseCard({ item }: { item: ExerciseItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const completedRef = useRef(false);
+
+  const handlePress = () => {
+    if (item.isLocked) {
+      if (Platform.OS === "web") {
+        window.alert(item.lockReason ?? "Este ejercicio está bloqueado");
+      } else {
+        Alert.alert("Ejercicio bloqueado", item.lockReason ?? "No cumples los requisitos para ver este ejercicio", [{ text: "Entendido" }]);
+      }
+      return;
+    }
+    setExpanded((v) => !v);
+    if (!expanded && !completedRef.current && !item.completedByUser) {
+      completedRef.current = true;
+      trainingApi.completeExercise(item.id).catch(() => {});
+    }
+  };
+
+  const locked = item.isLocked;
+
+  return (
+    <View style={[styles.exerciseCard, locked && styles.exerciseCardLocked]}>
+      <Pressable style={styles.exerciseCardTop} onPress={handlePress}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {locked ? (
+              <Ionicons name="lock-closed" size={14} color="#555" />
+            ) : item.completedByUser || (expanded && completedRef.current) ? (
+              <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
+            ) : null}
+            <Text style={[styles.exerciseTitle, locked && { color: "#555" }]}>{item.title}</Text>
+          </View>
+          {locked && item.lockReason ? (
+            <Text style={styles.lockReason}>{item.lockReason}</Text>
+          ) : null}
+          <View style={styles.exerciseMeta}>
+            {item.level ? (
+              <View style={[styles.levelBadge, { borderColor: locked ? "#333" : (LEVEL_COLORS[item.level] ?? "#D4AF37") }]}>
+                <Text style={[styles.levelBadgeText, { color: locked ? "#444" : (LEVEL_COLORS[item.level] ?? "#D4AF37") }]}>
+                  {LEVEL_LABELS[item.level] ?? item.level}
+                </Text>
+              </View>
+            ) : null}
+            {item.durationMinutes ? (
+              <View style={styles.durationTag}>
+                <Ionicons name="time-outline" size={11} color={locked ? "#444" : "#555"} />
+                <Text style={[styles.durationText, locked && { color: "#444" }]}>{item.durationMinutes} min</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <Ionicons
+          name={locked ? "lock-closed" : expanded ? "chevron-up" : "chevron-down"}
+          size={14}
+          color={locked ? "#333" : "#555"}
+          style={{ marginLeft: 6 }}
+        />
+      </Pressable>
+      {!locked && expanded ? (
+        <View style={{ marginTop: 8 }}>
+          {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
+          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function ExerciseList({ items }: { items: ExerciseItem[] }) {
   if (items.length === 0) return null;
   return (
     <>
       {items.map((item) => (
-        <View key={item.id} style={styles.exerciseCard}>
-          <View style={styles.exerciseCardTop}>
-            <Text style={styles.exerciseTitle}>{item.title}</Text>
-            <View style={styles.exerciseMeta}>
-              {item.level ? (
-                <View style={[styles.levelBadge, { borderColor: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
-                  <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? "#D4AF37" }]}>
-                    {LEVEL_LABELS[item.level] ?? item.level}
-                  </Text>
-                </View>
-              ) : null}
-              {item.durationMinutes ? (
-                <View style={styles.durationTag}>
-                  <Ionicons name="time-outline" size={11} color="#555" />
-                  <Text style={styles.durationText}>{item.durationMinutes} min</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-          {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
-          {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
-        </View>
+        <ExerciseCard key={item.id} item={item} />
       ))}
     </>
   );
@@ -672,8 +725,21 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
+  exerciseCardLocked: {
+    borderColor: "#111",
+    opacity: 0.7,
+  },
   exerciseCardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: 6,
+  },
+  lockReason: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 11,
+    color: "#555",
+    lineHeight: 16,
   },
   exerciseTitle: {
     fontFamily: "NotoSansJP_700Bold",

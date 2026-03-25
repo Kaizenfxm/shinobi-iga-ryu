@@ -1,6 +1,19 @@
 import { Router, raw } from "express";
-import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable, exerciseCategoriesTable, knowledgeCategoriesTable } from "@workspace/db";
-import { eq, asc, and } from "drizzle-orm";
+import {
+  db,
+  trainingSystemsTable,
+  exercisesTable,
+  knowledgeItemsTable,
+  exerciseCategoriesTable,
+  knowledgeCategoriesTable,
+  exercisePrerequisitesTable,
+  userExerciseCompletionsTable,
+  studentBeltsTable,
+  beltDefinitionsTable,
+  classAttendancesTable,
+  challengesTable,
+} from "@workspace/db";
+import { eq, asc, and, count, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
 
@@ -35,6 +48,7 @@ trainingRouter.get("/training/systems", requireAuth, async (_req, res) => {
 trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
   try {
     const key = String(req.params.key);
+    const userId = req.session.userId!;
 
     const [system] = await db
       .select()
@@ -50,13 +64,13 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
     const exercises = await db
       .select()
       .from(exercisesTable)
-      .where(eq(exercisesTable.trainingSystemId, system.id))
+      .where(and(eq(exercisesTable.trainingSystemId, system.id), eq(exercisesTable.isActive, true)))
       .orderBy(asc(exercisesTable.orderIndex), asc(exercisesTable.id));
 
     const knowledge = await db
       .select()
       .from(knowledgeItemsTable)
-      .where(eq(knowledgeItemsTable.trainingSystemId, system.id))
+      .where(and(eq(knowledgeItemsTable.trainingSystemId, system.id), eq(knowledgeItemsTable.isActive, true)))
       .orderBy(asc(knowledgeItemsTable.orderIndex), asc(knowledgeItemsTable.id));
 
     const exerciseCategories = await db
@@ -71,10 +85,124 @@ trainingRouter.get("/training/systems/:key", requireAuth, async (req, res) => {
       .where(and(eq(knowledgeCategoriesTable.trainingSystemId, system.id), eq(knowledgeCategoriesTable.isActive, true)))
       .orderBy(asc(knowledgeCategoriesTable.orderIndex), asc(knowledgeCategoriesTable.id));
 
-    const exercisesWithCategoryId = exercises.map((e) => ({ ...e, categoryId: e.exerciseCategoryId }));
+    const exerciseIds = exercises.map((e) => e.id);
+
+    const [userBelts, winsResult, attResult, beltDefs, allPrereqs, completions] = await Promise.all([
+      db
+        .select({ discipline: studentBeltsTable.discipline, orderIndex: beltDefinitionsTable.orderIndex })
+        .from(studentBeltsTable)
+        .innerJoin(beltDefinitionsTable, eq(beltDefinitionsTable.id, studentBeltsTable.currentBeltId))
+        .where(eq(studentBeltsTable.userId, userId)),
+
+      db
+        .select({ count: count() })
+        .from(challengesTable)
+        .where(and(eq(challengesTable.winnerId, userId), eq(challengesTable.status, "completed"))),
+
+      db
+        .select({ count: count() })
+        .from(classAttendancesTable)
+        .where(eq(classAttendancesTable.userId, userId)),
+
+      db
+        .select({ discipline: beltDefinitionsTable.discipline, orderIndex: beltDefinitionsTable.orderIndex, name: beltDefinitionsTable.name })
+        .from(beltDefinitionsTable),
+
+      exerciseIds.length > 0
+        ? db
+            .select({
+              exerciseId: exercisePrerequisitesTable.exerciseId,
+              prerequisiteExerciseId: exercisePrerequisitesTable.prerequisiteExerciseId,
+            })
+            .from(exercisePrerequisitesTable)
+            .where(inArray(exercisePrerequisitesTable.exerciseId, exerciseIds))
+        : Promise.resolve([]),
+
+      exerciseIds.length > 0
+        ? db
+            .select({ exerciseId: userExerciseCompletionsTable.exerciseId })
+            .from(userExerciseCompletionsTable)
+            .where(and(eq(userExerciseCompletionsTable.userId, userId), inArray(userExerciseCompletionsTable.exerciseId, exerciseIds)))
+        : Promise.resolve([]),
+    ]);
+
+    const userBeltMap: Record<string, number> = {};
+    for (const b of userBelts) {
+      userBeltMap[b.discipline] = b.orderIndex;
+    }
+
+    const userWins = winsResult[0]?.count ?? 0;
+    const userAttendances = attResult[0]?.count ?? 0;
+
+    const beltNameMap: Record<string, string> = {};
+    for (const bd of beltDefs) {
+      beltNameMap[`${bd.discipline}:${bd.orderIndex}`] = bd.name;
+    }
+
+    const prereqMap: Record<number, number[]> = {};
+    for (const p of allPrereqs) {
+      if (!prereqMap[p.exerciseId]) prereqMap[p.exerciseId] = [];
+      prereqMap[p.exerciseId].push(p.prerequisiteExerciseId);
+    }
+
+    const completedExerciseIds = new Set<number>(completions.map((c) => c.exerciseId));
+
+    const exerciseTitleMap: Record<number, string> = {};
+    for (const e of exercises) {
+      exerciseTitleMap[e.id] = e.title;
+    }
+
+    const exercisesWithMeta = exercises.map((e) => {
+      let isLocked = false;
+      let lockReason: string | null = null;
+
+      if (e.reqBeltDiscipline && e.reqBeltMinOrder !== null && e.reqBeltMinOrder !== undefined) {
+        const userOrder = userBeltMap[e.reqBeltDiscipline] ?? -1;
+        if (userOrder < e.reqBeltMinOrder) {
+          const beltName = beltNameMap[`${e.reqBeltDiscipline}:${e.reqBeltMinOrder}`] ?? `nivel ${e.reqBeltMinOrder}`;
+          const disc = e.reqBeltDiscipline === "ninjutsu" ? "Ninjutsu" : e.reqBeltDiscipline === "jiujitsu" ? "Jiujitsu" : e.reqBeltDiscipline;
+          isLocked = true;
+          lockReason = `Requiere cinturón ${beltName} de ${disc}`;
+        }
+      }
+
+      if (!isLocked && e.reqMinWins !== null && e.reqMinWins !== undefined && e.reqMinWins > 0) {
+        if (userWins < e.reqMinWins) {
+          isLocked = true;
+          lockReason = `Requiere ${e.reqMinWins} ${e.reqMinWins === 1 ? "victoria" : "victorias"} (tienes ${userWins})`;
+        }
+      }
+
+      if (!isLocked && e.reqMinAttendances !== null && e.reqMinAttendances !== undefined && e.reqMinAttendances > 0) {
+        if (userAttendances < e.reqMinAttendances) {
+          isLocked = true;
+          lockReason = `Requiere ${e.reqMinAttendances} ${e.reqMinAttendances === 1 ? "clase" : "clases"} (tienes ${userAttendances})`;
+        }
+      }
+
+      if (!isLocked) {
+        const prereqs = prereqMap[e.id] ?? [];
+        const missing = prereqs.filter((pid) => !completedExerciseIds.has(pid));
+        if (missing.length > 0) {
+          const titles = missing.map((pid) => exerciseTitleMap[pid] ?? `Ejercicio ${pid}`).join(", ");
+          isLocked = true;
+          lockReason = `Requiere completar: ${titles}`;
+        }
+      }
+
+      return {
+        ...e,
+        categoryId: e.exerciseCategoryId,
+        isLocked,
+        lockReason,
+        completedByUser: completedExerciseIds.has(e.id),
+        prerequisiteIds: prereqMap[e.id] ?? [],
+      };
+    });
+
     const knowledgeWithCategoryId = knowledge.map((k) => ({ ...k, categoryId: k.knowledgeCategoryId }));
 
-    res.json({ system, exercises: exercisesWithCategoryId, knowledge: knowledgeWithCategoryId, exerciseCategories, knowledgeCategories });
+    res.json({ system, exercises: exercisesWithMeta, knowledge: knowledgeWithCategoryId, exerciseCategories, knowledgeCategories });
   } catch (error) {
     console.error("Get training system detail error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -117,6 +245,24 @@ trainingRouter.get("/training/systems/:key/knowledge-categories", requireAuth, a
   }
 });
 
+trainingRouter.post("/training/exercises/:id/complete", requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+    const userId = req.session.userId!;
+
+    await db
+      .insert(userExerciseCompletionsTable)
+      .values({ userId, exerciseId: id })
+      .onConflictDoNothing();
+
+    res.json({ completed: true });
+  } catch (error) {
+    console.error("Complete exercise error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 trainingRouter.post("/admin/training/category-image-upload", requireProfesorOrAdmin, raw({ limit: "15mb", type: "image/*" }), async (req, res) => {
   try {
     const contentType = (req.headers["content-type"] || "image/jpeg").split(";")[0].trim();
@@ -128,6 +274,24 @@ trainingRouter.post("/admin/training/category-image-upload", requireProfesorOrAd
     res.json({ objectPath });
   } catch (error) {
     console.error("Category image upload error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+trainingRouter.get("/admin/training/exercises/:id/prerequisites", requireProfesorOrAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
+
+    const prereqs = await db
+      .select({ id: exercisesTable.id, title: exercisesTable.title })
+      .from(exercisePrerequisitesTable)
+      .innerJoin(exercisesTable, eq(exercisesTable.id, exercisePrerequisitesTable.prerequisiteExerciseId))
+      .where(eq(exercisePrerequisitesTable.exerciseId, id));
+
+    res.json({ prerequisites: prereqs });
+  } catch (error) {
+    console.error("Get exercise prerequisites error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -281,6 +445,11 @@ trainingRouter.post("/admin/training/exercises", requireProfesorOrAdmin, async (
       orderIndex,
       categoryId: rawCategoryId,
       exerciseCategoryId: rawExCategoryId,
+      reqBeltDiscipline,
+      reqBeltMinOrder,
+      reqMinWins,
+      reqMinAttendances,
+      prerequisiteIds,
     } = req.body as {
       trainingSystemId?: number;
       title?: string;
@@ -292,6 +461,11 @@ trainingRouter.post("/admin/training/exercises", requireProfesorOrAdmin, async (
       orderIndex?: number;
       categoryId?: number;
       exerciseCategoryId?: number;
+      reqBeltDiscipline?: string;
+      reqBeltMinOrder?: number;
+      reqMinWins?: number;
+      reqMinAttendances?: number;
+      prerequisiteIds?: number[];
     };
     const categoryId = rawCategoryId ?? rawExCategoryId;
 
@@ -321,10 +495,20 @@ trainingRouter.post("/admin/training/exercises", requireProfesorOrAdmin, async (
         orderIndex: orderIndex ?? 0,
         createdByUserId: req.session.userId!,
         exerciseCategoryId: categoryId ?? null,
+        reqBeltDiscipline: reqBeltDiscipline?.trim() || null,
+        reqBeltMinOrder: reqBeltMinOrder ?? null,
+        reqMinWins: reqMinWins ?? null,
+        reqMinAttendances: reqMinAttendances ?? null,
       })
       .returning();
 
-    res.json({ exercise: { ...exercise, categoryId: exercise.exerciseCategoryId } });
+    if (prerequisiteIds && prerequisiteIds.length > 0) {
+      await db.insert(exercisePrerequisitesTable).values(
+        prerequisiteIds.map((pid) => ({ exerciseId: exercise.id, prerequisiteExerciseId: pid }))
+      ).onConflictDoNothing();
+    }
+
+    res.json({ exercise: { ...exercise, categoryId: exercise.exerciseCategoryId, prerequisiteIds: prerequisiteIds ?? [] } });
   } catch (error) {
     console.error("Create exercise error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -339,7 +523,11 @@ trainingRouter.put("/admin/training/exercises/:id", requireProfesorOrAdmin, asyn
       return;
     }
 
-    const { title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive, categoryId: rawCatId, exerciseCategoryId: rawExCatId } = req.body;
+    const {
+      title, description, videoUrl, imageUrl, durationMinutes, level, orderIndex, isActive,
+      categoryId: rawCatId, exerciseCategoryId: rawExCatId,
+      reqBeltDiscipline, reqBeltMinOrder, reqMinWins, reqMinAttendances, prerequisiteIds,
+    } = req.body;
     const resolvedCategoryId = rawCatId !== undefined ? rawCatId : rawExCatId;
 
     if (resolvedCategoryId) {
@@ -366,6 +554,10 @@ trainingRouter.put("/admin/training/exercises/:id", requireProfesorOrAdmin, asyn
     if (orderIndex !== undefined) updates.orderIndex = orderIndex;
     if (isActive !== undefined) updates.isActive = Boolean(isActive);
     if (resolvedCategoryId !== undefined) updates.exerciseCategoryId = resolvedCategoryId ?? null;
+    if (reqBeltDiscipline !== undefined) updates.reqBeltDiscipline = reqBeltDiscipline?.trim() || null;
+    if (reqBeltMinOrder !== undefined) updates.reqBeltMinOrder = reqBeltMinOrder ?? null;
+    if (reqMinWins !== undefined) updates.reqMinWins = reqMinWins ?? null;
+    if (reqMinAttendances !== undefined) updates.reqMinAttendances = reqMinAttendances ?? null;
 
     const [updated] = await db
       .update(exercisesTable)
@@ -378,7 +570,21 @@ trainingRouter.put("/admin/training/exercises/:id", requireProfesorOrAdmin, asyn
       return;
     }
 
-    res.json({ exercise: { ...updated, categoryId: updated.exerciseCategoryId } });
+    if (prerequisiteIds !== undefined) {
+      await db.delete(exercisePrerequisitesTable).where(eq(exercisePrerequisitesTable.exerciseId, id));
+      if (prerequisiteIds.length > 0) {
+        await db.insert(exercisePrerequisitesTable).values(
+          prerequisiteIds.map((pid: number) => ({ exerciseId: id, prerequisiteExerciseId: pid }))
+        ).onConflictDoNothing();
+      }
+    }
+
+    const currentPrereqs = await db
+      .select({ prerequisiteExerciseId: exercisePrerequisitesTable.prerequisiteExerciseId })
+      .from(exercisePrerequisitesTable)
+      .where(eq(exercisePrerequisitesTable.exerciseId, id));
+
+    res.json({ exercise: { ...updated, categoryId: updated.exerciseCategoryId, prerequisiteIds: currentPrereqs.map((p) => p.prerequisiteExerciseId) } });
   } catch (error) {
     console.error("Update exercise error:", error);
     res.status(500).json({ error: "Error interno del servidor" });

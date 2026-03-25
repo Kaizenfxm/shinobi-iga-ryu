@@ -231,6 +231,7 @@ export const settingsApi = {
 
 export interface BeltDefinition {
   id: number;
+  discipline: string;
   name: string;
   color: string;
   orderIndex: number;
@@ -618,6 +619,14 @@ export interface ExerciseData {
   orderIndex: number;
   isActive: boolean;
   createdAt: string;
+  reqBeltDiscipline: string | null;
+  reqBeltMinOrder: number | null;
+  reqMinWins: number | null;
+  reqMinAttendances: number | null;
+  isLocked?: boolean;
+  lockReason?: string | null;
+  completedByUser?: boolean;
+  prerequisiteIds?: number[];
 }
 
 export interface KnowledgeItemData {
@@ -649,6 +658,9 @@ export const trainingApi = {
   getSystem: (key: string) =>
     apiFetch<TrainingSystemDetail>(`/training/systems/${key}`),
 
+  completeExercise: (id: number) =>
+    apiFetch<{ completed: boolean }>(`/training/exercises/${id}/complete`, { method: "POST" }),
+
   createExercise: (data: {
     trainingSystemId: number;
     title: string;
@@ -659,9 +671,14 @@ export const trainingApi = {
     level?: string;
     orderIndex?: number;
     categoryId?: number;
+    reqBeltDiscipline?: string | null;
+    reqBeltMinOrder?: number | null;
+    reqMinWins?: number | null;
+    reqMinAttendances?: number | null;
+    prerequisiteIds?: number[];
   }) => apiFetch<{ exercise: ExerciseData }>("/admin/training/exercises", { method: "POST", body: data }),
 
-  updateExercise: (id: number, data: Partial<ExerciseData>) =>
+  updateExercise: (id: number, data: Partial<ExerciseData> & { prerequisiteIds?: number[] }) =>
     apiFetch<{ exercise: ExerciseData }>(`/admin/training/exercises/${id}`, { method: "PUT", body: data }),
 
   deleteExercise: (id: number) =>
