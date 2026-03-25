@@ -798,6 +798,7 @@ function UsersPanel({
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState<Record<number, boolean>>({});
   const [paymentForms, setPaymentForms] = useState<Record<number, PaymentFormState | null>>({});
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState<Record<number, boolean>>({});
+  const [confirmDeletePaymentId, setConfirmDeletePaymentId] = useState<number | null>(null);
 
   const [anthropometryOpen, setAnthropometryOpen] = useState<Record<number, boolean>>({});
   const [anthropometryData, setAnthropometryData] = useState<Record<number, { initialWeight: string; targetWeight: string }>>({});
@@ -948,47 +949,28 @@ function UsersPanel({
     }
   };
 
-  const deletePaymentRecord = (userId: number, paymentId: number) => {
-    const confirmed = Platform.OS === "web"
-      ? window.confirm("¿Confirmas que deseas eliminar este pago?")
-      : true;
-    if (!confirmed) return;
-
-    const doDelete = () => {
-      adminApi.deletePayment(paymentId)
-        .then(() => {
-          loadPaymentHistory(userId);
-          return adminApi.getUsers();
-        })
-        .then(({ users: fresh }) => {
-          const updated = fresh.find((u) => u.id === userId);
-          if (updated) {
-            setUsers((prev) =>
-              prev.map((u) =>
-                u.id === userId
-                  ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt }
-                  : u
-              )
-            );
-          }
-        })
-        .catch(() => {
-          if (Platform.OS === "web") {
-            window.alert("No se pudo eliminar el pago");
-          } else {
-            Alert.alert("Error", "No se pudo eliminar el pago");
-          }
-        });
-    };
-
-    if (Platform.OS === "web") {
-      doDelete();
-    } else {
-      Alert.alert("Eliminar pago", "¿Confirmas que deseas eliminar este pago?", [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Eliminar", style: "destructive", onPress: doDelete },
-      ]);
-    }
+  const doDeletePayment = (userId: number, paymentId: number) => {
+    setConfirmDeletePaymentId(null);
+    adminApi.deletePayment(paymentId)
+      .then(() => {
+        loadPaymentHistory(userId);
+        return adminApi.getUsers();
+      })
+      .then(({ users: fresh }) => {
+        const updated = fresh.find((u) => u.id === userId);
+        if (updated) {
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === userId
+                ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt }
+                : u
+            )
+          );
+        }
+      })
+      .catch(() => {
+        Alert.alert("Error", "No se pudo eliminar el pago");
+      });
   };
 
 
@@ -1416,18 +1398,38 @@ function UsersPanel({
                                 </Text>
                               )}
                               <View style={styles.paymentRecordActions}>
-                                <Pressable
-                                  style={styles.paymentIconBtn}
-                                  onPress={() => openEditPaymentForm(u.id, p)}
-                                >
-                                  <Ionicons name="pencil-outline" size={13} color="#888" />
-                                </Pressable>
-                                <Pressable
-                                  style={styles.paymentIconBtn}
-                                  onPress={() => deletePaymentRecord(u.id, p.id)}
-                                >
-                                  <Ionicons name="trash-outline" size={13} color="#c44" />
-                                </Pressable>
+                                {confirmDeletePaymentId === p.id ? (
+                                  <>
+                                    <Text style={{ fontFamily: "NotoSansJP_400Regular", fontSize: 11, color: "#c44", marginRight: 4 }}>¿Eliminar?</Text>
+                                    <Pressable
+                                      style={[styles.paymentIconBtn, { backgroundColor: "#3a0a0a" }]}
+                                      onPress={() => doDeletePayment(u.id, p.id)}
+                                    >
+                                      <Ionicons name="checkmark" size={13} color="#c44" />
+                                    </Pressable>
+                                    <Pressable
+                                      style={styles.paymentIconBtn}
+                                      onPress={() => setConfirmDeletePaymentId(null)}
+                                    >
+                                      <Ionicons name="close" size={13} color="#888" />
+                                    </Pressable>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Pressable
+                                      style={styles.paymentIconBtn}
+                                      onPress={() => openEditPaymentForm(u.id, p)}
+                                    >
+                                      <Ionicons name="pencil-outline" size={13} color="#888" />
+                                    </Pressable>
+                                    <Pressable
+                                      style={styles.paymentIconBtn}
+                                      onPress={() => setConfirmDeletePaymentId(p.id)}
+                                    >
+                                      <Ionicons name="trash-outline" size={13} color="#c44" />
+                                    </Pressable>
+                                  </>
+                                )}
                               </View>
                             </View>
                             <View style={styles.paymentRecordDates}>
