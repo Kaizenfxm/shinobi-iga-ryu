@@ -949,35 +949,46 @@ function UsersPanel({
   };
 
   const deletePaymentRecord = (userId: number, paymentId: number) => {
-    Alert.alert("Eliminar pago", "¿Confirmas que deseas eliminar este pago?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: () => {
-          adminApi.deletePayment(paymentId)
-            .then(() => {
-              loadPaymentHistory(userId);
-              return adminApi.getUsers();
-            })
-            .then(({ users: fresh }) => {
-              const updated = fresh.find((u) => u.id === userId);
-              if (updated) {
-                setUsers((prev) =>
-                  prev.map((u) =>
-                    u.id === userId
-                      ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt }
-                      : u
-                  )
-                );
-              }
-            })
-            .catch(() => {
-              Alert.alert("Error", "No se pudo eliminar el pago");
-            });
-        },
-      },
-    ]);
+    const confirmed = Platform.OS === "web"
+      ? window.confirm("¿Confirmas que deseas eliminar este pago?")
+      : true;
+    if (!confirmed) return;
+
+    const doDelete = () => {
+      adminApi.deletePayment(paymentId)
+        .then(() => {
+          loadPaymentHistory(userId);
+          return adminApi.getUsers();
+        })
+        .then(({ users: fresh }) => {
+          const updated = fresh.find((u) => u.id === userId);
+          if (updated) {
+            setUsers((prev) =>
+              prev.map((u) =>
+                u.id === userId
+                  ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt }
+                  : u
+              )
+            );
+          }
+        })
+        .catch(() => {
+          if (Platform.OS === "web") {
+            window.alert("No se pudo eliminar el pago");
+          } else {
+            Alert.alert("Error", "No se pudo eliminar el pago");
+          }
+        });
+    };
+
+    if (Platform.OS === "web") {
+      doDelete();
+    } else {
+      Alert.alert("Eliminar pago", "¿Confirmas que deseas eliminar este pago?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Eliminar", style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
 
