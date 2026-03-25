@@ -3,6 +3,7 @@ import { Tabs, useRouter } from "expo-router";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import React, { useState, useEffect, useCallback } from "react";
 import { Platform, StyleSheet, View, Text, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { MembershipGate } from "@/components/MembershipGate";
 import { useMembership } from "@/hooks/useMembership";
@@ -13,12 +14,15 @@ import { suggestionsApi } from "@/lib/api";
 function CountdownBadge() {
   const { showCountdown, daysRemaining } = useMembership();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   if (!showCountdown || daysRemaining === null) return null;
 
+  const topOffset = Platform.OS === "web" ? 20 : insets.top + 8;
+
   return (
     <Pressable
-      style={countdownStyles.badge}
+      style={[countdownStyles.badge, { top: topOffset }]}
       onPress={() => router.push("/(tabs)/profile")}
     >
       <MaterialCommunityIcons name="clock-alert-outline" size={13} color="#000" />
@@ -37,7 +41,6 @@ const countdownStyles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 2,
     position: "absolute",
-    top: Platform.OS === "web" ? 20 : 8,
     right: 16,
     zIndex: 100,
   },
