@@ -7,7 +7,6 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
-  Alert,
   Image,
   RefreshControl,
 } from "react-native";
@@ -31,6 +30,7 @@ export default function ProfesorScreen() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [suggestionsReloadKey, setSuggestionsReloadKey] = useState(0);
   const [unreviewedCount, setUnreviewedCount] = useState(0);
 
@@ -38,8 +38,10 @@ export default function ProfesorScreen() {
     try {
       const res = await adminApi.getUsers();
       setUsers(res.users);
+      setFetchError(null);
     } catch {
-      Alert.alert("Error", "No se pudieron cargar los datos");
+      console.error("[ProfesorScreen] Failed to fetch users");
+      setFetchError("No se pudieron cargar los datos. Tira hacia abajo para reintentar.");
     }
   }, []);
 
@@ -176,7 +178,14 @@ export default function ProfesorScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFF" />
         }
       >
-        {renderPanel()}
+        {fetchError ? (
+          <View style={styles.errorBox}>
+            <Ionicons name="warning-outline" size={20} color="#FF3B30" />
+            <Text style={styles.errorText}>{fetchError}</Text>
+          </View>
+        ) : (
+          renderPanel()
+        )}
       </ScrollView>
     </View>
   );
@@ -252,5 +261,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#1A0000",
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+    borderRadius: 4,
+    padding: 12,
+    marginVertical: 8,
+  },
+  errorText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+    color: "#FF3B30",
+    flex: 1,
   },
 });
