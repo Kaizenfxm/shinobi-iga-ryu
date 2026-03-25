@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable, userRolesTable, paymentHistoryTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 
 const GRACE_DAYS = 5;
 
@@ -88,4 +88,28 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 export function requireProfesor(req: Request, res: Response, next: NextFunction) {
   return checkRole(req, res, next, "profesor");
+}
+
+export async function requireProfesorOrAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+
+  const found = await db
+    .select({ id: userRolesTable.id })
+    .from(userRolesTable)
+    .where(
+      and(
+        eq(userRolesTable.userId, req.session.userId),
+        or(eq(userRolesTable.role, "admin"), eq(userRolesTable.role, "profesor"))
+      )
+    )
+    .limit(1);
+
+  if (found.length === 0) {
+    res.status(403).json({ error: "Se requiere rol de profesor o admin" });
+    return;
+  }
+  next();
 }

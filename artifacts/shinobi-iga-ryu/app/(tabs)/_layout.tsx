@@ -67,7 +67,7 @@ export default function TabLayout() {
   };
 
   const showAdmin = isAuthenticated && hasRole("admin");
-  const showAlumnos = isAuthenticated && hasRole("profesor");
+  const showProfesor = isAuthenticated && hasRole("profesor") && !hasRole("admin");
 
   const [adminSuggestionCount, setAdminSuggestionCount] = useState(0);
 
@@ -139,14 +139,18 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
-            name="alumnos"
+            name="profesor"
             options={{
-              title: "Alumnos",
-              href: showAlumnos ? undefined : null,
+              title: "Profesor",
+              href: showProfesor ? undefined : null,
               tabBarIcon: ({ color }) => (
                 <MaterialCommunityIcons name="school" size={22} color={color} />
               ),
             }}
+          />
+          <Tabs.Screen
+            name="alumnos"
+            options={{ href: null }}
           />
           <Tabs.Screen
             name="carrera"

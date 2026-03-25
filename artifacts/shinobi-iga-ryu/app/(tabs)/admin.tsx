@@ -2248,7 +2248,7 @@ function BeltCatalogPanel() {
       </View>
     );
   }
-function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUsers: () => Promise<void> }) {
+export function FightsPanel({ users, onRefreshUsers }: { users: UserData[]; onRefreshUsers: () => Promise<void> }) {
   type FighterEntry = { fights: FightData[]; stats: FightStats | null; loading: boolean };
   const [fighterData, setFighterData] = useState<Record<number, FighterEntry>>({});
   const [expandedFighter, setExpandedFighter] = useState<number | null>(null);
@@ -2590,7 +2590,7 @@ const TARGET_LABELS: Record<string, string> = {
   luchadores: "Luchadores",
 };
 
-function NotificationsPanel() {
+export function NotificationsPanel() {
   const { refresh: refreshBell } = useNotifications();
   const [notifs, setNotifs] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2713,7 +2713,7 @@ function NotificationsPanel() {
 type TrainingSubView = "systems" | "categories" | "items";
 type TrainingContentType = "exercises" | "knowledge";
 
-function EntrenamientoPanel() {
+export function EntrenamientoPanel() {
   const [systems, setSystems] = useState<TrainingSystem[]>([]);
   const [selectedSystem, setSelectedSystem] = useState<TrainingSystem | null>(null);
   const [contentType, setContentType] = useState<TrainingContentType>("exercises");
@@ -3635,7 +3635,7 @@ const settingsPanelStyles = StyleSheet.create({
   },
 });
 
-function ClassesPanel({ users }: { users: UserData[] }) {
+export function ClassesPanel({ users }: { users: UserData[] }) {
   const { user: panelUser } = useAuth();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -4140,7 +4140,7 @@ const cpStyles = StyleSheet.create({
   },
 });
 
-function QrCodeDisplay({ value, size }: { value: string; size: number }) {
+export function QrCodeDisplay({ value, size }: { value: string; size: number }) {
   try {
     const QRCode = require("react-native-qrcode-svg").default;
     return (
@@ -4357,7 +4357,7 @@ export default function AdminScreen() {
   );
 }
 
-function SuggestionsPanel({ reloadKey, onCountChange }: { reloadKey: number; onCountChange: (delta: number) => void }) {
+export function SuggestionsPanel({ reloadKey, onCountChange, readOnly = false }: { reloadKey: number; onCountChange: (delta: number) => void; readOnly?: boolean }) {
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingOn, setActingOn] = useState<Set<number>>(new Set());
@@ -4461,31 +4461,33 @@ function SuggestionsPanel({ reloadKey, onCountChange }: { reloadKey: number; onC
               )}
             </View>
             <Text style={suggestPanelStyles.cardContent}>{s.content}</Text>
-            <View style={suggestPanelStyles.cardActions}>
-              {!s.isReviewed && (
+            {!readOnly && (
+              <View style={suggestPanelStyles.cardActions}>
+                {!s.isReviewed && (
+                  <Pressable
+                    style={suggestPanelStyles.reviewBtn}
+                    onPress={() => handleMarkReviewed(s.id)}
+                    disabled={actingOn.has(s.id)}
+                  >
+                    {actingOn.has(s.id) ? (
+                      <ActivityIndicator size="small" color="#D4AF37" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-outline" size={14} color="#D4AF37" />
+                        <Text style={suggestPanelStyles.reviewBtnText}>Marcar revisada</Text>
+                      </>
+                    )}
+                  </Pressable>
+                )}
                 <Pressable
-                  style={suggestPanelStyles.reviewBtn}
-                  onPress={() => handleMarkReviewed(s.id)}
+                  style={suggestPanelStyles.deleteBtn}
+                  onPress={() => handleDelete(s.id)}
                   disabled={actingOn.has(s.id)}
                 >
-                  {actingOn.has(s.id) ? (
-                    <ActivityIndicator size="small" color="#D4AF37" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-outline" size={14} color="#D4AF37" />
-                      <Text style={suggestPanelStyles.reviewBtnText}>Marcar revisada</Text>
-                    </>
-                  )}
+                  <Ionicons name="trash-outline" size={14} color="#555" />
                 </Pressable>
-              )}
-              <Pressable
-                style={suggestPanelStyles.deleteBtn}
-                onPress={() => handleDelete(s.id)}
-                disabled={actingOn.has(s.id)}
-              >
-                <Ionicons name="trash-outline" size={14} color="#555" />
-              </Pressable>
-            </View>
+              </View>
+            )}
           </View>
         ))
       )}

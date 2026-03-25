@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, trainingSystemsTable, exercisesTable, knowledgeItemsTable, exerciseCategoriesTable, knowledgeCategoriesTable } from "@workspace/db";
 import { eq, asc, and } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
 
 async function validateExerciseCategoryBelongsToSystem(categoryId: number, trainingSystemId: number): Promise<boolean> {
   const [cat] = await db.select().from(exerciseCategoriesTable).where(eq(exerciseCategoriesTable.id, categoryId)).limit(1);
@@ -114,7 +114,7 @@ trainingRouter.get("/training/systems/:key/knowledge-categories", requireAuth, a
   }
 });
 
-trainingRouter.post("/admin/training/exercise-categories", requireAdmin, async (req, res) => {
+trainingRouter.post("/admin/training/exercise-categories", requireProfesorOrAdmin, async (req, res) => {
   try {
     const { trainingSystemId, name, description, imageUrl, orderIndex } = req.body as {
       trainingSystemId?: number;
@@ -144,7 +144,7 @@ trainingRouter.post("/admin/training/exercise-categories", requireAdmin, async (
   }
 });
 
-trainingRouter.put("/admin/training/exercise-categories/:id", requireAdmin, async (req, res) => {
+trainingRouter.put("/admin/training/exercise-categories/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
@@ -170,7 +170,7 @@ trainingRouter.put("/admin/training/exercise-categories/:id", requireAdmin, asyn
   }
 });
 
-trainingRouter.delete("/admin/training/exercise-categories/:id", requireAdmin, async (req, res) => {
+trainingRouter.delete("/admin/training/exercise-categories/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
@@ -182,7 +182,7 @@ trainingRouter.delete("/admin/training/exercise-categories/:id", requireAdmin, a
   }
 });
 
-trainingRouter.post("/admin/training/knowledge-categories", requireAdmin, async (req, res) => {
+trainingRouter.post("/admin/training/knowledge-categories", requireProfesorOrAdmin, async (req, res) => {
   try {
     const { trainingSystemId, name, description, imageUrl, orderIndex } = req.body as {
       trainingSystemId?: number;
@@ -212,7 +212,7 @@ trainingRouter.post("/admin/training/knowledge-categories", requireAdmin, async 
   }
 });
 
-trainingRouter.put("/admin/training/knowledge-categories/:id", requireAdmin, async (req, res) => {
+trainingRouter.put("/admin/training/knowledge-categories/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
@@ -238,7 +238,7 @@ trainingRouter.put("/admin/training/knowledge-categories/:id", requireAdmin, asy
   }
 });
 
-trainingRouter.delete("/admin/training/knowledge-categories/:id", requireAdmin, async (req, res) => {
+trainingRouter.delete("/admin/training/knowledge-categories/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "ID inválido" }); return; }
@@ -250,7 +250,7 @@ trainingRouter.delete("/admin/training/knowledge-categories/:id", requireAdmin, 
   }
 });
 
-trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) => {
+trainingRouter.post("/admin/training/exercises", requireProfesorOrAdmin, async (req, res) => {
   try {
     const {
       trainingSystemId,
@@ -313,7 +313,7 @@ trainingRouter.post("/admin/training/exercises", requireAdmin, async (req, res) 
   }
 });
 
-trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, res) => {
+trainingRouter.put("/admin/training/exercises/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) {
@@ -367,7 +367,7 @@ trainingRouter.put("/admin/training/exercises/:id", requireAdmin, async (req, re
   }
 });
 
-trainingRouter.delete("/admin/training/exercises/:id", requireAdmin, async (req, res) => {
+trainingRouter.delete("/admin/training/exercises/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) {
@@ -383,7 +383,7 @@ trainingRouter.delete("/admin/training/exercises/:id", requireAdmin, async (req,
   }
 });
 
-trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) => {
+trainingRouter.post("/admin/training/knowledge", requireProfesorOrAdmin, async (req, res) => {
   try {
     const {
       trainingSystemId,
@@ -440,7 +440,7 @@ trainingRouter.post("/admin/training/knowledge", requireAdmin, async (req, res) 
   }
 });
 
-trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, res) => {
+trainingRouter.put("/admin/training/knowledge/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) {
@@ -492,7 +492,7 @@ trainingRouter.put("/admin/training/knowledge/:id", requireAdmin, async (req, re
   }
 });
 
-trainingRouter.delete("/admin/training/knowledge/:id", requireAdmin, async (req, res) => {
+trainingRouter.delete("/admin/training/knowledge/:id", requireProfesorOrAdmin, async (req, res) => {
   try {
     const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) {

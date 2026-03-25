@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, suggestionsTable, notificationsTable, userRolesTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { requireAuth, requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
 import { notifyUser, notifyAllAdmins } from "../lib/push";
 
 const suggestionsRouter = Router();
@@ -56,7 +56,7 @@ suggestionsRouter.post("/suggestions", requireAuth, async (req, res) => {
   }
 });
 
-suggestionsRouter.get("/admin/suggestions", requireAdmin, async (req, res) => {
+suggestionsRouter.get("/admin/suggestions", requireProfesorOrAdmin, async (req, res) => {
   try {
     const suggestions = await db
       .select({
@@ -76,7 +76,7 @@ suggestionsRouter.get("/admin/suggestions", requireAdmin, async (req, res) => {
   }
 });
 
-suggestionsRouter.get("/admin/suggestions/unreviewed-count", requireAdmin, async (_req, res) => {
+suggestionsRouter.get("/admin/suggestions/unreviewed-count", requireProfesorOrAdmin, async (_req, res) => {
   try {
     const rows = await db
       .select({ id: suggestionsTable.id })

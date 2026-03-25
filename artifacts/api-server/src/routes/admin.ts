@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, userRolesTable, profesorStudentsTable, studentBeltsTable, beltHistoryTable, studentBeltUnlocksTable, fightsTable, beltDefinitionsTable, beltApplicationsTable, studentRequirementChecksTable, appSettingsTable, paymentHistoryTable, anthropometricEvaluationsTable, notificationsTable, notificationReadsTable, exercisesTable, knowledgeItemsTable, classAttendancesTable, pushTokensTable, suggestionsTable } from "@workspace/db";
 import { eq, and, or, desc, isNotNull, isNull, lte, notInArray, inArray } from "drizzle-orm";
-import { requireAdmin } from "../middlewares/auth";
+import { requireAdmin, requireProfesorOrAdmin } from "../middlewares/auth";
 
 const adminRouter = Router();
 
@@ -71,7 +71,7 @@ async function fetchUsersWithRoles() {
   return users.map((u) => ({ ...u, roles: rolesByUser.get(u.id) || [] }));
 }
 
-adminRouter.get("/admin/users", requireAdmin, async (_req, res) => {
+adminRouter.get("/admin/users", requireProfesorOrAdmin, async (_req, res) => {
   try {
     await runMembershipExpiryCheck();
     const users = await fetchUsersWithRoles();
