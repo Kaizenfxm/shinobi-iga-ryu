@@ -921,7 +921,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {isAlumno && lastAttendedAt !== undefined && (() => {
+          {isAlumno && lastAttendedAt !== undefined && profile?.hasPayments && (() => {
             if (!lastAttendedAt) return null;
             const daysSince = Math.floor((Date.now() - lastAttendedAt.getTime()) / (1000 * 60 * 60 * 24));
             if (daysSince < 7) return null;

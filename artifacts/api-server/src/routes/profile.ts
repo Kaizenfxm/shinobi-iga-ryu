@@ -12,8 +12,9 @@ import {
   notificationsTable,
   notificationReadsTable,
   profesorStudentsTable,
+  paymentHistoryTable,
 } from "@workspace/db";
-import { eq, asc, or } from "drizzle-orm";
+import { eq, asc, or, sql } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import bcrypt from "bcryptjs";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -102,6 +103,11 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
 
     const weightData = weightRow || null;
 
+    const [paymentCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(paymentHistoryTable)
+      .where(eq(paymentHistoryTable.userId, userId));
+
     res.json({
       profile: {
         ...user,
@@ -109,6 +115,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         belts,
         fightStats,
         weightData,
+        hasPayments: paymentCount.count > 0,
       },
     });
   } catch (error) {

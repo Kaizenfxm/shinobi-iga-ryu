@@ -501,6 +501,7 @@ export interface ProfileData {
   belts: ProfileBelt[];
   fightStats: FightStats | null;
   weightData: WeightData | null;
+  hasPayments: boolean;
 }
 
 export const profileApi = {
