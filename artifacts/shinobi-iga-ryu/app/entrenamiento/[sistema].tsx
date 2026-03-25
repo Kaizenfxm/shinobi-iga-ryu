@@ -426,19 +426,17 @@ function ExerciseCard({ item, onComplete }: { item: ExerciseItem; onComplete?: (
           {item.description ? <Text style={styles.exerciseDesc}>{item.description}</Text> : null}
           {item.videoUrl ? <YouTubePlayer videoUrl={item.videoUrl} /> : null}
           {localDone ? (
-            <View style={styles.dominadoConfirmed}>
+            <Pressable style={styles.dominadoConfirmed} onPress={handleDesmarcar} disabled={marking}>
               {marking ? (
                 <ActivityIndicator size="small" color="#555" />
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
                   <Text style={styles.dominadoConfirmedText}>Ejercicio dominado</Text>
-                  <Pressable onPress={handleDesmarcar} style={styles.desmarcarBtn}>
-                    <Text style={styles.desmarcarText}>Desmarcar</Text>
-                  </Pressable>
+                  <Text style={styles.desmarcarText}>(toca para desmarcar)</Text>
                 </>
               )}
-            </View>
+            </Pressable>
           ) : (
             <Pressable
               style={[styles.dominadoBtn, marking && { opacity: 0.6 }]}
@@ -1009,6 +1007,7 @@ const styles = StyleSheet.create({
   dominadoConfirmed: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: 6,
     paddingVertical: 8,
   },
