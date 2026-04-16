@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API Server (Express)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "api-server", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Mockup Sandbox (Vite)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "mockup-sandbox", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "Shinobi Iga Ryu (Expo)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "shinobi-iga-ryu", "dev"],
+      "port": 8081
+    },
+    {
+      "name": "Payments Admin Desktop",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "payments-admin-desktop", "dev"],
+      "port": 1420
+    }
+  ]
+}

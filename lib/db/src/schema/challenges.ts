@@ -19,6 +19,7 @@ export const challengesTable = pgTable("challenges", {
   notes: text("notes"),
   status: challengeStatusEnum("status").notNull().default("pending"),
   winnerId: integer("winner_id").references(() => usersTable.id),
+  videoUrl: text("video_url"),
   cancelRequestedBy: integer("cancel_requested_by").references(() => usersTable.id),
   respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

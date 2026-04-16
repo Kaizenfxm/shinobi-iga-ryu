@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, challengesTable, pushTokensTable, trainingSystemsTable, usersTable, userRolesTable, notificationsTable } from "@workspace/db";
 import { eq, and, ne, or, desc, sql, aliasedTable } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
-import { notifyUser } from "../lib/push";
+import { notifyUser, notifyTarget } from "../lib/push";
 
 const challengerUsers = aliasedTable(usersTable, "challenger_users");
 const challengedUsers = aliasedTable(usersTable, "challenged_users");
@@ -63,7 +63,7 @@ challengesRouter.get("/challenges/users", requireAuth, async (req, res) => {
     const users = await db
       .select({
         id: usersTable.id,
-        displayName: usersTable.displayName,
+        displayName: sql<string>`COALESCE(${usersTable.nickname}, ${usersTable.displayName})`.as("display_name"),
         avatarUrl: usersTable.avatarUrl,
       })
       .from(usersTable)
@@ -112,13 +112,14 @@ challengesRouter.get("/challenges", requireAuth, async (req, res) => {
         notes: challengesTable.notes,
         status: challengesTable.status,
         winnerId: challengesTable.winnerId,
+        videoUrl: challengesTable.videoUrl,
         cancelRequestedBy: challengesTable.cancelRequestedBy,
         respondedAt: challengesTable.respondedAt,
         createdAt: challengesTable.createdAt,
         trainingSystemName: trainingSystemsTable.name,
-        challengerName: challengerUsers.displayName,
+        challengerName: sql<string>`COALESCE(${challengerUsers.nickname}, ${challengerUsers.displayName})`.as("challenger_name"),
         challengerAvatar: challengerUsers.avatarUrl,
-        challengedName: challengedUsers.displayName,
+        challengedName: sql<string>`COALESCE(${challengedUsers.nickname}, ${challengedUsers.displayName})`.as("challenged_name"),
         challengedAvatar: challengedUsers.avatarUrl,
       })
       .from(challengesTable)
@@ -183,11 +184,12 @@ challengesRouter.get("/challenges/community-pending", requireAuth, async (req, r
         scheduledAt: challengesTable.scheduledAt,
         notes: challengesTable.notes,
         status: challengesTable.status,
+        videoUrl: challengesTable.videoUrl,
         createdAt: challengesTable.createdAt,
         trainingSystemName: trainingSystemsTable.name,
-        challengerName: challengerUsers.displayName,
+        challengerName: sql<string>`COALESCE(${challengerUsers.nickname}, ${challengerUsers.displayName})`.as("challenger_name"),
         challengerAvatar: challengerUsers.avatarUrl,
-        challengedName: challengedUsers.displayName,
+        challengedName: sql<string>`COALESCE(${challengedUsers.nickname}, ${challengedUsers.displayName})`.as("challenged_name"),
         challengedAvatar: challengedUsers.avatarUrl,
       })
       .from(challengesTable)
@@ -220,13 +222,14 @@ challengesRouter.get("/challenges/community-active", requireAuth, async (req, re
         notes: challengesTable.notes,
         status: challengesTable.status,
         winnerId: challengesTable.winnerId,
+        videoUrl: challengesTable.videoUrl,
         cancelRequestedBy: challengesTable.cancelRequestedBy,
         respondedAt: challengesTable.respondedAt,
         createdAt: challengesTable.createdAt,
         trainingSystemName: trainingSystemsTable.name,
-        challengerName: challengerUsers.displayName,
+        challengerName: sql<string>`COALESCE(${challengerUsers.nickname}, ${challengerUsers.displayName})`.as("challenger_name"),
         challengerAvatar: challengerUsers.avatarUrl,
-        challengedName: challengedUsers.displayName,
+        challengedName: sql<string>`COALESCE(${challengedUsers.nickname}, ${challengedUsers.displayName})`.as("challenged_name"),
         challengedAvatar: challengedUsers.avatarUrl,
       })
       .from(challengesTable)
@@ -271,7 +274,7 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
     }
 
     const [challenger] = await db
-      .select({ displayName: usersTable.displayName, membershipStatus: usersTable.membershipStatus })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname, membershipStatus: usersTable.membershipStatus })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!challenger || challenger.membershipStatus !== "activo") {
       res.status(403).json({ error: "Solo miembros activos pueden enviar retos" });
@@ -279,7 +282,7 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
     }
 
     const [challenged] = await db
-      .select({ id: usersTable.id, displayName: usersTable.displayName, membershipStatus: usersTable.membershipStatus })
+      .select({ id: usersTable.id, displayName: usersTable.displayName, nickname: usersTable.nickname, membershipStatus: usersTable.membershipStatus })
       .from(usersTable).where(eq(usersTable.id, challengedId)).limit(1);
     if (!challenged) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
     if (challenged.membershipStatus !== "activo") {
@@ -300,10 +303,22 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
       notes: notes?.trim() || null,
     }).returning();
 
+    const challengerLabel = challenger.nickname ?? challenger.displayName;
+    const challengedLabel = challenged.nickname ?? challenged.displayName;
+
     const notifTitle = "¡Te han retado!";
-    const notifBody = `${challenger.displayName} te reta en ${system.name}`;
+    const notifBody = `${challengerLabel} te reta en ${system.name}`;
 
     void createInAppNotification(challengedId, notifTitle, notifBody, userId);
+
+    // Notify entire community about the new challenge
+    const dateStr = new Date(scheduledAt).toLocaleDateString("es-CO", {
+      day: "numeric", month: "long", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+    const communityTitle = "⚔️ ¡Nuevo reto en la comunidad!";
+    const communityBody = `${challengerLabel} retó a ${challengedLabel} en ${system.name} el ${dateStr}. ¿Aceptará?`;
+    void notifyTarget(["todas"], communityTitle, communityBody);
 
     res.status(201).json({ challenge: created });
   } catch (error) {
@@ -352,13 +367,14 @@ challengesRouter.patch("/challenges/:id", requireAuth, async (req, res) => {
       .returning();
 
     const [challenger] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    const challengerLabel = challenger?.nickname ?? challenger?.displayName ?? "El retador";
 
     const notifTitle = wasAccepted ? "Reto activo modificado" : "Reto modificado";
     const notifBody = wasAccepted
-      ? `${challenger?.displayName ?? "El retador"} modificó las condiciones. Debes aceptar de nuevo.`
-      : `${challenger?.displayName ?? "El retador"} modificó las condiciones del reto`;
+      ? `${challengerLabel} modificó las condiciones. Debes aceptar de nuevo.`
+      : `${challengerLabel} modificó las condiciones del reto`;
     void createInAppNotification(challenge.challengedId, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
@@ -392,12 +408,12 @@ challengesRouter.post("/challenges/:id/request-cancel", requireAuth, async (req,
       .returning();
 
     const [requester] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
     const otherId = challenge.challengerId === userId ? challenge.challengedId : challenge.challengerId;
     const notifTitle = "Solicitud de cancelación";
-    const notifBody = `${requester?.displayName ?? "Tu oponente"} quiere cancelar el reto. Confirma o rechaza.`;
+    const notifBody = `${requester?.nickname ?? requester?.displayName ?? "Tu oponente"} quiere cancelar el reto. Confirma o rechaza.`;
     void createInAppNotification(otherId, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
@@ -426,13 +442,13 @@ challengesRouter.post("/challenges/:id/confirm-cancel", requireAuth, async (req,
     }
 
     const [confirmer] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
     await db.delete(challengesTable).where(eq(challengesTable.id, challengeId));
 
     const notifTitle = "Reto eliminado";
-    const notifBody = `${confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto — el reto fue eliminado`;
+    const notifBody = `${confirmer?.nickname ?? confirmer?.displayName ?? "Tu oponente"} aceptó cancelar el reto — el reto fue eliminado`;
     void createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId);
 
     res.json({ deleted: true, challengeId });
@@ -466,11 +482,11 @@ challengesRouter.post("/challenges/:id/decline-cancel", requireAuth, async (req,
       .returning();
 
     const [decliner] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
     const notifTitle = "Cancelación rechazada";
-    const notifBody = `${decliner?.displayName ?? "Tu oponente"} rechazó cancelar el reto. El reto continúa.`;
+    const notifBody = `${decliner?.nickname ?? decliner?.displayName ?? "Tu oponente"} rechazó cancelar el reto. El reto continúa.`;
     void createInAppNotification(challenge.cancelRequestedBy!, notifTitle, notifBody, userId);
 
     res.json({ challenge: updated });
@@ -503,14 +519,26 @@ challengesRouter.post("/challenges/:id/respond", requireAuth, async (req, res) =
       .returning();
 
     const [responder] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    const responderLabel = responder?.nickname ?? responder?.displayName ?? "El retado";
     const notifTitle = "Respuesta a tu reto";
     const notifBody = decision === "accepted"
-      ? `${responder?.displayName ?? "El retado"} aceptó tu reto`
-      : `${responder?.displayName ?? "El retado"} declinó tu reto`;
+      ? `${responderLabel} aceptó tu reto`
+      : `${responderLabel} declinó tu reto`;
 
     void createInAppNotification(challenge.challengerId, notifTitle, notifBody, userId);
+
+    // Notify entire community when a challenge is accepted
+    if (decision === "accepted") {
+      const [challengerUser] = await db
+        .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
+        .from(usersTable).where(eq(usersTable.id, challenge.challengerId)).limit(1);
+      const challengerLabel = challengerUser?.nickname ?? challengerUser?.displayName ?? "su rival";
+      const communityTitle = "⚔️ ¡Reto aceptado!";
+      const communityBody = `${responderLabel} aceptó el reto de ${challengerLabel}. ¡Se viene la pelea!`;
+      void notifyTarget(["todas"], communityTitle, communityBody);
+    }
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -580,16 +608,26 @@ challengesRouter.post("/challenges/:id/result", requireAuth, async (req, res) =>
 
     const loserId = winnerId === challenge.challengerId ? challenge.challengedId : challenge.challengerId;
     const [winner] = await db
-      .select({ displayName: usersTable.displayName })
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
       .from(usersTable).where(eq(usersTable.id, winnerId)).limit(1);
+    const winnerLabel = winner?.nickname ?? winner?.displayName ?? "Un guerrero";
 
     const winnerTitle = "¡Ganaste el reto!";
     const winnerBody = "Felicidades, fuiste declarado ganador";
     const loserTitle = "Resultado del reto";
-    const loserBody = `${winner?.displayName ?? "Tu rival"} fue declarado ganador`;
+    const loserBody = `${winnerLabel} fue declarado ganador`;
 
     void createInAppNotification(winnerId, winnerTitle, winnerBody, userId);
     void createInAppNotification(loserId, loserTitle, loserBody, userId);
+
+    // Notify entire community about the winner
+    const [loser] = await db
+      .select({ displayName: usersTable.displayName, nickname: usersTable.nickname })
+      .from(usersTable).where(eq(usersTable.id, loserId)).limit(1);
+    const loserLabel = loser?.nickname ?? loser?.displayName ?? "su rival";
+    const communityTitle = "🏆 ¡Tenemos ganador!";
+    const communityBody = `${winnerLabel} fue declarado ganador del reto contra ${loserLabel}. ¡Mira la repetición!`;
+    void notifyTarget(["todas"], communityTitle, communityBody);
 
     res.json({ challenge: updated });
   } catch (error) {
@@ -614,10 +652,13 @@ challengesRouter.get("/admin/challenges", requireAuth, async (req, res) => {
         notes: challengesTable.notes,
         status: challengesTable.status,
         winnerId: challengesTable.winnerId,
+        videoUrl: challengesTable.videoUrl,
         createdAt: challengesTable.createdAt,
         trainingSystemName: trainingSystemsTable.name,
         challengerName: challengerUsers.displayName,
+        challengerNickname: challengerUsers.nickname,
         challengedName: challengedUsers.displayName,
+        challengedNickname: challengedUsers.nickname,
       })
       .from(challengesTable)
       .innerJoin(trainingSystemsTable, eq(challengesTable.trainingSystemId, trainingSystemsTable.id))
@@ -643,11 +684,12 @@ challengesRouter.patch("/admin/challenges/:id", requireAuth, async (req, res) =>
       .select().from(challengesTable).where(eq(challengesTable.id, challengeId)).limit(1);
     if (!challenge) { res.status(404).json({ error: "Reto no encontrado" }); return; }
 
-    const { trainingSystemId, scheduledAt, notes, status } = req.body as {
+    const { trainingSystemId, scheduledAt, notes, status, videoUrl } = req.body as {
       trainingSystemId?: number;
       scheduledAt?: string;
       notes?: string | null;
       status?: string;
+      videoUrl?: string | null;
     };
 
     const validStatuses = ["pending", "accepted", "declined", "completed", "cancelled"];
@@ -660,6 +702,7 @@ challengesRouter.patch("/admin/challenges/:id", requireAuth, async (req, res) =>
     if (scheduledAt) updates.scheduledAt = new Date(scheduledAt);
     if (notes !== undefined) updates.notes = notes?.trim() || null;
     if (status) updates.status = status;
+    if (videoUrl !== undefined) updates.videoUrl = videoUrl?.trim() || null;
 
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "Nada que actualizar" }); return;

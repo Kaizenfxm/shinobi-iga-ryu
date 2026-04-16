@@ -10,6 +10,7 @@ const MEMBERSHIP_FIELDS = {
   id: usersTable.id,
   email: usersTable.email,
   displayName: usersTable.displayName,
+  nickname: usersTable.nickname,
   avatarUrl: usersTable.avatarUrl,
   subscriptionLevel: usersTable.subscriptionLevel,
   phone: usersTable.phone,
@@ -21,6 +22,7 @@ const MEMBERSHIP_FIELDS = {
   trialEndsAt: usersTable.trialEndsAt,
   lastPaymentAt: usersTable.lastPaymentAt,
   membershipNotes: usersTable.membershipNotes,
+  createdAt: usersTable.createdAt,
 };
 
 const GRACE_DAYS = 5;
@@ -173,6 +175,7 @@ authRouter.post("/auth/login", async (req, res) => {
         id: user.id,
         email: user.email,
         displayName: user.displayName,
+        nickname: user.nickname,
         avatarUrl: user.avatarUrl,
         subscriptionLevel: user.subscriptionLevel,
         phone: user.phone,
@@ -184,6 +187,7 @@ authRouter.post("/auth/login", async (req, res) => {
         trialEndsAt: user.trialEndsAt,
         lastPaymentAt: user.lastPaymentAt,
         membershipNotes: user.membershipNotes,
+        createdAt: user.createdAt,
         roles: roleNames,
       },
     });

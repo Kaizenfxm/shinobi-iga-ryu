@@ -84,6 +84,10 @@ async function runMigrations() {
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE;"
     );
 
+    await client.query(
+      "ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS subscription_level subscription_level;"
+    );
+
     console.log("[migrations] startup migrations complete");
   } catch (err) {
     console.error("[migrations] error running startup migrations:", err);

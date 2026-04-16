@@ -176,6 +176,7 @@ export default function ProfileScreen() {
   const [suggestionSent, setSuggestionSent] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editNickname, setEditNickname] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editSedes, setEditSedes] = useState<string[]>([]);
   const [editCurrentPassword, setEditCurrentPassword] = useState("");
@@ -342,6 +343,7 @@ export default function ProfileScreen() {
 
   const handleEditOpen = () => {
     setEditName(profile?.displayName ?? user?.displayName ?? "");
+    setEditNickname(profile?.nickname ?? "");
     setEditPhone(profile?.phone ?? "");
     setEditSedes(profile?.sedes ?? []);
     setEditCurrentPassword("");
@@ -415,6 +417,13 @@ export default function ProfileScreen() {
       Alert.alert("Error", "El nombre no puede estar vacío");
       return;
     }
+    if (editNickname.trim()) {
+      const wordCount = editNickname.trim().split(/\s+/).filter(Boolean).length;
+      if (wordCount > 3) {
+        Alert.alert("Error", "El apodo no puede tener más de 3 palabras");
+        return;
+      }
+    }
     if (editSedes.length === 0) {
       Alert.alert("Error", "Selecciona al menos una sede");
       return;
@@ -437,6 +446,7 @@ export default function ProfileScreen() {
     try {
       const payload: Parameters<typeof profileApi.updateProfile>[0] = {
         displayName: editName.trim(),
+        nickname: editNickname.trim() || null,
         phone: editPhone.trim() || null,
         sedes: editSedes,
       };
@@ -447,7 +457,7 @@ export default function ProfileScreen() {
       await profileApi.updateProfile(payload);
       setProfile((prev) =>
         prev
-          ? { ...prev, displayName: editName.trim(), phone: editPhone.trim() || null, sedes: editSedes }
+          ? { ...prev, displayName: editName.trim(), nickname: editNickname.trim() || null, phone: editPhone.trim() || null, sedes: editSedes }
           : prev
       );
       setPendingAvatarUri(null);
@@ -626,6 +636,9 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.name}>{data.displayName}</Text>
+            {data.nickname ? (
+              <Text style={{ color: "#D4AF37", fontSize: 14, fontStyle: "italic", marginTop: 2 }}>"{data.nickname}"</Text>
+            ) : null}
 
             <View style={styles.rolesRow}>
               {data.roles.map((role) => (
@@ -814,6 +827,19 @@ export default function ProfileScreen() {
                 placeholderTextColor="#444"
                 autoCapitalize="words"
               />
+              <Text style={styles.editLabel}>Apodo (opcional)</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editNickname}
+                onChangeText={setEditNickname}
+                placeholder="Ej: Johan Kaizen"
+                placeholderTextColor="#444"
+                autoCapitalize="words"
+                maxLength={100}
+              />
+              <Text style={{ color: "#555", fontSize: 11, marginTop: -4, marginBottom: 8 }}>
+                Máximo 3 palabras. Se mostrará en la comunidad en lugar de tu nombre.
+              </Text>
               <Text style={styles.editLabel}>Teléfono (opcional)</Text>
               <TextInput
                 style={styles.editInput}

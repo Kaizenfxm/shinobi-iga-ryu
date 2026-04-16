@@ -24,8 +24,8 @@ import {
 
 const SUB_LABELS: Record<string, string> = {
   basico: "Básico",
-  medio: "Medio",
-  avanzado: "Avanzado",
+  medio: "Medium",
+  avanzado: "Premium",
   personalizado: "Personalizado",
 };
 

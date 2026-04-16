@@ -14,6 +14,7 @@ import {
   ImageBackground,
   Image,
   Keyboard,
+  Linking,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -773,7 +774,7 @@ function PendingChallengeCard({ item, onRespond, onUndo, onExpire }: {
   );
 }
 
-function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, onEdit, onRequestCancel, onConfirmCancel, onDeclineCancel }: {
+function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, onEdit, onRequestCancel, onConfirmCancel, onDeclineCancel, userCreatedAt }: {
   item: ChallengeItem;
   currentUserId: number;
   canManage: boolean;
@@ -783,6 +784,7 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
   onRequestCancel?: (id: number) => void;
   onConfirmCancel?: (id: number) => void;
   onDeclineCancel?: (id: number) => void;
+  userCreatedAt?: string;
 }) {
   const isPast = ["completed", "declined", "cancelled"].includes(item.status);
   const isCompleted = item.status === "completed";
@@ -883,6 +885,36 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
           ★ GANADOR: {item.winnerId === item.challengerId ? item.challengerName : item.challengedName}
         </Text>
       )}
+
+      {isCompleted && item.videoUrl && (() => {
+        const hasThreeDays = userCreatedAt
+          ? (Date.now() - new Date(userCreatedAt).getTime()) >= 3 * 24 * 60 * 60 * 1000
+          : false;
+        return hasThreeDays ? (
+          <Pressable
+            style={{
+              flexDirection: "row", alignItems: "center", justifyContent: "center",
+              gap: 8, marginTop: 8, paddingVertical: 10, paddingHorizontal: 16,
+              backgroundColor: "#C41E3A", borderRadius: 8,
+            }}
+            onPress={() => Linking.openURL(item.videoUrl!)}
+          >
+            <Ionicons name="play-circle" size={22} color="#FFF" />
+            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13, letterSpacing: 1 }}>VER REPETICIÓN</Text>
+          </Pressable>
+        ) : (
+          <View
+            style={{
+              flexDirection: "row", alignItems: "center", justifyContent: "center",
+              gap: 6, marginTop: 8, paddingVertical: 8, paddingHorizontal: 12,
+              backgroundColor: "#1a1a1a", borderRadius: 8, borderWidth: 1, borderColor: "#333",
+            }}
+          >
+            <Ionicons name="lock-closed" size={14} color="#555" />
+            <Text style={{ color: "#555", fontSize: 11, fontWeight: "600" }}>Video disponible con 3+ días de suscripción</Text>
+          </View>
+        );
+      })()}
 
       {iRequestedCancel && (
         <Text style={[rStyles.fightCardStatus, { color: "#555" }]}>⏸ CANCELACIÓN SOLICITADA — ESPERANDO RESPUESTA</Text>
@@ -1149,7 +1181,7 @@ function ComingSoon() {
   );
 }
 
-function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUserId: number }) {
+function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: boolean; currentUserId: number; userCreatedAt?: string }) {
   const insets = useSafeAreaInsets();
   const { refresh: refreshBadge } = useChallenges();
   const [users, setUsers] = useState<ChallengeUser[]>([]);
@@ -1358,7 +1390,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
               <Ionicons name={sentExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
             </Pressable>
             {sentExpanded && challenges.sent.map((ch) => (
-              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} onEdit={handleEditChallenge} />
+              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} onCancel={handleCancel} onEdit={handleEditChallenge} userCreatedAt={userCreatedAt} />
             ))}
           </View>
         )}
@@ -1388,6 +1420,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
                   onRequestCancel={handleRequestCancel}
                   onConfirmCancel={handleConfirmCancel}
                   onDeclineCancel={handleDeclineCancel}
+                  userCreatedAt={userCreatedAt}
                 />
               ))}
             </View>
@@ -1403,7 +1436,7 @@ function RetosTab({ canManage, currentUserId }: { canManage: boolean; currentUse
               <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
             </Pressable>
             {pastExpanded && challenges.past.map((ch) => (
-              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} />
+              <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} userCreatedAt={userCreatedAt} />
             ))}
           </View>
         )}
@@ -2087,7 +2120,7 @@ export default function ComunidadScreen() {
 
   const renderTab = () => {
     if (activeTab === "eventos") return <EventosTab canManage={canManage} extraEvents={createdEvents} />;
-    if (activeTab === "retos") return <RetosTab canManage={canManage} currentUserId={user?.id ?? 0} />;
+    if (activeTab === "retos") return <RetosTab canManage={canManage} currentUserId={user?.id ?? 0} userCreatedAt={user?.createdAt} />;
     if (activeTab === "ranking") return <RankingTab />;
     return <ComingSoon />;
   };

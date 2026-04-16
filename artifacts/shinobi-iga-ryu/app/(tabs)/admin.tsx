@@ -42,8 +42,8 @@ const ROLE_ICONS: Record<string, string> = {
 const SUB_LEVELS = ["basico", "medio", "avanzado", "personalizado"] as const;
 const SUB_LABELS: Record<string, string> = {
   basico: "Básico",
-  medio: "Medio",
-  avanzado: "Avanzado",
+  medio: "Medium",
+  avanzado: "Premium",
   personalizado: "Personalizado",
 };
 
@@ -787,6 +787,7 @@ function UsersPanel({
     expiresDate: string;
     amount: string;
     paymentMethod: PaymentMethod;
+    subscriptionLevel: string;
     notes: string;
   };
 
@@ -810,11 +811,12 @@ function UsersPanel({
   const [anthropometryLoading, setAnthropometryLoading] = useState<Record<number, boolean>>({});
   const [anthropometrySaving, setAnthropometrySaving] = useState<Record<number, boolean>>({});
 
-  const makeBlankPaymentForm = (): PaymentFormState => ({
+  const makeBlankPaymentForm = (userSubLevel?: string): PaymentFormState => ({
     paymentDate: todayStr(),
     expiresDate: addDaysStr(todayStr(), 30),
     amount: "",
     paymentMethod: "nequi",
+    subscriptionLevel: userSubLevel || "basico",
     notes: "",
   });
 
@@ -889,7 +891,8 @@ function UsersPanel({
   };
 
   const openAddPaymentForm = (userId: number) => {
-    setPaymentForms((prev) => ({ ...prev, [userId]: makeBlankPaymentForm() }));
+    const user = users.find(u => u.id === userId);
+    setPaymentForms((prev) => ({ ...prev, [userId]: makeBlankPaymentForm(user?.subscriptionLevel) }));
   };
 
   const openEditPaymentForm = (userId: number, p: PaymentRecord) => {
@@ -901,6 +904,7 @@ function UsersPanel({
         expiresDate: p.expiresDate,
         amount: p.amount != null ? String(p.amount) : "",
         paymentMethod: p.paymentMethod,
+        subscriptionLevel: p.subscriptionLevel || "basico",
         notes: p.notes || "",
       },
     }));
@@ -935,6 +939,7 @@ function UsersPanel({
         expiresDate: form.expiresDate,
         amount: form.amount ? parseInt(form.amount, 10) : null,
         paymentMethod: form.paymentMethod,
+        subscriptionLevel: form.subscriptionLevel,
         notes: form.notes || null,
       };
       if (form.editId) {
@@ -947,7 +952,7 @@ function UsersPanel({
       const { users: fresh } = await adminApi.getUsers();
       const updated = fresh.find((u) => u.id === userId);
       if (updated) {
-        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt } : u)));
+        setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, membershipStatus: updated.membershipStatus, membershipExpiresAt: updated.membershipExpiresAt, lastPaymentAt: updated.lastPaymentAt, subscriptionLevel: updated.subscriptionLevel } : u)));
       }
     } catch {
       Alert.alert("Error", "No se pudo guardar el pago");
@@ -1397,6 +1402,13 @@ function UsersPanel({
                                   {PAYMENT_METHODS.find((m) => m.value === p.paymentMethod)?.label ?? p.paymentMethod}
                                 </Text>
                               </View>
+                              {p.subscriptionLevel && (
+                                <View style={[styles.paymentMethodBadge, { backgroundColor: p.subscriptionLevel === "personalizado" ? "#5B21B620" : p.subscriptionLevel === "avanzado" ? "#1D4ED820" : p.subscriptionLevel === "medio" ? "#0E747020" : "#27272A", borderColor: p.subscriptionLevel === "personalizado" ? "#7C3AED40" : p.subscriptionLevel === "avanzado" ? "#3B82F640" : p.subscriptionLevel === "medio" ? "#06B6D440" : "#3F3F46" }]}>
+                                  <Text style={[styles.paymentMethodBadgeText, { color: p.subscriptionLevel === "personalizado" ? "#A78BFA" : p.subscriptionLevel === "avanzado" ? "#60A5FA" : p.subscriptionLevel === "medio" ? "#22D3EE" : "#A1A1AA" }]}>
+                                    {SUB_LABELS[p.subscriptionLevel] ?? p.subscriptionLevel}
+                                  </Text>
+                                </View>
+                              )}
                               {p.amount != null && (
                                 <Text style={styles.paymentAmount}>
                                   ${p.amount.toLocaleString("es-CO")}
@@ -1502,6 +1514,24 @@ function UsersPanel({
                               placeholderTextColor="#444"
                               keyboardType="numeric"
                             />
+
+                            <Text style={styles.paymentFormLabel}>Paquete</Text>
+                            <View style={styles.paymentMethodSelector}>
+                              {SUB_LEVELS.map((l) => {
+                                const active = paymentForms[u.id]!.subscriptionLevel === l;
+                                return (
+                                  <Pressable
+                                    key={l}
+                                    style={[styles.paymentMethodChip, active && styles.paymentMethodChipActive]}
+                                    onPress={() => setPaymentFormField(u.id, "subscriptionLevel", l)}
+                                  >
+                                    <Text style={[styles.paymentMethodChipText, active && { color: "#000" }]}>
+                                      {SUB_LABELS[l]}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
 
                             <Text style={styles.paymentFormLabel}>Medio de pago</Text>
                             <View style={styles.paymentMethodSelector}>
@@ -5136,6 +5166,7 @@ export function RetosPanel() {
   const [editSystemId, setEditSystemId] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editVideoUrl, setEditVideoUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<Set<number>>(new Set());
 
@@ -5166,6 +5197,7 @@ export function RetosPanel() {
     setEditSystemId(c.trainingSystemId);
     setEditNotes(c.notes ?? "");
     setEditStatus(c.status);
+    setEditVideoUrl(c.videoUrl ?? "");
   };
 
   const closeEdit = () => setEditingId(null);
@@ -5179,6 +5211,7 @@ export function RetosPanel() {
         trainingSystemId: editSystemId || undefined,
         notes: editNotes.trim() || null,
         status: editStatus || undefined,
+        videoUrl: editVideoUrl.trim() || null,
       });
       await load();
       closeEdit();
@@ -5272,7 +5305,7 @@ export function RetosPanel() {
                 <View style={retosStyles.cardBody}>
                   <View style={retosStyles.cardRow}>
                     <Text style={retosStyles.cardParticipants} numberOfLines={1}>
-                      {c.challengerName} <Text style={{ color: "#555" }}>⚔</Text> {c.challengedName}
+                      {c.challengerName}{c.challengerNickname ? ` (${c.challengerNickname})` : ""} <Text style={{ color: "#555" }}>⚔</Text> {c.challengedName}{c.challengedNickname ? ` (${c.challengedNickname})` : ""}
                     </Text>
                     <View style={[retosStyles.statusBadge, { borderColor: statusColor }]}>
                       <Text style={[retosStyles.statusBadgeText, { color: statusColor }]}>
@@ -5307,7 +5340,7 @@ export function RetosPanel() {
         <View style={retosStyles.modalOverlay}>
           <View style={retosStyles.modalBox}>
             <Text style={retosStyles.modalTitle}>EDITAR RETO</Text>
-            <Text style={retosStyles.modalSubtitle}>{editingChallenge.challengerName} ⚔ {editingChallenge.challengedName}</Text>
+            <Text style={retosStyles.modalSubtitle}>{editingChallenge.challengerName}{editingChallenge.challengerNickname ? ` (${editingChallenge.challengerNickname})` : ""} ⚔ {editingChallenge.challengedName}{editingChallenge.challengedNickname ? ` (${editingChallenge.challengedNickname})` : ""}</Text>
 
             <Text style={retosStyles.fieldLabel}>ARTE MARCIAL</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
@@ -5361,6 +5394,23 @@ export function RetosPanel() {
               placeholderTextColor="#444"
               multiline
             />
+
+            <Text style={retosStyles.fieldLabel}>🎬 VIDEO DEL RETO (YOUTUBE)</Text>
+            <TextInput
+              style={retosStyles.input}
+              value={editVideoUrl}
+              onChangeText={setEditVideoUrl}
+              placeholder="https://youtube.com/watch?v=..."
+              placeholderTextColor="#444"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            {editVideoUrl.trim() ? (
+              <Text style={{ color: "#22C55E", fontSize: 11, marginTop: 2, marginBottom: 8 }}>✓ Video configurado</Text>
+            ) : (
+              <Text style={{ color: "#555", fontSize: 11, marginTop: 2, marginBottom: 8 }}>Sin video — pega el link de YouTube</Text>
+            )}
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
               <Pressable style={retosStyles.cancelModalBtn} onPress={closeEdit} disabled={saving}>

@@ -83,6 +83,7 @@ export interface UserData {
   id: number;
   email: string;
   displayName: string;
+  nickname: string | null;
   avatarUrl: string | null;
   subscriptionLevel: string;
   phone: string | null;
@@ -96,6 +97,7 @@ export interface UserData {
   trialEndsAt: string | null;
   lastPaymentAt: string | null;
   membershipNotes: string | null;
+  createdAt: string;
 }
 
 export type PaymentMethod = "nequi" | "daviplata" | "banco" | "link" | "tarjeta" | "efectivo";
@@ -107,6 +109,7 @@ export interface PaymentRecord {
   expiresDate: string;
   amount: number | null;
   paymentMethod: PaymentMethod;
+  subscriptionLevel: string | null;
   notes: string | null;
   registeredBy: number;
   createdAt: string;
@@ -180,6 +183,7 @@ export const adminApi = {
     expiresDate: string;
     amount?: number | null;
     paymentMethod: PaymentMethod;
+    subscriptionLevel?: string | null;
     notes?: string | null;
   }) =>
     apiFetch<{ payment: PaymentRecord }>(`/admin/users/${userId}/payments`, { method: "POST", body: data }),
@@ -189,6 +193,7 @@ export const adminApi = {
     expiresDate?: string;
     amount?: number | null;
     paymentMethod?: PaymentMethod;
+    subscriptionLevel?: string | null;
     notes?: string | null;
   }) =>
     apiFetch<{ payment: PaymentRecord }>(`/admin/payments/${paymentId}`, { method: "PUT", body: data }),
@@ -492,6 +497,7 @@ export interface ProfileData {
   id: number;
   email: string;
   displayName: string;
+  nickname: string | null;
   avatarUrl: string | null;
   subscriptionLevel: string;
   phone: string | null;
@@ -506,7 +512,7 @@ export interface ProfileData {
 
 export const profileApi = {
   getMyProfile: () => apiFetch<{ profile: ProfileData }>("/profile/me"),
-  updateProfile: (data: { displayName?: string; phone?: string | null; sedes?: string[]; currentPassword?: string; newPassword?: string }) =>
+  updateProfile: (data: { displayName?: string; nickname?: string | null; phone?: string | null; sedes?: string[]; currentPassword?: string; newPassword?: string }) =>
     apiFetch<{ user: UserData }>("/profile/me", { method: "PUT", body: data }),
   toggleFighterMode: (isFighter: boolean) =>
     apiFetch<{ success: boolean; isFighter: boolean }>("/profile/me/fighter", {
@@ -906,13 +912,16 @@ export interface ChallengeItem {
   notes: string | null;
   status: "pending" | "accepted" | "declined" | "completed" | "cancelled";
   winnerId: number | null;
+  videoUrl: string | null;
   cancelRequestedBy: number | null;
   respondedAt: string | null;
   createdAt: string;
   trainingSystemName: string;
   challengerName: string;
+  challengerNickname: string | null;
   challengerAvatar: string | null;
   challengedName: string;
+  challengedNickname: string | null;
   challengedAvatar: string | null;
 }
 
@@ -965,7 +974,7 @@ export const challengesApi = {
   adminGetAll: () =>
     apiFetch<{ challenges: ChallengeItem[] }>("/admin/challenges"),
 
-  adminUpdate: (id: number, data: { trainingSystemId?: number; scheduledAt?: string; notes?: string | null; status?: string }) =>
+  adminUpdate: (id: number, data: { trainingSystemId?: number; scheduledAt?: string; notes?: string | null; status?: string; videoUrl?: string | null }) =>
     apiFetch<{ challenge: ChallengeItem }>(`/admin/challenges/${id}`, { method: "PATCH", body: data }),
 
   adminDelete: (id: number) =>

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicedoc/tauri-v2-schema/refs/heads/main/tauri.conf.json",
+  "productName": "Shinobi Pagos Admin",
+  "version": "1.0.0",
+  "identifier": "com.shinobiIgaRyu.payments-admin",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "title": "Shinobi Iga Ryu — Admin Pagos",
+    "windows": [
+      {
+        "title": "Shinobi Iga Ryu — Admin Pagos",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "dangerousRemoteDomainIpcAccess": [],
+      "csp": null
+    }
+  }
+}

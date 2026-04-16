@@ -1,0 +1,30 @@
+{
+  "name": "payments-admin-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.60.1",
+    "@tailwindcss/vite": "catalog:",
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "lightningcss": "^1.32.0",
+    "lightningcss-darwin-arm64": "^1.32.0",
+    "tailwindcss": "catalog:",
+    "typescript": "^5.8.3",
+    "vite": "catalog:"
+  }
+}

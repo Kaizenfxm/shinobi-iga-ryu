@@ -32,6 +32,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
         id: usersTable.id,
         email: usersTable.email,
         displayName: usersTable.displayName,
+        nickname: usersTable.nickname,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,
@@ -127,7 +128,7 @@ profileRouter.get("/profile/me", requireAuth, async (req, res) => {
 profileRouter.put("/profile/me", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    const { displayName, phone, sedes, currentPassword, newPassword } = req.body;
+    const { displayName, nickname, phone, sedes, currentPassword, newPassword } = req.body;
 
     if (displayName !== undefined && typeof displayName !== "string") {
       res.status(400).json({ error: "Nombre inválido" });
@@ -150,10 +151,30 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
       return;
     }
 
-    const updates: { displayName?: string; phone?: string | null; sedes?: string[]; passwordHash?: string; updatedAt: Date } = {
+    if (nickname !== undefined && nickname !== null) {
+      if (typeof nickname !== "string") {
+        res.status(400).json({ error: "Apodo inválido" });
+        return;
+      }
+      const trimmedNick = nickname.trim();
+      if (trimmedNick.length > 0) {
+        const wordCount = trimmedNick.split(/\s+/).filter(Boolean).length;
+        if (wordCount > 3) {
+          res.status(400).json({ error: "El apodo no puede tener más de 3 palabras" });
+          return;
+        }
+        if (trimmedNick.length > 100) {
+          res.status(400).json({ error: "El apodo es demasiado largo" });
+          return;
+        }
+      }
+    }
+
+    const updates: { displayName?: string; nickname?: string | null; phone?: string | null; sedes?: string[]; passwordHash?: string; updatedAt: Date } = {
       updatedAt: new Date(),
     };
     if (trimmedName !== undefined) updates.displayName = trimmedName;
+    if (nickname !== undefined) updates.nickname = nickname?.trim() || null;
     if (phone !== undefined) updates.phone = phone?.trim() || null;
     if (sedes !== undefined) updates.sedes = sedes;
 
@@ -191,6 +212,7 @@ profileRouter.put("/profile/me", requireAuth, async (req, res) => {
         id: usersTable.id,
         email: usersTable.email,
         displayName: usersTable.displayName,
+        nickname: usersTable.nickname,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
         phone: usersTable.phone,

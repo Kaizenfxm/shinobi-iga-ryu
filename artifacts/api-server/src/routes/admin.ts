@@ -697,6 +697,7 @@ adminRouter.get("/admin/users/:id/payments", requireAdmin, async (req, res) => {
         expiresDate: paymentHistoryTable.expiresDate,
         amount: paymentHistoryTable.amount,
         paymentMethod: paymentHistoryTable.paymentMethod,
+        subscriptionLevel: paymentHistoryTable.subscriptionLevel,
         notes: paymentHistoryTable.notes,
         registeredBy: paymentHistoryTable.registeredBy,
         createdAt: paymentHistoryTable.createdAt,
@@ -720,7 +721,7 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
       return;
     }
 
-    const { paymentDate, expiresDate, amount, paymentMethod, notes } = req.body;
+    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel } = req.body;
 
     if (!paymentDate || !expiresDate || !paymentMethod) {
       res.status(400).json({ error: "Se requieren paymentDate, expiresDate y paymentMethod" });
@@ -730,6 +731,12 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
     const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"];
     if (!validMethods.includes(paymentMethod)) {
       res.status(400).json({ error: "Método de pago inválido" });
+      return;
+    }
+
+    const validLevels = ["basico", "medio", "avanzado", "personalizado"];
+    if (subscriptionLevel && !validLevels.includes(subscriptionLevel)) {
+      res.status(400).json({ error: "Nivel de suscripción inválido" });
       return;
     }
 
@@ -743,17 +750,54 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
           expiresDate,
           amount: amount ? parseInt(String(amount), 10) : null,
           paymentMethod,
+          subscriptionLevel: subscriptionLevel || null,
           notes: notes || null,
           registeredBy: req.session.userId!,
         })
         .returning();
       newPayment = inserted;
+
+      // Update user's subscription level to match the latest payment
+      if (subscriptionLevel) {
+        await tx
+          .update(usersTable)
+          .set({ subscriptionLevel, updatedAt: new Date() })
+          .where(eq(usersTable.id, userId));
+      }
+
       await recalculateUserMembership(userId, tx);
     });
 
     res.json({ payment: newPayment });
   } catch (error) {
     console.error("Admin create payment error:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+adminRouter.get("/admin/payments", requireAdmin, async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: paymentHistoryTable.id,
+        userId: paymentHistoryTable.userId,
+        paymentDate: paymentHistoryTable.paymentDate,
+        expiresDate: paymentHistoryTable.expiresDate,
+        amount: paymentHistoryTable.amount,
+        paymentMethod: paymentHistoryTable.paymentMethod,
+        subscriptionLevel: paymentHistoryTable.subscriptionLevel,
+        notes: paymentHistoryTable.notes,
+        registeredBy: paymentHistoryTable.registeredBy,
+        createdAt: paymentHistoryTable.createdAt,
+        userName: usersTable.displayName,
+        userNickname: usersTable.nickname,
+      })
+      .from(paymentHistoryTable)
+      .innerJoin(usersTable, eq(paymentHistoryTable.userId, usersTable.id))
+      .orderBy(desc(paymentHistoryTable.paymentDate));
+    res.json({ payments: rows });
+  } catch (error) {
+    console.error("Admin get all payments error:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
@@ -777,11 +821,17 @@ adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { paymentDate, expiresDate, amount, paymentMethod, notes } = req.body;
+    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel } = req.body;
 
     const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"];
     if (paymentMethod && !validMethods.includes(paymentMethod)) {
       res.status(400).json({ error: "Método de pago inválido" });
+      return;
+    }
+
+    const validLevels = ["basico", "medio", "avanzado", "personalizado"];
+    if (subscriptionLevel && !validLevels.includes(subscriptionLevel)) {
+      res.status(400).json({ error: "Nivel de suscripción inválido" });
       return;
     }
 
@@ -794,12 +844,31 @@ adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
           ...(expiresDate !== undefined && { expiresDate }),
           ...(amount !== undefined && { amount: amount ? parseInt(String(amount), 10) : null }),
           ...(paymentMethod !== undefined && { paymentMethod }),
+          ...(subscriptionLevel !== undefined && { subscriptionLevel: subscriptionLevel || null }),
           ...(notes !== undefined && { notes: notes || null }),
           updatedAt: new Date(),
         })
         .where(eq(paymentHistoryTable.id, paymentId))
         .returning();
       updated = result;
+
+      // If subscription level changed, update user to match the latest payment's level
+      if (subscriptionLevel) {
+        // Find the latest payment for this user to determine if this is the most recent
+        const [latestPayment] = await tx
+          .select({ id: paymentHistoryTable.id, subscriptionLevel: paymentHistoryTable.subscriptionLevel })
+          .from(paymentHistoryTable)
+          .where(eq(paymentHistoryTable.userId, existing.userId))
+          .orderBy(desc(paymentHistoryTable.paymentDate))
+          .limit(1);
+        if (latestPayment && latestPayment.id === paymentId && latestPayment.subscriptionLevel) {
+          await tx
+            .update(usersTable)
+            .set({ subscriptionLevel: latestPayment.subscriptionLevel, updatedAt: new Date() })
+            .where(eq(usersTable.id, existing.userId));
+        }
+      }
+
       await recalculateUserMembership(existing.userId, tx);
     });
 
