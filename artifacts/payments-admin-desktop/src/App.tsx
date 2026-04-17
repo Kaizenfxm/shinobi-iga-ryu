@@ -823,14 +823,17 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
   const parent = user.parentId ? allUsers.find((u) => u.id === user.parentId) : null;
   const children = allUsers.filter((u) => u.parentId === user.id);
 
-  // Combined total: own payments + only children's payments the parent actually paid for
-  const ownTotal = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  const childrenTotal = children.reduce((sum, child) => {
-    return sum + (userPayments[child.id] ?? [])
-      .filter((p) => p.paidByUserId === user.id)
-      .reduce((s, p) => s + (p.amount ?? 0), 0);
-  }, 0);
+  // Combined total & count:
+  // - If child: only payments the child paid themselves (paidByUserId is null)
+  // - If parent: own payments + children's payments the parent paid for (paidByUserId === parent.id)
+  const ownPayments = parent ? payments.filter((p) => !p.paidByUserId) : payments;
+  const ownTotal = ownPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const childrenPaidPayments = children.flatMap((child) =>
+    (userPayments[child.id] ?? []).filter((p) => p.paidByUserId === user.id)
+  );
+  const childrenTotal = childrenPaidPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
   const combinedTotal = ownTotal + childrenTotal;
+  const combinedCount = ownPayments.length + childrenPaidPayments.length;
 
   // Parent shows only its own payments; children's payments appear in each child's own card
   const filteredPayments = useMemo(() => {
@@ -943,7 +946,7 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
         {/* Payment count */}
         <div className="w-16 text-center mr-2">
           <span className="bg-zinc-800 text-zinc-400 text-xs px-2 py-0.5 rounded">
-            {payments.length} pago{payments.length !== 1 ? "s" : ""}
+            {combinedCount} pago{combinedCount !== 1 ? "s" : ""}
           </span>
         </div>
 
@@ -1198,7 +1201,11 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
       if (sortBy === "nombre_desc") return b.displayName.localeCompare(a.displayName, "es");
       if (sortBy === "total_desc" || sortBy === "total_asc") {
         const getCombined = (u: AdminUser) => {
-          const own = (userPayments[u.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
+          const isChild = !!u.parentId;
+          const ownPmts = userPayments[u.id] ?? [];
+          const own = isChild
+            ? ownPmts.filter((p) => !p.paidByUserId).reduce((s, p) => s + (p.amount ?? 0), 0)
+            : ownPmts.reduce((s, p) => s + (p.amount ?? 0), 0);
           const childrenSum = users
             .filter((c) => c.parentId === u.id)
             .reduce((s, c) => s + (userPayments[c.id] ?? [])
