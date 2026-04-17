@@ -16,6 +16,8 @@
   },
   "devDependencies": {
     "@rollup/rollup-darwin-arm64": "^4.60.1",
+    "@rollup/rollup-win32-arm64-msvc": "^4.60.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.60.1",
     "@tailwindcss/vite": "catalog:",
     "@tauri-apps/cli": "^2.5.0",
     "@types/react": "catalog:",
@@ -23,6 +25,8 @@
     "@vitejs/plugin-react": "catalog:",
     "lightningcss": "^1.32.0",
     "lightningcss-darwin-arm64": "^1.32.0",
+    "lightningcss-win32-arm64-msvc": "^1.32.0",
+    "lightningcss-win32-x64-msvc": "^1.32.0",
     "tailwindcss": "catalog:",
     "typescript": "^5.8.3",
     "vite": "catalog:"
