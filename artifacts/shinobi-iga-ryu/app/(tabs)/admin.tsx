@@ -154,42 +154,79 @@ const INIT_USER_FORM = {
   subscriptionLevel: "basico",
   isFighter: false,
   sedes: [] as string[],
+  parentId: null as number | null,
 };
+
+type MobileChildEntry = { key: string; name: string; email: string; phone: string };
 
 function UserFormModal({
   visible,
   mode,
   initialData,
+  allUsers,
+  prefilledParentId,
   onClose,
   onSaved,
 }: {
   visible: boolean;
   mode: "create" | "edit";
   initialData?: UserData | null;
+  allUsers?: UserData[];
+  prefilledParentId?: number;
   onClose: () => void;
   onSaved: (user: UserData & { roles: string[] }) => void;
 }) {
   const [form, setForm] = useState(INIT_USER_FORM);
   const [saving, setSaving] = useState(false);
+  const [parentSearch, setParentSearch] = useState("");
+  const [showParentSearch, setShowParentSearch] = useState(false);
+  const [pendingChildren, setPendingChildren] = useState<MobileChildEntry[]>([]);
+
+  const selectedParent = form.parentId ? allUsers?.find((u) => u.id === form.parentId) : null;
+
+  const parentCandidates = (allUsers || []).filter((u) => {
+    if (u.id === initialData?.id) return false;
+    if (u.parentId != null) return false;
+    if (!parentSearch.trim()) return true;
+    const q = parentSearch.toLowerCase();
+    return u.displayName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  }).slice(0, 10);
+
+  const existingChildren = initialData
+    ? (allUsers || []).filter((u) => u.parentId === initialData.id)
+    : [];
+
+  const addPendingChild = () =>
+    setPendingChildren((prev) => [...prev, { key: Math.random().toString(36).slice(2), name: "", email: "", phone: "" }]);
+
+  const removePendingChild = (key: string) =>
+    setPendingChildren((prev) => prev.filter((c) => c.key !== key));
+
+  const updatePendingChild = (key: string, field: keyof Omit<MobileChildEntry, "key">, value: string) =>
+    setPendingChildren((prev) => prev.map((c) => (c.key === key ? { ...c, [field]: value } : c)));
 
   useEffect(() => {
     if (visible) {
       if (mode === "edit" && initialData) {
         setForm({
           displayName: initialData.displayName,
-          email: initialData.email,
+          email: initialData.email.includes("@sinregistro.local") ? "" : initialData.email,
           password: "",
           phone: initialData.phone || "",
           roles: initialData.roles || ["alumno"],
           subscriptionLevel: initialData.subscriptionLevel,
           isFighter: initialData.isFighter,
           sedes: initialData.sedes || [],
+          parentId: initialData.parentId ?? null,
         });
       } else {
-        setForm(INIT_USER_FORM);
+        setForm({ ...INIT_USER_FORM, parentId: prefilledParentId ?? null });
       }
+      setParentSearch("");
+      setShowParentSearch(false);
+      setPendingChildren([]);
     }
-  }, [visible, mode, initialData]);
+  }, [visible, mode, initialData, prefilledParentId]);
 
   const toggleRole = (role: string) => {
     setForm((prev) => {
@@ -204,35 +241,35 @@ function UserFormModal({
       Alert.alert("Error", "El nombre es obligatorio");
       return;
     }
-    if (!form.email.trim()) {
-      Alert.alert("Error", "El email es obligatorio");
-      return;
-    }
     if (form.password && form.password.length < 6) {
       Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
       return;
     }
     setSaving(true);
     try {
+      let savedUserId: number;
       if (mode === "create") {
         const res = await adminApi.createUser({
-          email: form.email.trim(),
-          password: form.password,
+          email: form.email.trim() || undefined,
+          password: form.password || undefined,
           displayName: form.displayName.trim(),
           phone: form.phone.trim() || undefined,
           roles: form.roles,
           subscriptionLevel: form.subscriptionLevel,
           isFighter: form.isFighter,
           sedes: form.sedes,
+          parentId: form.parentId ?? null,
         });
+        savedUserId = res.user.id;
         onSaved({ ...res.user, roles: form.roles });
       } else if (initialData) {
         const payload: Parameters<typeof adminApi.updateUser>[1] = {
           displayName: form.displayName.trim(),
-          email: form.email.trim(),
+          ...(form.email.trim() ? { email: form.email.trim() } : {}),
           phone: form.phone.trim() || undefined,
           isFighter: form.isFighter,
           sedes: form.sedes,
+          parentId: form.parentId ?? null,
         };
         if (form.password) payload.password = form.password;
         const res = await adminApi.updateUser(initialData.id, payload);
@@ -242,8 +279,24 @@ function UserFormModal({
         if (form.subscriptionLevel !== initialData.subscriptionLevel) {
           await adminApi.updateSubscription(initialData.id, form.subscriptionLevel);
         }
+        savedUserId = initialData.id;
         onSaved({ ...res.user, roles: form.roles, subscriptionLevel: form.subscriptionLevel });
+      } else {
+        return;
       }
+
+      // Create pending children
+      for (const child of pendingChildren) {
+        if (!child.name.trim()) continue;
+        await adminApi.createUser({
+          displayName: child.name.trim(),
+          email: child.email.trim() || undefined,
+          phone: child.phone.trim() || undefined,
+          roles: ["alumno"],
+          parentId: savedUserId,
+        });
+      }
+
       onClose();
     } catch (e: unknown) {
       Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
@@ -276,12 +329,12 @@ function UserFormModal({
               autoCapitalize="words"
             />
 
-            <Text style={userFormStyles.fieldLabel}>EMAIL *</Text>
+            <Text style={userFormStyles.fieldLabel}>EMAIL (vacío = sin cuenta propia)</Text>
             <TextInput
               style={userFormStyles.input}
               value={form.email}
               onChangeText={(v) => setForm((p) => ({ ...p, email: v }))}
-              placeholder="correo@ejemplo.com"
+              placeholder="correo@ejemplo.com (opcional para niños)"
               placeholderTextColor="#444"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -383,6 +436,138 @@ function UserFormModal({
                   </Pressable>
                 );
               })}
+            </View>
+
+            {/* ── Acudiente / Responsable ── */}
+            <View style={{ borderTopWidth: 1, borderTopColor: "#222", marginTop: 16, paddingTop: 12 }}>
+              <Text style={userFormStyles.fieldLabel}>ACUDIENTE / RESPONSABLE</Text>
+              {selectedParent ? (
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a1a", borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: "#fff", fontSize: 13 }}>{selectedParent.displayName}</Text>
+                    <Text style={{ color: "#555", fontSize: 11 }}>{selectedParent.email}</Text>
+                  </View>
+                  <Pressable onPress={() => { setForm((p) => ({ ...p, parentId: null })); setParentSearch(""); }}>
+                    <Text style={{ color: "#888", fontSize: 12, paddingHorizontal: 8 }}>✕ Quitar</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <Pressable
+                    style={{ backgroundColor: "#1a1a1a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 8, padding: 10, marginBottom: 6 }}
+                    onPress={() => setShowParentSearch(!showParentSearch)}
+                  >
+                    <Text style={{ color: showParentSearch ? "#D4AF37" : "#555", fontSize: 13 }}>
+                      {showParentSearch ? "▲ Cerrar búsqueda" : "▼ Buscar acudiente..."}
+                    </Text>
+                  </Pressable>
+                  {showParentSearch && (
+                    <>
+                      <TextInput
+                        style={[userFormStyles.input, { marginBottom: 4 }]}
+                        value={parentSearch}
+                        onChangeText={setParentSearch}
+                        placeholder="Nombre o email..."
+                        placeholderTextColor="#444"
+                        autoCapitalize="none"
+                      />
+                      <View style={{ backgroundColor: "#1a1a1a", borderRadius: 8, marginBottom: 8, maxHeight: 160 }}>
+                        {parentCandidates.length === 0 ? (
+                          <Text style={{ color: "#555", fontSize: 12, padding: 10 }}>Sin resultados</Text>
+                        ) : parentCandidates.map((u) => (
+                          <Pressable
+                            key={u.id}
+                            style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: "#222" }}
+                            onPress={() => { setForm((p) => ({ ...p, parentId: u.id })); setShowParentSearch(false); setParentSearch(""); }}
+                          >
+                            <Text style={{ color: "#fff", fontSize: 13 }}>{u.displayName}</Text>
+                            <Text style={{ color: "#555", fontSize: 11 }}>{u.email}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </>
+                  )}
+                  {!showParentSearch && (
+                    <Text style={{ color: "#444", fontSize: 11, marginBottom: 8 }}>Sin acudiente asignado</Text>
+                  )}
+                </>
+              )}
+            </View>
+
+            {/* ── Hijos existentes ── */}
+            {existingChildren.length > 0 && (
+              <View style={{ borderTopWidth: 1, borderTopColor: "#222", marginTop: 8, paddingTop: 12 }}>
+                <Text style={userFormStyles.fieldLabel}>HIJOS VINCULADOS ({existingChildren.length})</Text>
+                {existingChildren.map((child) => (
+                  <View key={child.id} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a1a", borderRadius: 8, padding: 8, marginBottom: 6 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: "#fff", fontSize: 13 }}>{child.displayName}</Text>
+                      <Text style={{ color: "#555", fontSize: 11 }}>
+                        {child.email.includes("@sinregistro.local") ? "Sin correo" : child.email}
+                      </Text>
+                    </View>
+                    <View style={{ backgroundColor: child.membershipStatus === "activo" ? "#1a3d1a" : "#3d1a1a", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ color: child.membershipStatus === "activo" ? "#4ade80" : "#f87171", fontSize: 10 }}>
+                        {child.membershipStatus}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* ── Agregar hijos nuevos ── */}
+            <View style={{ borderTopWidth: 1, borderTopColor: "#222", marginTop: 8, paddingTop: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Text style={userFormStyles.fieldLabel}>AGREGAR HIJOS</Text>
+                <Pressable
+                  style={{ backgroundColor: "#2a2200", borderWidth: 1, borderColor: "#D4AF37", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}
+                  onPress={addPendingChild}
+                >
+                  <Text style={{ color: "#D4AF37", fontSize: 11, fontWeight: "bold" }}>+ Hijo</Text>
+                </Pressable>
+              </View>
+              {pendingChildren.length === 0 && (
+                <Text style={{ color: "#444", fontSize: 11, marginBottom: 8 }}>Los hijos se vinculan automáticamente al guardar.</Text>
+              )}
+              {pendingChildren.map((child) => (
+                <View key={child.key} style={{ backgroundColor: "#1a1a1a", borderWidth: 1, borderColor: "#2a2a2a", borderRadius: 10, padding: 10, marginBottom: 8 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                    <Text style={{ color: "#888", fontSize: 11, fontWeight: "bold" }}>HIJO</Text>
+                    <Pressable onPress={() => removePendingChild(child.key)}>
+                      <Text style={{ color: "#e53e3e", fontSize: 11 }}>✕ Quitar</Text>
+                    </Pressable>
+                  </View>
+                  <TextInput
+                    style={[userFormStyles.input, { marginBottom: 6 }]}
+                    value={child.name}
+                    onChangeText={(v) => updatePendingChild(child.key, "name", v)}
+                    placeholder="Nombre *"
+                    placeholderTextColor="#444"
+                    autoCapitalize="words"
+                  />
+                  <TextInput
+                    style={[userFormStyles.input, { marginBottom: 6 }]}
+                    value={child.email}
+                    onChangeText={(v) => updatePendingChild(child.key, "email", v)}
+                    placeholder="Email (opcional)"
+                    placeholderTextColor="#444"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  <TextInput
+                    style={userFormStyles.input}
+                    value={child.phone}
+                    onChangeText={(v) => updatePendingChild(child.key, "phone", v)}
+                    placeholder="Teléfono (opcional)"
+                    placeholderTextColor="#444"
+                    keyboardType="phone-pad"
+                  />
+                  <Text style={{ color: "#444", fontSize: 10, marginTop: 4 }}>
+                    Sin email → se crea con un correo interno automático.
+                  </Text>
+                </View>
+              ))}
             </View>
 
             <Pressable
@@ -523,6 +708,7 @@ function UsersPanel({
   const [formVisible, setFormVisible] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [prefilledParentId, setPrefilledParentId] = useState<number | undefined>(undefined);
   const [beltSectionOpen, setBeltSectionOpen] = useState<Record<number, boolean>>({});
   const [userBeltMap, setUserBeltMap] = useState<Record<number, AdminBeltUser>>({});
   const [beltDataLoading, setBeltDataLoading] = useState(false);
@@ -632,15 +818,17 @@ function UsersPanel({
     }
   }, [beltSectionOpen, loadBeltData, loadPendingApps]);
 
-  const openCreate = () => {
+  const openCreate = (parentId?: number) => {
     setFormMode("create");
     setEditingUser(null);
+    setPrefilledParentId(parentId);
     setFormVisible(true);
   };
 
   const openEdit = (user: UserData) => {
     setFormMode("edit");
     setEditingUser(user);
+    setPrefilledParentId(undefined);
     setFormVisible(true);
   };
 
@@ -1029,6 +1217,8 @@ function UsersPanel({
         visible={formVisible}
         mode={formMode}
         initialData={editingUser}
+        allUsers={users}
+        prefilledParentId={prefilledParentId}
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
       />
@@ -1225,7 +1415,28 @@ function UsersPanel({
                       />
                     </Pressable>
                   </View>
-                  <Text style={styles.userEmail}>{u.email}</Text>
+                  <Text style={styles.userEmail}>
+                    {u.email.includes("@sinregistro.local") ? "Sin correo registrado" : u.email}
+                  </Text>
+                  {/* Parent / children indicators */}
+                  {(() => {
+                    const parent = u.parentId ? users.find((x) => x.id === u.parentId) : null;
+                    const children = users.filter((x) => x.parentId === u.id);
+                    return (
+                      <>
+                        {parent && (
+                          <Text style={{ color: "#555", fontSize: 10, marginBottom: 2 }}>
+                            👤 Acudiente: <Text style={{ color: "#777" }}>{parent.displayName}</Text>
+                          </Text>
+                        )}
+                        {children.length > 0 && (
+                          <Text style={{ color: "#3b82f6", fontSize: 10, marginBottom: 2 }}>
+                            👨‍👧 {children.length} {children.length === 1 ? "hijo" : "hijos"}: {children.map((c) => c.displayName).join(", ")}
+                          </Text>
+                        )}
+                      </>
+                    );
+                  })()}
                   <View style={styles.roleBadges}>
                     {u.roles.map((r) => (
                       <View key={r} style={styles.roleBadge}>
@@ -1735,6 +1946,13 @@ function UsersPanel({
                   >
                     <Ionicons name="pencil" size={10} color="#D4AF37" />
                     <Text style={styles.editUserBtnText}>Editar</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editUserBtn, { borderColor: "#3b82f6" }]}
+                    onPress={() => openCreate(u.id)}
+                  >
+                    <Ionicons name="person-add-outline" size={10} color="#3b82f6" />
+                    <Text style={[styles.editUserBtnText, { color: "#3b82f6" }]}>Hijo</Text>
                   </Pressable>
                   {passwordResetStatus[u.id] === "confirming" ? (
                     <View style={{ flexDirection: "row", gap: 4 }}>

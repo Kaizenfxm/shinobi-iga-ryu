@@ -285,12 +285,18 @@ function PaymentModal({
 
 // ─── User Modal (create / edit) ───────────────────────────────
 
+type ChildEntry = { key: string; name: string; email: string; phone: string };
+
 function UserModal({
   user,
+  users,
+  prefilledParentId,
   onSave,
   onClose,
 }: {
   user: AdminUser | null; // null = create
+  users: AdminUser[];
+  prefilledParentId?: number;
   onSave: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -302,8 +308,38 @@ function UserModal({
   const [sedes, setSedes] = useState<string[]>(user?.sedes ?? []);
   const [subscriptionLevel, setSubscriptionLevel] = useState(user?.subscriptionLevel ?? "basico");
   const [isFighter, setIsFighter] = useState(user?.isFighter ?? false);
+  const [parentId, setParentId] = useState<number | null>(user?.parentId ?? prefilledParentId ?? null);
+  const [parentSearch, setParentSearch] = useState("");
+  const [pendingChildren, setPendingChildren] = useState<ChildEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Candidates for parent: all users that aren't this user and aren't already children
+  const parentCandidates = useMemo(() => {
+    const q = parentSearch.toLowerCase();
+    return users.filter((u) =>
+      u.id !== user?.id &&
+      u.parentId == null && // only root users can be parents
+      (u.displayName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    );
+  }, [users, parentSearch, user?.id]);
+
+  const selectedParent = parentId ? users.find((u) => u.id === parentId) : null;
+
+  // Children of this user (when editing)
+  const existingChildren = useMemo(
+    () => (user ? users.filter((u) => u.parentId === user.id) : []),
+    [users, user]
+  );
+
+  const addPendingChild = () =>
+    setPendingChildren((prev) => [...prev, { key: Math.random().toString(36).slice(2), name: "", email: "", phone: "" }]);
+
+  const removePendingChild = (key: string) =>
+    setPendingChildren((prev) => prev.filter((c) => c.key !== key));
+
+  const updatePendingChild = (key: string, field: keyof Omit<ChildEntry, "key">, value: string) =>
+    setPendingChildren((prev) => prev.map((c) => (c.key === key ? { ...c, [field]: value } : c)));
 
   const toggleRole = (r: string) => {
     setRoles((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
@@ -315,44 +351,59 @@ function UserModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim()) { setError("El nombre es obligatorio"); return; }
-    if (!email.trim()) { setError("El email es obligatorio"); return; }
     if (roles.length === 0) { setError("Selecciona al menos un rol"); return; }
     setSaving(true);
     setError("");
     try {
+      let savedUserId: number;
       if (user) {
-        // Update existing user — multiple endpoints
+        // Update existing user — multiple endpoints in parallel
         const updates: Promise<unknown>[] = [];
         updates.push(adminApi.updateUser(user.id, {
           displayName: displayName.trim(),
-          email: email.trim(),
+          ...(email.trim() ? { email: email.trim() } : {}),
           phone: phone.trim() || undefined,
           isFighter,
           sedes,
+          parentId: parentId ?? null,
           ...(password ? { password } : {}),
         }));
-        // Roles (separate endpoint)
-        if (JSON.stringify(roles.sort()) !== JSON.stringify((user.roles ?? []).sort())) {
+        if (JSON.stringify([...roles].sort()) !== JSON.stringify([...(user.roles ?? [])].sort())) {
           updates.push(adminApi.updateUserRoles(user.id, roles));
         }
-        // Subscription (separate endpoint)
         if (subscriptionLevel !== user.subscriptionLevel) {
           updates.push(adminApi.updateUserSubscription(user.id, subscriptionLevel));
         }
         await Promise.all(updates);
+        savedUserId = user.id;
       } else {
         // Create new user
-        await adminApi.createUser({
+        const res = await adminApi.createUser({
           displayName: displayName.trim(),
-          email: email.trim(),
-          password: password || undefined, // defaults to Ninja123 on server
+          email: email.trim() || undefined, // server generates placeholder if empty
+          password: password || undefined,
           phone: phone.trim() || undefined,
           roles,
           subscriptionLevel,
           isFighter,
           sedes,
+          parentId: parentId ?? null,
+        });
+        savedUserId = res.user.id;
+      }
+
+      // Create pending children
+      for (const child of pendingChildren) {
+        if (!child.name.trim()) continue;
+        await adminApi.createUser({
+          displayName: child.name.trim(),
+          email: child.email.trim() || undefined,
+          phone: child.phone.trim() || undefined,
+          roles: ["alumno"],
+          parentId: savedUserId,
         });
       }
+
       await onSave();
       onClose();
     } catch (err) {
@@ -383,11 +434,13 @@ function UserModal({
             />
           </div>
           <div>
-            <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">Email *</label>
+            <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">
+              Email <span className="text-zinc-600 normal-case">(vacío = sin cuenta)</span>
+            </label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-gold"
-              required
+              placeholder="correo@ejemplo.com"
             />
           </div>
         </div>
@@ -479,6 +532,117 @@ function UserModal({
           <span className="text-sm text-zinc-300">Luchador</span>
         </div>
 
+        {/* ── Acudiente (parent) ── */}
+        <div className="border-t border-zinc-800 pt-4 mb-3">
+          <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wider">Acudiente / Responsable</label>
+          {selectedParent ? (
+            <div className="flex items-center gap-2 bg-zinc-800 rounded px-3 py-2 mb-2">
+              <span className="text-white text-sm flex-1">{selectedParent.displayName}</span>
+              <span className="text-zinc-500 text-xs">{selectedParent.email}</span>
+              <button type="button" onClick={() => { setParentId(null); setParentSearch(""); }}
+                className="text-zinc-500 hover:text-red-400 text-xs ml-2">✕</button>
+            </div>
+          ) : (
+            <>
+              <input
+                value={parentSearch}
+                onChange={(e) => setParentSearch(e.target.value)}
+                placeholder="Buscar acudiente por nombre o email..."
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 mb-1 text-white text-sm outline-none focus:border-gold"
+              />
+              {parentSearch && (
+                <div className="bg-zinc-800 border border-zinc-700 rounded max-h-36 overflow-y-auto mb-2">
+                  {parentCandidates.length === 0 ? (
+                    <div className="px-3 py-2 text-zinc-500 text-xs">Sin resultados</div>
+                  ) : parentCandidates.map((u) => (
+                    <button key={u.id} type="button"
+                      onClick={() => { setParentId(u.id); setParentSearch(""); }}
+                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-zinc-700 transition flex items-center justify-between"
+                    >
+                      <span>{u.displayName}</span>
+                      <span className="text-zinc-500 text-xs">{u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!parentSearch && <p className="text-zinc-600 text-xs mb-2">Sin acudiente asignado</p>}
+            </>
+          )}
+        </div>
+
+        {/* ── Hijos existentes (only in edit mode) ── */}
+        {user && existingChildren.length > 0 && (
+          <div className="border-t border-zinc-800 pt-3 mb-3">
+            <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wider">
+              Hijos vinculados ({existingChildren.length})
+            </label>
+            <div className="space-y-1">
+              {existingChildren.map((child) => (
+                <div key={child.id} className="flex items-center gap-2 bg-zinc-800/60 rounded px-3 py-1.5">
+                  <span className="text-white text-sm flex-1">{child.displayName}</span>
+                  <span className="text-zinc-500 text-xs">{child.email.includes("@sinregistro.local") ? "Sin correo" : child.email}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${child.membershipStatus === "activo" ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
+                    {child.membershipStatus}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Agregar hijos nuevos (only when creating or explicitly for edit) ── */}
+        <div className="border-t border-zinc-800 pt-3 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs text-zinc-400 uppercase tracking-wider">Agregar hijos</label>
+            <button type="button" onClick={addPendingChild}
+              className="text-gold hover:text-gold-dark text-xs border border-gold/30 hover:border-gold px-2 py-0.5 rounded transition">
+              + Agregar hijo
+            </button>
+          </div>
+          {pendingChildren.length === 0 && (
+            <p className="text-zinc-600 text-xs">Los hijos se crean con su acudiente como responsable.</p>
+          )}
+          <div className="space-y-2">
+            {pendingChildren.map((child) => (
+              <div key={child.key} className="bg-zinc-800/60 border border-zinc-700 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-zinc-400 uppercase tracking-wider">Hijo</span>
+                  <button type="button" onClick={() => removePendingChild(child.key)}
+                    className="text-zinc-500 hover:text-red-400 text-xs">✕ Quitar</button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-1">
+                    <input
+                      value={child.name}
+                      onChange={(e) => updatePendingChild(child.key, "name", e.target.value)}
+                      placeholder="Nombre *"
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm outline-none focus:border-gold"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <input
+                      type="email"
+                      value={child.email}
+                      onChange={(e) => updatePendingChild(child.key, "email", e.target.value)}
+                      placeholder="Email (opcional)"
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm outline-none focus:border-gold"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <input
+                      value={child.phone}
+                      onChange={(e) => updatePendingChild(child.key, "phone", e.target.value)}
+                      placeholder="Teléfono (opcional)"
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm outline-none focus:border-gold"
+                    />
+                  </div>
+                </div>
+                <p className="text-zinc-600 text-[10px] mt-1.5">Si no tiene email, se generará uno interno automáticamente.</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex gap-2 mt-4">
           <button type="button" onClick={onClose} className="flex-1 bg-zinc-800 text-zinc-400 py-2 rounded hover:bg-zinc-700 transition">
             Cancelar
@@ -517,11 +681,12 @@ type StatusFilter = "todos" | "vencidos" | "por_vencer" | "activos";
 
 // ─── Action Menu (3 dots) ─────────────────────────────────────
 
-function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, latestPayment, phone }: {
+function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, onAddChild, latestPayment, phone }: {
   onAdd: () => void;
   onEdit: (p: Payment) => void;
   onDelete: (p: Payment) => void;
   onEditUser: () => void;
+  onAddChild: () => void;
   latestPayment: Payment | null;
   phone: string | null;
 }) {
@@ -568,6 +733,12 @@ function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, latestPayment, phone 
           >
             <span className="text-gold">+</span> Agregar pago
           </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(false); onAddChild(); }}
+            className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-700 transition flex items-center gap-2"
+          >
+            <span className="text-blue-400">👦</span> Agregar hijo
+          </button>
         </div>
       )}
     </div>
@@ -576,19 +747,24 @@ function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, latestPayment, phone 
 
 // ─── User Row (expandable) ────────────────────────────────────
 
-function UserRow({ user, payments, dateFrom, dateTo, onAddPayment, onEditPayment, onDeletePayment, onEditUser }: {
+function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onEditPayment, onDeletePayment, onEditUser, onAddChild }: {
   user: AdminUser;
   payments: Payment[];
+  allUsers: AdminUser[];
   dateFrom: string;
   dateTo: string;
   onAddPayment: (userId: number) => void;
   onEditPayment: (p: Payment) => void;
   onDeletePayment: (p: Payment) => void;
   onEditUser: (user: AdminUser) => void;
+  onAddChild: (parentId: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const status = getUserExpiryStatus(user);
   const latestPayment = payments.length > 0 ? payments[0] : null;
+
+  const parent = user.parentId ? allUsers.find((u) => u.id === user.parentId) : null;
+  const children = allUsers.filter((u) => u.parentId === user.id);
 
   // Filter payments by date range
   const filteredPayments = useMemo(() => {
@@ -615,8 +791,22 @@ function UserRow({ user, payments, dateFrom, dateTo, onAddPayment, onEditPayment
           <div className="flex items-center gap-2">
             <span className="font-medium text-white truncate">{user.displayName}</span>
             {user.nickname && <span className="text-gold text-xs">({user.nickname})</span>}
+            {children.length > 0 && (
+              <span className="text-[10px] bg-blue-900/30 text-blue-400 border border-blue-800 px-1.5 py-0.5 rounded">
+                👨‍👧 {children.length} {children.length === 1 ? "hijo" : "hijos"}
+              </span>
+            )}
           </div>
-          <div className="text-zinc-500 text-xs truncate">{user.email}</div>
+          <div className="text-zinc-500 text-xs truncate">
+            {user.email.includes("@sinregistro.local") ? (
+              <span className="text-zinc-600 italic">Sin correo registrado</span>
+            ) : user.email}
+          </div>
+          {parent && (
+            <div className="text-zinc-600 text-[10px] truncate">
+              👤 Acudiente: <span className="text-zinc-500">{parent.displayName}</span>
+            </div>
+          )}
         </div>
 
         {/* Subscription level badge */}
@@ -685,6 +875,7 @@ function UserRow({ user, payments, dateFrom, dateTo, onAddPayment, onEditPayment
           onEdit={onEditPayment}
           onDelete={onDeletePayment}
           onEditUser={() => onEditUser(user)}
+          onAddChild={() => onAddChild(user.id)}
           latestPayment={latestPayment}
           phone={user.phone}
         />
@@ -693,6 +884,36 @@ function UserRow({ user, payments, dateFrom, dateTo, onAddPayment, onEditPayment
       {/* Expanded payment history */}
       {expanded && (
         <div className="bg-zinc-950/50 border-t border-zinc-800/50">
+          {/* Children summary */}
+          {children.length > 0 && (
+            <div className="px-12 py-3 border-b border-zinc-800/50">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Hijos</div>
+              <div className="flex flex-wrap gap-2">
+                {children.map((child) => {
+                  const childStatus = getUserExpiryStatus(child);
+                  return (
+                    <div key={child.id} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-1.5">
+                      <div>
+                        <span className="text-white text-xs font-medium">{child.displayName}</span>
+                        {child.email.includes("@sinregistro.local") ? (
+                          <span className="block text-zinc-600 text-[10px] italic">Sin correo</span>
+                        ) : (
+                          <span className="block text-zinc-500 text-[10px]">{child.email}</span>
+                        )}
+                      </div>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        child.membershipStatus === "activo" ? "bg-green-900/30 text-green-400" :
+                        child.membershipStatus === "pausado" ? "bg-amber-900/30 text-amber-400" :
+                        "bg-red-900/30 text-red-400"
+                      }`}>{child.membershipStatus}</span>
+                      <span className={`text-[10px] ${childStatus.color}`}>{childStatus.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {filteredPayments.length === 0 ? (
             <div className="px-12 py-4 text-zinc-600 text-sm flex items-center justify-between">
               <span>No hay pagos registrados</span>
@@ -799,7 +1020,7 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [modal, setModal] = useState<{ payment: Payment | null; preselectedUserId?: number } | null>(null);
-  const [userModal, setUserModal] = useState<{ user: AdminUser | null } | null>(null);
+  const [userModal, setUserModal] = useState<{ user: AdminUser | null; prefilledParentId?: number } | null>(null);
   const [ingresosPeriod, setIngresosPeriod] = useState<"mes" | "trimestre" | "semestre" | "año" | "global">("mes");
   const [sortBy, setSortBy] = useState<"reciente" | "nombre_asc" | "nombre_desc" | "total_desc" | "total_asc">("reciente");
 
@@ -1099,12 +1320,14 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
                 key={user.id}
                 user={user}
                 payments={userPayments[user.id] ?? []}
+                allUsers={users}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 onAddPayment={(userId) => setModal({ payment: null, preselectedUserId: userId })}
                 onEditPayment={(p) => setModal({ payment: p })}
                 onDeletePayment={handleDelete}
                 onEditUser={(u) => setUserModal({ user: u })}
+                onAddChild={(parentId) => setUserModal({ user: null, prefilledParentId: parentId })}
               />
             ))
           )}
@@ -1124,6 +1347,8 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
       {userModal && (
         <UserModal
           user={userModal.user}
+          users={users}
+          prefilledParentId={userModal.prefilledParentId}
           onSave={load}
           onClose={() => setUserModal(null)}
         />

@@ -97,6 +97,7 @@ export interface UserData {
   trialEndsAt: string | null;
   lastPaymentAt: string | null;
   membershipNotes: string | null;
+  parentId: number | null;
   createdAt: string;
 }
 
@@ -135,14 +136,15 @@ export const adminApi = {
   getUsers: () => apiFetch<{ users: UserData[] }>("/admin/users"),
 
   createUser: (data: {
-    email: string;
-    password: string;
+    email?: string;
+    password?: string;
     displayName: string;
     phone?: string;
-    roles: string[];
+    roles?: string[];
     subscriptionLevel?: string;
     isFighter?: boolean;
     sedes?: string[];
+    parentId?: number | null;
   }) => apiFetch<{ user: UserData & { roles: string[] } }>("/admin/users", { method: "POST", body: data }),
 
   updateUser: (userId: number, data: {
@@ -152,6 +154,7 @@ export const adminApi = {
     isFighter?: boolean;
     password?: string;
     sedes?: string[];
+    parentId?: number | null;
   }) => apiFetch<{ user: UserData }>(`/admin/users/${userId}`, { method: "PUT", body: data }),
 
   deleteUser: (userId: number) =>

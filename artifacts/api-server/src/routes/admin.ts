@@ -51,6 +51,7 @@ async function fetchUsersWithRoles() {
       trialEndsAt: usersTable.trialEndsAt,
       lastPaymentAt: usersTable.lastPaymentAt,
       membershipNotes: usersTable.membershipNotes,
+      parentId: usersTable.parentId,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -84,12 +85,26 @@ adminRouter.get("/admin/users", requireProfesorOrAdmin, async (_req, res) => {
 
 adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
   try {
-    const { email, displayName, phone, roles, subscriptionLevel, isFighter, sedes } = req.body;
+    const { email: rawEmail, displayName, phone, roles, subscriptionLevel, isFighter, sedes, parentId } = req.body;
     const password = req.body.password || "Ninja123";
 
-    if (!email || !displayName) {
-      res.status(400).json({ error: "Email y nombre son obligatorios" });
+    // If email is empty and a parentId is set (child without account), auto-generate a placeholder
+    const email = rawEmail?.trim()
+      ? rawEmail.trim()
+      : `${(displayName || "hijo").toLowerCase().replace(/\s+/g, ".").replace(/[^a-z0-9.]/g, "")}.${Math.random().toString(36).slice(2, 6)}@sinregistro.local`;
+
+    if (!displayName) {
+      res.status(400).json({ error: "El nombre es obligatorio" });
       return;
+    }
+
+    // Validate parentId if provided
+    if (parentId !== undefined && parentId !== null) {
+      const parentExists = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.id, Number(parentId))).limit(1);
+      if (parentExists.length === 0) {
+        res.status(400).json({ error: "El acudiente especificado no existe" });
+        return;
+      }
     }
     if (password.length < 6) {
       res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
@@ -137,6 +152,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         sedes: sedesArray,
         membershipStatus: "activo",
         trialEndsAt,
+        parentId: parentId ? Number(parentId) : null,
       })
       .returning({
         id: usersTable.id,
@@ -154,6 +170,7 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         trialEndsAt: usersTable.trialEndsAt,
         lastPaymentAt: usersTable.lastPaymentAt,
         membershipNotes: usersTable.membershipNotes,
+        parentId: usersTable.parentId,
       });
 
     for (const role of userRoles) {
@@ -175,7 +192,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { displayName, email, phone, isFighter, password, sedes } = req.body;
+    const { displayName, email, phone, isFighter, password, sedes, parentId } = req.body;
 
     const [existing] = await db
       .select({ id: usersTable.id })
@@ -201,6 +218,16 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
     if (password !== undefined && password.length >= 6) {
       updates.passwordHash = await bcrypt.hash(password, 12);
     }
+    if (parentId !== undefined) {
+      if (parentId === null) {
+        updates.parentId = null;
+      } else {
+        const parentNum = Number(parentId);
+        if (!isNaN(parentNum) && parentNum !== userId) {
+          updates.parentId = parentNum;
+        }
+      }
+    }
 
     const [updated] = await db
       .update(usersTable)
@@ -222,6 +249,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         trialEndsAt: usersTable.trialEndsAt,
         lastPaymentAt: usersTable.lastPaymentAt,
         membershipNotes: usersTable.membershipNotes,
+        parentId: usersTable.parentId,
       });
 
     res.json({ user: updated });

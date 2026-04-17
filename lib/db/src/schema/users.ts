@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex, boolean, date, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, varchar, pgEnum, integer, uniqueIndex, boolean, date, real, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -27,6 +27,7 @@ export const usersTable = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at"),
   lastPaymentAt: timestamp("last_payment_at"),
   membershipNotes: text("membership_notes"),
+  parentId: integer("parent_id").references((): AnyPgColumn => usersTable.id),
   isDeleted: boolean("is_deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

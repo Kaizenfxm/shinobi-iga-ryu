@@ -87,6 +87,9 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS subscription_level subscription_level;"
     );
+    await client.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES users(id);"
+    );
 
     console.log("[migrations] startup migrations complete");
   } catch (err) {

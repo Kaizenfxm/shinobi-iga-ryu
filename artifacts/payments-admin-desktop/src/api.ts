@@ -44,6 +44,7 @@ export interface AdminUser {
   subscriptionLevel?: string;
   isFighter?: boolean;
   sedes?: string[];
+  parentId?: number | null;
 }
 
 export type SubscriptionLevel = "basico" | "medio" | "avanzado" | "personalizado";
@@ -111,9 +112,9 @@ export const adminApi = {
     apiFetch<{ payment: Payment }>(`/admin/payments/${id}`, { method: "PUT", body: data }),
   deletePayment: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/payments/${id}`, { method: "DELETE" }),
-  createUser: (data: { email: string; displayName: string; password?: string; phone?: string; roles?: string[]; subscriptionLevel?: string; isFighter?: boolean; sedes?: string[] }) =>
+  createUser: (data: { email?: string; displayName: string; password?: string; phone?: string; roles?: string[]; subscriptionLevel?: string; isFighter?: boolean; sedes?: string[]; parentId?: number | null }) =>
     apiFetch<{ user: AdminUser }>("/admin/users", { method: "POST", body: data }),
-  updateUser: (id: number, data: { displayName?: string; email?: string; phone?: string; password?: string; isFighter?: boolean; sedes?: string[] }) =>
+  updateUser: (id: number, data: { displayName?: string; email?: string; phone?: string; password?: string; isFighter?: boolean; sedes?: string[]; parentId?: number | null }) =>
     apiFetch<{ user: AdminUser }>(`/admin/users/${id}`, { method: "PUT", body: data }),
   updateUserRoles: (id: number, roles: string[]) =>
     apiFetch<{ user: AdminUser }>(`/admin/users/${id}/roles`, { method: "PUT", body: { roles } }),
