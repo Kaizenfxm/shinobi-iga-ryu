@@ -99,7 +99,7 @@ function PaymentModal({
   payment: Payment | null; // null = new
   users: AdminUser[];
   preselectedUserId?: number;
-  onSave: (data: { userId: number; paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string }, id?: number) => Promise<void>;
+  onSave: (data: { userId: number; paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string; paidByUserId?: number | null }, id?: number) => Promise<void>;
   onClose: () => void;
 }) {
   const preselectedUser = preselectedUserId ? users.find(u => u.id === preselectedUserId) : null;
@@ -110,6 +110,7 @@ function PaymentModal({
   const [subLevel, setSubLevel] = useState(payment?.subscriptionLevel ?? preselectedUser?.subscriptionLevel ?? "basico");
   const [amount, setAmount] = useState(payment?.amount?.toString() ?? "");
   const [notes, setNotes] = useState(payment?.notes ?? "");
+  const [paidBy, setPaidBy] = useState<number | null>(payment?.paidByUserId ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [userSearch, setUserSearch] = useState("");
@@ -147,6 +148,7 @@ function PaymentModal({
           paymentMethod: method,
           subscriptionLevel: subLevel,
           notes: notes || undefined,
+          paidByUserId: paidBy,
         },
         payment?.id
       );
@@ -269,6 +271,42 @@ function PaymentModal({
             />
           </div>
         </div>
+
+        {/* Pagado por — only shown when the selected user has a parent */}
+        {(() => {
+          const selectedUser = users.find(u => u.id === userId);
+          const parent = selectedUser?.parentId ? users.find(u => u.id === selectedUser.parentId) : null;
+          if (!parent) return null;
+          return (
+            <div className="mb-3">
+              <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">Pagado por</label>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPaidBy(null)}
+                  className={`flex-1 px-3 py-1.5 rounded text-xs font-medium border transition ${
+                    paidBy === null
+                      ? "bg-zinc-600 text-white border-zinc-500"
+                      : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                  }`}
+                >
+                  {selectedUser.displayName}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaidBy(parent.id)}
+                  className={`flex-1 px-3 py-1.5 rounded text-xs font-medium border transition ${
+                    paidBy === parent.id
+                      ? "bg-blue-800 text-blue-200 border-blue-600"
+                      : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                  }`}
+                >
+                  👤 {parent.displayName}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="flex gap-2 mt-4">
           <button type="button" onClick={onClose} className="flex-1 bg-zinc-800 text-zinc-400 py-2 rounded hover:bg-zinc-700 transition">
@@ -780,30 +818,22 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
   const parent = user.parentId ? allUsers.find((u) => u.id === user.parentId) : null;
   const children = allUsers.filter((u) => u.parentId === user.id);
 
-  // Combined total: own payments + children's payments
+  // Combined total: own payments + only children's payments the parent actually paid for
   const ownTotal = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
   const childrenTotal = children.reduce((sum, child) => {
-    return sum + (userPayments[child.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
+    return sum + (userPayments[child.id] ?? [])
+      .filter((p) => p.paidByUserId === user.id)
+      .reduce((s, p) => s + (p.amount ?? 0), 0);
   }, 0);
   const combinedTotal = ownTotal + childrenTotal;
 
-  // Merge parent's own payments + all children's payments into one sorted list
-  type FamilyPayment = Payment & { forChildName?: string };
-  const allFamilyPayments = useMemo<FamilyPayment[]>(() => {
-    const own: FamilyPayment[] = payments.map((p) => ({ ...p }));
-    const childPs: FamilyPayment[] = children.flatMap((child) =>
-      (userPayments[child.id] ?? []).map((p) => ({ ...p, forChildName: child.displayName }))
-    );
-    return [...own, ...childPs].sort((a, b) => b.paymentDate.localeCompare(a.paymentDate));
-  }, [payments, children, userPayments]);
-
-  // Filter by date range
+  // Parent shows only its own payments; children's payments appear in each child's own card
   const filteredPayments = useMemo(() => {
-    let list = allFamilyPayments;
+    let list = payments;
     if (dateFrom) list = list.filter((p) => p.paymentDate >= dateFrom);
     if (dateTo) list = list.filter((p) => p.paymentDate <= dateTo);
     return list;
-  }, [allFamilyPayments, dateFrom, dateTo]);
+  }, [payments, dateFrom, dateTo]);
 
   return (
     <div className="border-b border-zinc-800/50">
@@ -927,42 +957,6 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
       {/* Expanded payment history */}
       {expanded && (
         <div className="bg-zinc-950/50 border-t border-zinc-800/50">
-          {/* Children summary */}
-          {children.length > 0 && (
-            <div className="px-12 py-3 border-b border-zinc-800/50">
-              <div className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Hijos</div>
-              <div className="flex flex-wrap gap-2">
-                {children.map((child) => {
-                  const childStatus = getUserExpiryStatus(child);
-                  return (
-                    <div key={child.id} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
-                      <div className="mr-1">
-                        <span className="text-white text-xs font-medium">{child.displayName}</span>
-                        {child.email.includes("@sinregistro.local") ? (
-                          <span className="block text-zinc-600 text-[10px] italic">Sin correo</span>
-                        ) : (
-                          <span className="block text-zinc-500 text-[10px]">{child.email}</span>
-                        )}
-                      </div>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                        child.membershipStatus === "activo" ? "bg-green-900/30 text-green-400" :
-                        child.membershipStatus === "pausado" ? "bg-amber-900/30 text-amber-400" :
-                        "bg-red-900/30 text-red-400"
-                      }`}>{child.membershipStatus}</span>
-                      <span className={`text-[10px] ${childStatus.color}`}>{childStatus.label}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onAddPayment(child.id); }}
-                        className="ml-1 text-[10px] px-2 py-0.5 rounded border border-gold/40 text-gold hover:bg-gold/10 transition"
-                      >
-                        + Pago
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {filteredPayments.length === 0 ? (
             <div className="px-12 py-4 text-zinc-600 text-sm flex items-center justify-between">
               <span>No hay pagos registrados</span>
@@ -982,6 +976,7 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
                   <th className="px-4 py-2 text-left">Paquete</th>
                   <th className="px-4 py-2 text-left">Método</th>
                   <th className="px-4 py-2 text-right">Monto</th>
+                  {parent && <th className="px-4 py-2 text-left">Pagado por</th>}
                   <th className="px-4 py-2 text-left">Notas</th>
                   <th className="px-4 py-2 text-right pr-6"></th>
                 </tr>
@@ -995,19 +990,12 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
                   const expColor = days < 0 ? "text-red-400" : days <= 7 ? "text-amber-400" : "text-green-400";
                   const expLabel = days < 0 ? `Venció hace ${Math.abs(days)}d` : days <= 7 ? `Vence en ${days}d` : `${days}d`;
 
-                  const fp = p as Payment & { forChildName?: string };
+                  const paidByUser = p.paidByUserId ? allUsers.find(u => u.id === p.paidByUserId) : null;
                   return (
-                    <tr key={`${p.id}-${fp.forChildName ?? "own"}`} className={`border-t border-zinc-800/30 hover:bg-zinc-800/20 transition ${i === 0 ? "bg-zinc-900/30" : ""} ${fp.forChildName ? "opacity-90" : ""}`}>
+                    <tr key={p.id} className={`border-t border-zinc-800/30 hover:bg-zinc-800/20 transition ${i === 0 ? "bg-zinc-900/30" : ""}`}>
                       <td className="pl-12 pr-4 py-2 text-sm text-white">
-                        <div>
-                          {fmtDate(p.paymentDate)}
-                          {i === 0 && <span className="ml-2 text-[10px] text-gold uppercase">último</span>}
-                        </div>
-                        {fp.forChildName && (
-                          <span className="text-[10px] text-blue-400 bg-blue-900/20 border border-blue-800/40 px-1.5 py-0.5 rounded mt-0.5 inline-block">
-                            👦 por {fp.forChildName}
-                          </span>
-                        )}
+                        {fmtDate(p.paymentDate)}
+                        {i === 0 && <span className="ml-2 text-[10px] text-gold uppercase">último</span>}
                       </td>
                       <td className="px-4 py-2 text-sm">
                         <span className="text-zinc-300">{fmtDate(expDate)}</span>
@@ -1035,6 +1023,15 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
                       <td className="px-4 py-2 text-sm text-right">
                         <span className="text-gold font-medium">{fmtMoney(p.amount)}</span>
                       </td>
+                      {parent && (
+                        <td className="px-4 py-2 text-sm">
+                          {paidByUser ? (
+                            <span className="text-blue-400">💳 {paidByUser.displayName}</span>
+                          ) : (
+                            <span className="text-zinc-600">—</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-2 text-sm text-zinc-500 max-w-[200px] truncate">
                         {p.notes ?? "—"}
                       </td>
@@ -1059,6 +1056,34 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
                 })}
               </tbody>
             </table>
+          )}
+
+          {/* Children — full embedded rows, shown below parent's own payments */}
+          {children.length > 0 && (
+            <div className="border-t border-zinc-800/50">
+              <div className="px-4 py-1.5 bg-zinc-900/60 border-b border-zinc-800/30">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                  👨‍👧 {children.length === 1 ? "Hijo" : "Hijos"}
+                </span>
+              </div>
+              {children.map((child) => (
+                <div key={child.id} className="border-l-4 border-zinc-700/40 ml-8">
+                  <UserRow
+                    user={child}
+                    payments={userPayments[child.id] ?? []}
+                    allUsers={allUsers}
+                    userPayments={userPayments}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    onAddPayment={onAddPayment}
+                    onEditPayment={onEditPayment}
+                    onDeletePayment={onDeletePayment}
+                    onEditUser={onEditUser}
+                    onAddChild={onAddChild}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -1120,7 +1145,8 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
 
   // Filter & sort users
   const filteredUsers = useMemo(() => {
-    let list = users;
+    // Only show root users in the main list — children appear inside their parent's row
+    let list = users.filter((u) => !u.parentId);
 
     // Text search
     if (searchQuery) {
@@ -1145,11 +1171,15 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
       });
     }
 
-    // Date filter: only show users who have payments in the date range
+    // Date filter: show users (or their family) with payments in the date range
     if (dateFrom || dateTo) {
       list = list.filter((u) => {
-        const ups = userPayments[u.id] ?? [];
-        return ups.some((p) => {
+        const children = users.filter((c) => c.parentId === u.id);
+        const familyPayments = [
+          ...(userPayments[u.id] ?? []),
+          ...children.flatMap((c) => userPayments[c.id] ?? []),
+        ];
+        return familyPayments.some((p) => {
           if (dateFrom && p.paymentDate < dateFrom) return false;
           if (dateTo && p.paymentDate > dateTo) return false;
           return true;
@@ -1166,7 +1196,9 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
           const own = (userPayments[u.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
           const childrenSum = users
             .filter((c) => c.parentId === u.id)
-            .reduce((s, c) => s + (userPayments[c.id] ?? []).reduce((cs, p) => cs + (p.amount ?? 0), 0), 0);
+            .reduce((s, c) => s + (userPayments[c.id] ?? [])
+              .filter((p) => p.paidByUserId === u.id)
+              .reduce((cs, p) => cs + (p.amount ?? 0), 0), 0);
           return own + childrenSum;
         };
         return sortBy === "total_desc" ? getCombined(b) - getCombined(a) : getCombined(a) - getCombined(b);
@@ -1234,7 +1266,7 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleSave = async (
-    data: { userId: number; paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string },
+    data: { userId: number; paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string; paidByUserId?: number | null },
     id?: number
   ) => {
     if (id) {

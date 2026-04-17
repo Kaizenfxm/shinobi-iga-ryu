@@ -72,6 +72,7 @@ export interface Payment {
   subscriptionLevel: string | null;
   notes: string | null;
   registeredBy: number;
+  paidByUserId?: number | null;
   createdAt: string;
   userName?: string;
   userNickname?: string | null;
@@ -107,9 +108,9 @@ export const adminApi = {
     apiFetch<{ payments: Payment[] }>("/admin/payments"),
   getUserPayments: (userId: number) =>
     apiFetch<{ payments: Payment[] }>(`/admin/users/${userId}/payments`),
-  createPayment: (userId: number, data: { paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string }) =>
+  createPayment: (userId: number, data: { paymentDate: string; expiresDate: string; amount?: number; paymentMethod: string; subscriptionLevel?: string; notes?: string; paidByUserId?: number | null }) =>
     apiFetch<{ payment: Payment }>(`/admin/users/${userId}/payments`, { method: "POST", body: data }),
-  updatePayment: (id: number, data: { paymentDate?: string; expiresDate?: string; amount?: number | null; paymentMethod?: string; subscriptionLevel?: string | null; notes?: string | null }) =>
+  updatePayment: (id: number, data: { paymentDate?: string; expiresDate?: string; amount?: number | null; paymentMethod?: string; subscriptionLevel?: string | null; notes?: string | null; paidByUserId?: number | null }) =>
     apiFetch<{ payment: Payment }>(`/admin/payments/${id}`, { method: "PUT", body: data }),
   deletePayment: (id: number) =>
     apiFetch<{ success: boolean }>(`/admin/payments/${id}`, { method: "DELETE" }),

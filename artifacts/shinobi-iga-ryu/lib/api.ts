@@ -114,6 +114,7 @@ export interface PaymentRecord {
   subscriptionLevel: string | null;
   notes: string | null;
   registeredBy: number;
+  paidByUserId?: number | null;
   createdAt: string;
 }
 
@@ -193,6 +194,7 @@ export const adminApi = {
     paymentMethod: PaymentMethod;
     subscriptionLevel?: string | null;
     notes?: string | null;
+    paidByUserId?: number | null;
   }) =>
     apiFetch<{ payment: PaymentRecord }>(`/admin/users/${userId}/payments`, { method: "POST", body: data }),
 
@@ -203,6 +205,7 @@ export const adminApi = {
     paymentMethod?: PaymentMethod;
     subscriptionLevel?: string | null;
     notes?: string | null;
+    paidByUserId?: number | null;
   }) =>
     apiFetch<{ payment: PaymentRecord }>(`/admin/payments/${paymentId}`, { method: "PUT", body: data }),
 

@@ -52,6 +52,7 @@ export const paymentHistoryTable = pgTable("payment_history", {
   subscriptionLevel: subscriptionLevelEnum("subscription_level"),
   notes: text("notes"),
   registeredBy: integer("registered_by").references(() => usersTable.id).notNull(),
+  paidByUserId: integer("paid_by_user_id").references((): AnyPgColumn => usersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

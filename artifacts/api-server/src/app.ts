@@ -93,6 +93,9 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS internal_name VARCHAR(255);"
     );
+    await client.query(
+      "ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS paid_by_user_id INTEGER REFERENCES users(id);"
+    );
 
     console.log("[migrations] startup migrations complete");
   } catch (err) {

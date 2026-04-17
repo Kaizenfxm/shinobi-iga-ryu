@@ -736,6 +736,7 @@ adminRouter.get("/admin/users/:id/payments", requireAdmin, async (req, res) => {
         subscriptionLevel: paymentHistoryTable.subscriptionLevel,
         notes: paymentHistoryTable.notes,
         registeredBy: paymentHistoryTable.registeredBy,
+        paidByUserId: paymentHistoryTable.paidByUserId,
         createdAt: paymentHistoryTable.createdAt,
       })
       .from(paymentHistoryTable)
@@ -757,7 +758,7 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
       return;
     }
 
-    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel } = req.body;
+    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel, paidByUserId } = req.body;
 
     if (!paymentDate || !expiresDate || !paymentMethod) {
       res.status(400).json({ error: "Se requieren paymentDate, expiresDate y paymentMethod" });
@@ -789,6 +790,7 @@ adminRouter.post("/admin/users/:id/payments", requireAdmin, async (req, res) => 
           subscriptionLevel: subscriptionLevel || null,
           notes: notes || null,
           registeredBy: req.session.userId!,
+          paidByUserId: paidByUserId ? parseInt(String(paidByUserId), 10) : null,
         })
         .returning();
       newPayment = inserted;
@@ -824,6 +826,7 @@ adminRouter.get("/admin/payments", requireAdmin, async (_req, res) => {
         subscriptionLevel: paymentHistoryTable.subscriptionLevel,
         notes: paymentHistoryTable.notes,
         registeredBy: paymentHistoryTable.registeredBy,
+        paidByUserId: paymentHistoryTable.paidByUserId,
         createdAt: paymentHistoryTable.createdAt,
         userName: usersTable.displayName,
         userNickname: usersTable.nickname,
@@ -857,7 +860,7 @@ adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel } = req.body;
+    const { paymentDate, expiresDate, amount, paymentMethod, notes, subscriptionLevel, paidByUserId } = req.body;
 
     const validMethods = ["nequi", "daviplata", "banco", "link", "tarjeta", "efectivo"];
     if (paymentMethod && !validMethods.includes(paymentMethod)) {
@@ -882,6 +885,7 @@ adminRouter.put("/admin/payments/:id", requireAdmin, async (req, res) => {
           ...(paymentMethod !== undefined && { paymentMethod }),
           ...(subscriptionLevel !== undefined && { subscriptionLevel: subscriptionLevel || null }),
           ...(notes !== undefined && { notes: notes || null }),
+          ...(paidByUserId !== undefined && { paidByUserId: paidByUserId ? parseInt(String(paidByUserId), 10) : null }),
           updatedAt: new Date(),
         })
         .where(eq(paymentHistoryTable.id, paymentId))

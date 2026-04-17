@@ -1005,6 +1005,7 @@ function UsersPanel({
   const [paymentHistory, setPaymentHistory] = useState<Record<number, PaymentRecord[]>>({});
   const [paymentHistoryOpen, setPaymentHistoryOpen] = useState<Record<number, boolean>>({});
   const [paymentForms, setPaymentForms] = useState<Record<number, PaymentFormState | null>>({});
+  const [paymentFormPaidBy, setPaymentFormPaidBy] = useState<Record<number, number | null>>({});
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState<Record<number, boolean>>({});
   const [confirmDeletePaymentId, setConfirmDeletePaymentId] = useState<number | null>(null);
 
@@ -1100,6 +1101,7 @@ function UsersPanel({
   const openAddPaymentForm = (userId: number) => {
     const user = users.find(u => u.id === userId);
     setPaymentForms((prev) => ({ ...prev, [userId]: makeBlankPaymentForm(user?.subscriptionLevel) }));
+    setPaymentFormPaidBy((prev) => ({ ...prev, [userId]: null }));
   };
 
   const openEditPaymentForm = (userId: number, p: PaymentRecord) => {
@@ -1115,10 +1117,12 @@ function UsersPanel({
         notes: p.notes || "",
       },
     }));
+    setPaymentFormPaidBy((prev) => ({ ...prev, [userId]: p.paidByUserId ?? null }));
   };
 
   const closePaymentForm = (userId: number) => {
     setPaymentForms((prev) => ({ ...prev, [userId]: null }));
+    setPaymentFormPaidBy((prev) => ({ ...prev, [userId]: null }));
   };
 
   const setPaymentFormField = (userId: number, field: keyof PaymentFormState, value: string) => {
@@ -1148,6 +1152,7 @@ function UsersPanel({
         paymentMethod: form.paymentMethod,
         subscriptionLevel: form.subscriptionLevel,
         notes: form.notes || null,
+        paidByUserId: paymentFormPaidBy[userId] ?? null,
       };
       if (form.editId) {
         await adminApi.updatePayment(form.editId, payload);
@@ -1228,6 +1233,8 @@ function UsersPanel({
         return new Date(expiry) >= thirtyDaysAgo;
       });
     }
+    // Children only appear inside their parent's card — hide from main list
+    list = list.filter((u) => !u.parentId);
     return list;
   })();
 
@@ -1390,13 +1397,15 @@ function UsersPanel({
         </View>
       )}
       {filteredUsers.map((u) => {
+        // eslint-disable-next-line no-shadow
+        const renderCard = (u: UserData, isNested = false): React.ReactElement => {
         const isExpanded = expandedUser === u.id;
         const isCurrentUser = u.id === currentUser?.id;
 
         return (
           <View
             key={u.id}
-            style={styles.userCard}
+            style={[styles.userCard, isNested && styles.nestedUserCard]}
           >
             <View style={styles.userHeader}>
               <Pressable
@@ -1607,45 +1616,6 @@ function UsersPanel({
                   </Text>
                 )}
 
-                {/* ── HIJOS ── */}
-                {(() => {
-                  const children = users.filter((x) => x.parentId === u.id);
-                  if (children.length === 0) return null;
-                  return (
-                    <View style={{ marginBottom: 8 }}>
-                      <Text style={[styles.sectionLabel, { marginBottom: 6 }]}>HIJOS</Text>
-                      {children.map((child) => {
-                        const exp = child.membershipExpiresAt;
-                        const days = exp ? Math.ceil((new Date(exp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-                        const expColor = days === null ? "#555" : days < 0 ? "#f87171" : days <= 7 ? "#fbbf24" : "#4ade80";
-                        const expLabel = days === null ? "Sin pagos" : days < 0 ? `Venció hace ${Math.abs(days)}d` : days <= 7 ? `Vence en ${days}d` : `${days}d restantes`;
-                        return (
-                          <View key={child.id} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a1a", borderRadius: 8, padding: 10, marginBottom: 6 }}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{child.displayName}</Text>
-                              <Text style={{ color: "#555", fontSize: 10 }}>
-                                {child.email.includes("@sinregistro.local") ? "Sin correo" : child.email}
-                              </Text>
-                              <Text style={{ color: expColor, fontSize: 10, marginTop: 2 }}>{expLabel}</Text>
-                            </View>
-                            <View style={{ backgroundColor: child.membershipStatus === "activo" ? "#1a3d1a" : child.membershipStatus === "pausado" ? "#3d3000" : "#3d1a1a", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 }}>
-                              <Text style={{ color: child.membershipStatus === "activo" ? "#4ade80" : child.membershipStatus === "pausado" ? "#fbbf24" : "#f87171", fontSize: 9 }}>
-                                {child.membershipStatus}
-                              </Text>
-                            </View>
-                            <Pressable
-                              style={{ backgroundColor: "#2a2200", borderWidth: 1, borderColor: "#D4AF37", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}
-                              onPress={() => openAddPaymentForm(child.id)}
-                            >
-                              <Text style={{ color: "#D4AF37", fontSize: 10, fontWeight: "bold" }}>+ Pago</Text>
-                            </Pressable>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  );
-                })()}
-
                 {/* ── HISTORIAL DE PAGOS ── */}
                 <Pressable
                   style={styles.paymentHistoryToggle}
@@ -1668,17 +1638,10 @@ function UsersPanel({
                       <ActivityIndicator color="#D4AF37" style={{ margin: 12 }} />
                     ) : (
                       <>
-                        {/* Existing payments list — merged with children's payments */}
+                        {/* Own payments only — children's payments appear in each child's own card */}
                         {(() => {
-                          const children = users.filter((c) => c.parentId === u.id);
-                          type MobilePayment = PaymentRecord & { forChildName?: string };
-                          const allMerged: MobilePayment[] = [
-                            ...(paymentHistory[u.id] ?? []).map((p) => ({ ...p })),
-                            ...children.flatMap((child) =>
-                              (paymentHistory[child.id] ?? []).map((p) => ({ ...p, forChildName: child.displayName }))
-                            ),
-                          ].sort((a, b) => b.paymentDate.localeCompare(a.paymentDate));
-                          return allMerged.map((p) => (
+                          const ownPayments = paymentHistory[u.id] ?? [];
+                          return ownPayments.map((p) => (
                           <View key={p.id} style={styles.paymentRecord}>
                             <View style={styles.paymentRecordHeader}>
                               <View style={styles.paymentMethodBadge}>
@@ -1742,21 +1705,26 @@ function UsersPanel({
                                 Vence: {p.expiresDate}
                               </Text>
                             </View>
+                            {(() => {
+                              const hasParent = !!u.parentId;
+                              if (!hasParent) return null;
+                              const payer = p.paidByUserId ? users.find((x) => x.id === p.paidByUserId) : null;
+                              const payerName = payer ? payer.displayName : u.displayName;
+                              const isParent = !!payer;
+                              return (
+                                <Text style={{ color: isParent ? "#60a5fa" : "#888", fontSize: 10, marginTop: 3 }}>
+                                  💳 {payerName}
+                                </Text>
+                              );
+                            })()}
                             {p.notes ? (
                               <Text style={styles.paymentRecordNotes}>{p.notes}</Text>
-                            ) : null}
-                            {(p as { forChildName?: string }).forChildName ? (
-                              <View style={{ marginTop: 4 }}>
-                                <Text style={{ color: "#3b82f6", fontSize: 10, backgroundColor: "#1e3a5f22", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: "flex-start" }}>
-                                  👦 por {(p as { forChildName?: string }).forChildName}
-                                </Text>
-                              </View>
                             ) : null}
                           </View>
                           ));
                         })()}
 
-                        {(paymentHistory[u.id] ?? []).length === 0 && users.filter(c => c.parentId === u.id).every(c => (paymentHistory[c.id] ?? []).length === 0) && !paymentForms[u.id] && (
+                        {(paymentHistory[u.id] ?? []).length === 0 && !paymentForms[u.id] && (
                           <Text style={styles.paymentEmptyText}>Sin pagos registrados</Text>
                         )}
 
@@ -1843,6 +1811,36 @@ function UsersPanel({
                               })}
                             </View>
 
+                            {/* Pagado por — solo si el usuario tiene acudiente */}
+                            {(() => {
+                              const parent = u.parentId ? users.find((x) => x.id === u.parentId) : null;
+                              if (!parent) return null;
+                              const paidBy = paymentFormPaidBy[u.id] ?? null;
+                              return (
+                                <View style={{ marginBottom: 8 }}>
+                                  <Text style={styles.paymentFormLabel}>Pagado por</Text>
+                                  <View style={styles.paymentMethodSelector}>
+                                    <Pressable
+                                      style={[styles.paymentMethodChip, paidBy === null && styles.paymentMethodChipActive]}
+                                      onPress={() => setPaymentFormPaidBy((prev) => ({ ...prev, [u.id]: null }))}
+                                    >
+                                      <Text style={[styles.paymentMethodChipText, paidBy === null && { color: "#000" }]}>
+                                        {u.displayName}
+                                      </Text>
+                                    </Pressable>
+                                    <Pressable
+                                      style={[styles.paymentMethodChip, paidBy === parent.id && { backgroundColor: "#1e3a5f", borderColor: "#3b82f6" }]}
+                                      onPress={() => setPaymentFormPaidBy((prev) => ({ ...prev, [u.id]: parent.id }))}
+                                    >
+                                      <Text style={[styles.paymentMethodChipText, paidBy === parent.id && { color: "#60a5fa" }]}>
+                                        👤 {parent.displayName}
+                                      </Text>
+                                    </Pressable>
+                                  </View>
+                                </View>
+                              );
+                            })()}
+
                             <Text style={styles.paymentFormLabel}>Notas</Text>
                             <TextInput
                               style={[styles.paymentFormInput, { height: 48, textAlignVertical: "top", marginBottom: 10 }]}
@@ -1885,6 +1883,20 @@ function UsersPanel({
                     )}
                   </View>
                 )}
+
+                {/* ── HIJOS ── full cards embedded */}
+                {(() => {
+                  const children = users.filter((x) => x.parentId === u.id);
+                  if (children.length === 0) return null;
+                  return (
+                    <View style={{ marginBottom: 8 }}>
+                      <Text style={[styles.sectionLabel, { marginBottom: 6 }]}>
+                        👨‍👧 HIJOS ({children.length})
+                      </Text>
+                      {children.map((child) => renderCard(child, true))}
+                    </View>
+                  );
+                })()}
 
                 <Pressable
                   style={styles.paymentHistoryToggle}
@@ -2114,6 +2126,8 @@ function UsersPanel({
             )}
           </View>
         );
+        }; // end renderCard
+        return renderCard(u);
       })}
 
       {/* Belt Assignment Modal */}
@@ -6161,6 +6175,13 @@ const styles = StyleSheet.create({
     borderTopColor: "#D4AF3722",
     padding: 10,
     marginBottom: 6,
+  },
+  nestedUserCard: {
+    marginLeft: 10,
+    borderLeftWidth: 2,
+    borderLeftColor: "#1a1a2e",
+    borderTopColor: "#3b82f622",
+    backgroundColor: "#050505",
   },
   userHeader: {
     flexDirection: "row",
