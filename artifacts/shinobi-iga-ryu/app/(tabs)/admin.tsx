@@ -1582,6 +1582,45 @@ function UsersPanel({
                   </Text>
                 )}
 
+                {/* ── HIJOS ── */}
+                {(() => {
+                  const children = users.filter((x) => x.parentId === u.id);
+                  if (children.length === 0) return null;
+                  return (
+                    <View style={{ marginBottom: 8 }}>
+                      <Text style={[styles.sectionLabel, { marginBottom: 6 }]}>HIJOS</Text>
+                      {children.map((child) => {
+                        const exp = child.membershipExpiresAt;
+                        const days = exp ? Math.ceil((new Date(exp).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        const expColor = days === null ? "#555" : days < 0 ? "#f87171" : days <= 7 ? "#fbbf24" : "#4ade80";
+                        const expLabel = days === null ? "Sin pagos" : days < 0 ? `Venció hace ${Math.abs(days)}d` : days <= 7 ? `Vence en ${days}d` : `${days}d restantes`;
+                        return (
+                          <View key={child.id} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a1a", borderRadius: 8, padding: 10, marginBottom: 6 }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>{child.displayName}</Text>
+                              <Text style={{ color: "#555", fontSize: 10 }}>
+                                {child.email.includes("@sinregistro.local") ? "Sin correo" : child.email}
+                              </Text>
+                              <Text style={{ color: expColor, fontSize: 10, marginTop: 2 }}>{expLabel}</Text>
+                            </View>
+                            <View style={{ backgroundColor: child.membershipStatus === "activo" ? "#1a3d1a" : child.membershipStatus === "pausado" ? "#3d3000" : "#3d1a1a", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 }}>
+                              <Text style={{ color: child.membershipStatus === "activo" ? "#4ade80" : child.membershipStatus === "pausado" ? "#fbbf24" : "#f87171", fontSize: 9 }}>
+                                {child.membershipStatus}
+                              </Text>
+                            </View>
+                            <Pressable
+                              style={{ backgroundColor: "#2a2200", borderWidth: 1, borderColor: "#D4AF37", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}
+                              onPress={() => openAddPaymentForm(child.id)}
+                            >
+                              <Text style={{ color: "#D4AF37", fontSize: 10, fontWeight: "bold" }}>+ Pago</Text>
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  );
+                })()}
+
                 {/* ── HISTORIAL DE PAGOS ── */}
                 <Pressable
                   style={styles.paymentHistoryToggle}

@@ -892,8 +892,8 @@ function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onE
                 {children.map((child) => {
                   const childStatus = getUserExpiryStatus(child);
                   return (
-                    <div key={child.id} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-1.5">
-                      <div>
+                    <div key={child.id} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2">
+                      <div className="mr-1">
                         <span className="text-white text-xs font-medium">{child.displayName}</span>
                         {child.email.includes("@sinregistro.local") ? (
                           <span className="block text-zinc-600 text-[10px] italic">Sin correo</span>
@@ -907,6 +907,12 @@ function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onE
                         "bg-red-900/30 text-red-400"
                       }`}>{child.membershipStatus}</span>
                       <span className={`text-[10px] ${childStatus.color}`}>{childStatus.label}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onAddPayment(child.id); }}
+                        className="ml-1 text-[10px] px-2 py-0.5 rounded border border-gold/40 text-gold hover:bg-gold/10 transition"
+                      >
+                        + Pago
+                      </button>
                     </div>
                   );
                 })}
