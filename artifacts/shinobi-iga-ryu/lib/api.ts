@@ -98,6 +98,7 @@ export interface UserData {
   lastPaymentAt: string | null;
   membershipNotes: string | null;
   parentId: number | null;
+  internalName: string | null;
   createdAt: string;
 }
 
@@ -139,6 +140,8 @@ export const adminApi = {
     email?: string;
     password?: string;
     displayName: string;
+    nickname?: string | null;
+    internalName?: string | null;
     phone?: string;
     roles?: string[];
     subscriptionLevel?: string;
@@ -149,6 +152,8 @@ export const adminApi = {
 
   updateUser: (userId: number, data: {
     displayName?: string;
+    nickname?: string | null;
+    internalName?: string | null;
     email?: string;
     phone?: string;
     isFighter?: boolean;

@@ -27,6 +27,7 @@ export const usersTable = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at"),
   lastPaymentAt: timestamp("last_payment_at"),
   membershipNotes: text("membership_notes"),
+  internalName: varchar("internal_name", { length: 255 }),
   parentId: integer("parent_id").references((): AnyPgColumn => usersTable.id),
   isDeleted: boolean("is_deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

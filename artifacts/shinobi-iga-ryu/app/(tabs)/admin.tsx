@@ -147,6 +147,7 @@ const NOTIFICATION_TARGETS = [
 
 const INIT_USER_FORM = {
   displayName: "",
+  internalName: "",
   email: "",
   password: "",
   phone: "",
@@ -210,6 +211,7 @@ function UserFormModal({
       if (mode === "edit" && initialData) {
         setForm({
           displayName: initialData.displayName,
+          internalName: initialData.internalName ?? "",
           email: initialData.email.includes("@sinregistro.local") ? "" : initialData.email,
           password: "",
           phone: initialData.phone || "",
@@ -253,6 +255,7 @@ function UserFormModal({
           email: form.email.trim() || undefined,
           password: form.password || undefined,
           displayName: form.displayName.trim(),
+          internalName: form.internalName.trim() || null,
           phone: form.phone.trim() || undefined,
           roles: form.roles,
           subscriptionLevel: form.subscriptionLevel,
@@ -265,6 +268,7 @@ function UserFormModal({
       } else if (initialData) {
         const payload: Parameters<typeof adminApi.updateUser>[1] = {
           displayName: form.displayName.trim(),
+          internalName: form.internalName.trim() || null,
           ...(form.email.trim() ? { email: form.email.trim() } : {}),
           phone: form.phone.trim() || undefined,
           isFighter: form.isFighter,
@@ -325,6 +329,16 @@ function UserFormModal({
               value={form.displayName}
               onChangeText={(v) => setForm((p) => ({ ...p, displayName: v }))}
               placeholder="Nombre completo"
+              placeholderTextColor="#444"
+              autoCapitalize="words"
+            />
+
+            <Text style={[userFormStyles.fieldLabel, { color: "#888" }]}>NOMBRE INTERNO (solo admins 🔒)</Text>
+            <TextInput
+              style={userFormStyles.input}
+              value={form.internalName}
+              onChangeText={(v) => setForm((p) => ({ ...p, internalName: v }))}
+              placeholder="Ej: La mamá de Juan, El tío raro..."
               placeholderTextColor="#444"
               autoCapitalize="words"
             />
@@ -1198,7 +1212,8 @@ function UsersPanel({
       : users.filter(
           (u) =>
             u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+            u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (u.internalName ?? "").toLowerCase().includes(searchQuery.toLowerCase())
         );
     if (showInactiveFilter) {
       list = list.filter((u) => {
@@ -1418,6 +1433,11 @@ function UsersPanel({
                   <Text style={styles.userEmail}>
                     {u.email.includes("@sinregistro.local") ? "Sin correo registrado" : u.email}
                   </Text>
+                  {u.internalName ? (
+                    <Text style={{ color: "#555", fontSize: 10, marginBottom: 2 }}>
+                      🔒 <Text style={{ color: "#666" }}>{u.internalName}</Text>
+                    </Text>
+                  ) : null}
                   {/* Parent / children indicators */}
                   {(() => {
                     const parent = u.parentId ? users.find((x) => x.id === u.parentId) : null;

@@ -52,6 +52,7 @@ async function fetchUsersWithRoles() {
       lastPaymentAt: usersTable.lastPaymentAt,
       membershipNotes: usersTable.membershipNotes,
       parentId: usersTable.parentId,
+      internalName: usersTable.internalName,
       createdAt: usersTable.createdAt,
     })
     .from(usersTable)
@@ -85,7 +86,7 @@ adminRouter.get("/admin/users", requireProfesorOrAdmin, async (_req, res) => {
 
 adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
   try {
-    const { email: rawEmail, displayName, phone, roles, subscriptionLevel, isFighter, sedes, parentId } = req.body;
+    const { email: rawEmail, displayName, nickname, internalName, phone, roles, subscriptionLevel, isFighter, sedes, parentId } = req.body;
     const password = req.body.password || "Ninja123";
 
     // If email is empty and a parentId is set (child without account), auto-generate a placeholder
@@ -146,6 +147,8 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         email: email.toLowerCase().trim(),
         passwordHash,
         displayName: displayName.trim(),
+        nickname: nickname?.trim() || null,
+        internalName: internalName?.trim() || null,
         phone: phone?.trim() || null,
         subscriptionLevel: subLevel,
         isFighter: isFighter === true,
@@ -158,6 +161,8 @@ adminRouter.post("/admin/users", requireAdmin, async (req, res) => {
         id: usersTable.id,
         email: usersTable.email,
         displayName: usersTable.displayName,
+        nickname: usersTable.nickname,
+        internalName: usersTable.internalName,
         avatarUrl: usersTable.avatarUrl,
         subscriptionLevel: usersTable.subscriptionLevel,
         isFighter: usersTable.isFighter,
@@ -192,7 +197,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
       return;
     }
 
-    const { displayName, email, phone, isFighter, password, sedes, parentId } = req.body;
+    const { displayName, nickname, internalName, email, phone, isFighter, password, sedes, parentId } = req.body;
 
     const [existing] = await db
       .select({ id: usersTable.id })
@@ -211,6 +216,8 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
 
     const validSedes = ["bogota", "chia"];
     if (displayName !== undefined && displayName.trim()) updates.displayName = displayName.trim();
+    if (nickname !== undefined) updates.nickname = nickname?.trim() || null;
+    if (internalName !== undefined) updates.internalName = internalName?.trim() || null;
     if (email !== undefined && email.trim()) updates.email = email.toLowerCase().trim();
     if (phone !== undefined) updates.phone = phone?.trim() || null;
     if (isFighter !== undefined) updates.isFighter = Boolean(isFighter);
@@ -250,6 +257,7 @@ adminRouter.put("/admin/users/:id", requireAdmin, async (req, res) => {
         lastPaymentAt: usersTable.lastPaymentAt,
         membershipNotes: usersTable.membershipNotes,
         parentId: usersTable.parentId,
+        internalName: usersTable.internalName,
       });
 
     res.json({ user: updated });

@@ -90,6 +90,9 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES users(id);"
     );
+    await client.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS internal_name VARCHAR(255);"
+    );
 
     console.log("[migrations] startup migrations complete");
   } catch (err) {

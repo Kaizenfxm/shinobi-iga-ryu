@@ -301,6 +301,7 @@ function UserModal({
   onClose: () => void;
 }) {
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [internalName, setInternalName] = useState(user?.internalName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState(user?.phone ?? "");
@@ -361,6 +362,7 @@ function UserModal({
         const updates: Promise<unknown>[] = [];
         updates.push(adminApi.updateUser(user.id, {
           displayName: displayName.trim(),
+          internalName: internalName.trim() || null,
           ...(email.trim() ? { email: email.trim() } : {}),
           phone: phone.trim() || undefined,
           isFighter,
@@ -380,7 +382,8 @@ function UserModal({
         // Create new user
         const res = await adminApi.createUser({
           displayName: displayName.trim(),
-          email: email.trim() || undefined, // server generates placeholder if empty
+          internalName: internalName.trim() || null,
+          email: email.trim() || undefined,
           password: password || undefined,
           phone: phone.trim() || undefined,
           roles,
@@ -435,25 +438,24 @@ function UserModal({
           </div>
           <div>
             <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">
+              Nombre interno <span className="text-zinc-600 normal-case">(solo admins)</span>
+            </label>
+            <input
+              value={internalName} onChange={(e) => setInternalName(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-gold"
+              placeholder="Ej: La mamá de Juan, El tío raro..."
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">
               Email <span className="text-zinc-600 normal-case">(vacío = sin cuenta)</span>
             </label>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-gold"
               placeholder="correo@ejemplo.com"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">
-              Contraseña {user ? "(dejar vacío para no cambiar)" : "(vacío = Ninja123)"}
-            </label>
-            <input
-              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-gold"
-              placeholder={user ? "••••••" : "Ninja123"}
             />
           </div>
           <div>
@@ -464,6 +466,17 @@ function UserModal({
               placeholder="Opcional"
             />
           </div>
+        </div>
+
+        <div className="mb-3">
+          <label className="block text-xs text-zinc-400 mb-1 uppercase tracking-wider">
+            Contraseña {user ? "(dejar vacío para no cambiar)" : "(vacío = Ninja123)"}
+          </label>
+          <input
+            type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-gold"
+            placeholder={user ? "••••••" : "Ninja123"}
+          />
         </div>
 
         {/* Roles */}
@@ -799,6 +812,11 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
           <div className="flex items-center gap-2">
             <span className="font-medium text-white truncate">{user.displayName}</span>
             {user.nickname && <span className="text-gold text-xs">({user.nickname})</span>}
+            {user.internalName && (
+              <span className="text-[10px] bg-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-600" title="Nombre interno (solo admins)">
+                🔒 {user.internalName}
+              </span>
+            )}
             {children.length > 0 && (
               <span className="text-[10px] bg-blue-900/30 text-blue-400 border border-blue-800 px-1.5 py-0.5 rounded">
                 👨‍👧 {children.length} {children.length === 1 ? "hijo" : "hijos"}
@@ -1093,6 +1111,7 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
         (u) =>
           u.displayName.toLowerCase().includes(q) ||
           (u.nickname ?? "").toLowerCase().includes(q) ||
+          (u.internalName ?? "").toLowerCase().includes(q) ||
           u.email.toLowerCase().includes(q)
       );
     }
