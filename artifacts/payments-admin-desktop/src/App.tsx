@@ -747,10 +747,11 @@ function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, onAddChild, latestPay
 
 // ─── User Row (expandable) ────────────────────────────────────
 
-function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onEditPayment, onDeletePayment, onEditUser, onAddChild }: {
+function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onAddPayment, onEditPayment, onDeletePayment, onEditUser, onAddChild }: {
   user: AdminUser;
   payments: Payment[];
   allUsers: AdminUser[];
+  userPayments: Record<number, Payment[]>;
   dateFrom: string;
   dateTo: string;
   onAddPayment: (userId: number) => void;
@@ -765,6 +766,13 @@ function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onE
 
   const parent = user.parentId ? allUsers.find((u) => u.id === user.parentId) : null;
   const children = allUsers.filter((u) => u.parentId === user.id);
+
+  // Combined total: own payments + children's payments
+  const ownTotal = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const childrenTotal = children.reduce((sum, child) => {
+    return sum + (userPayments[child.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
+  }, 0);
+  const combinedTotal = ownTotal + childrenTotal;
 
   // Filter payments by date range
   const filteredPayments = useMemo(() => {
@@ -855,11 +863,18 @@ function UserRow({ user, payments, allUsers, dateFrom, dateTo, onAddPayment, onE
 
         {/* Total value */}
         <div className="w-28 text-right mr-4">
-          <span className="text-white font-medium text-sm">
-            {payments.length > 0
-              ? fmtMoney(payments.reduce((sum, p) => sum + (p.amount ?? 0), 0))
-              : "—"}
-          </span>
+          {combinedTotal > 0 ? (
+            <div>
+              <span className="text-white font-medium text-sm">{fmtMoney(combinedTotal)}</span>
+              {childrenTotal > 0 && (
+                <span className="block text-[10px] text-zinc-500" title={`Incluye ${fmtMoney(childrenTotal)} de hijos`}>
+                  incl. hijos
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-zinc-600 text-sm">—</span>
+          )}
         </div>
 
         {/* Payment count */}
@@ -1110,9 +1125,14 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
       if (sortBy === "nombre_asc") return a.displayName.localeCompare(b.displayName, "es");
       if (sortBy === "nombre_desc") return b.displayName.localeCompare(a.displayName, "es");
       if (sortBy === "total_desc" || sortBy === "total_asc") {
-        const aTotal = (userPayments[a.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
-        const bTotal = (userPayments[b.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
-        return sortBy === "total_desc" ? bTotal - aTotal : aTotal - bTotal;
+        const getCombined = (u: AdminUser) => {
+          const own = (userPayments[u.id] ?? []).reduce((s, p) => s + (p.amount ?? 0), 0);
+          const childrenSum = users
+            .filter((c) => c.parentId === u.id)
+            .reduce((s, c) => s + (userPayments[c.id] ?? []).reduce((cs, p) => cs + (p.amount ?? 0), 0), 0);
+          return own + childrenSum;
+        };
+        return sortBy === "total_desc" ? getCombined(b) - getCombined(a) : getCombined(a) - getCombined(b);
       }
       // Default: most recent payment first
       const aPayments = userPayments[a.id] ?? [];
@@ -1327,6 +1347,7 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
                 user={user}
                 payments={userPayments[user.id] ?? []}
                 allUsers={users}
+                userPayments={userPayments}
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 onAddPayment={(userId) => setModal({ payment: null, preselectedUserId: userId })}
