@@ -95,6 +95,7 @@ overrides:
   lightningcss>lightningcss-linux-x64-musl: '-'
   # lightningcss>lightningcss-win32-arm64-msvc: '-'
   # lightningcss>lightningcss-win32-x64-msvc: '-'
+  rollup: '>=4.60.1'
   rollup>@rollup/rollup-android-arm-eabi: '-'
   rollup>@rollup/rollup-android-arm64: '-'
   # rollup>@rollup/rollup-darwin-arm64: '-'
