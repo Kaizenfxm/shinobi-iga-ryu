@@ -8,6 +8,7 @@ export const eventsTable = pgTable("events", {
   eventDate: timestamp("event_date").notNull(),
   location: varchar("location", { length: 300 }).notNull(),
   eventEndDate: timestamp("event_end_date"),
+  videoUrl: text("video_url"),
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

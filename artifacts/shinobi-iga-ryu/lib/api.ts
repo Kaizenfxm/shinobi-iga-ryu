@@ -897,6 +897,7 @@ export interface EventItem {
   coverImageUrl: string | null;
   eventDate: string;
   eventEndDate: string | null;
+  videoUrl: string | null;
   location: string;
   createdByUserId: number;
   attendeeCount: number;
@@ -997,10 +998,10 @@ export const eventsApi = {
   getAll: () =>
     apiFetch<{ events: EventItem[] }>("/events"),
 
-  create: (data: { title: string; coverImageUrl?: string | null; eventDate: string; eventEndDate?: string | null; location: string }) =>
+  create: (data: { title: string; coverImageUrl?: string | null; eventDate: string; eventEndDate?: string | null; videoUrl?: string | null; location: string }) =>
     apiFetch<{ event: EventItem }>("/events", { method: "POST", body: data }),
 
-  update: (id: number, data: { title?: string; coverImageUrl?: string | null; eventDate?: string; eventEndDate?: string | null; location?: string }) =>
+  update: (id: number, data: { title?: string; coverImageUrl?: string | null; eventDate?: string; eventEndDate?: string | null; videoUrl?: string | null; location?: string }) =>
     apiFetch<{ event: EventItem }>(`/events/${id}`, { method: "PATCH", body: data }),
 
   delete: (id: number) =>

@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { eventsApi, challengesApi, trainingApi, rankingApi, getAvatarServingUrl, EventItem, EventAttendee, ChallengeItem, ChallengeUser, TrainingSystem, RankingFighterEntry, RankingAttendanceEntry, RankingChallengeEntry, RankingWonChallenge } from "@/lib/api";
+import YouTubePlayer from "@/components/YouTubePlayer";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChallenges } from "@/contexts/ChallengesContext";
@@ -135,6 +136,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
   const [title, setTitle] = useState("");
   const [datetime, setDatetime] = useState<Date | null>(null);
   const [endDatetime, setEndDatetime] = useState<Date | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
   const [location, setLocation] = useState("");
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const [coverPath, setCoverPath] = useState<string | null>(null);
@@ -162,19 +164,20 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
       setTitle(editEvent.title);
       setDatetime(new Date(editEvent.eventDate));
       setEndDatetime(editEvent.eventEndDate ? new Date(editEvent.eventEndDate) : null);
+      setVideoUrl(editEvent.videoUrl ?? "");
       setLocation(editEvent.location);
       setCoverUri(editEvent.coverImageUrl ?? null);
       setCoverPath(editEvent.coverImageUrl ?? null);
       setFormError(null);
     }
     if (!visible) {
-      setTitle(""); setDatetime(null); setEndDatetime(null); setLocation("");
+      setTitle(""); setDatetime(null); setEndDatetime(null); setVideoUrl(""); setLocation("");
       setCoverUri(null); setCoverPath(null); setFormError(null);
     }
   }, [visible, editEvent]);
 
   const reset = () => {
-    setTitle(""); setDatetime(null); setEndDatetime(null); setLocation("");
+    setTitle(""); setDatetime(null); setEndDatetime(null); setVideoUrl(""); setLocation("");
     setCoverUri(null); setCoverPath(null); setFormError(null);
   };
 
@@ -213,6 +216,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           coverImageUrl: coverPath !== editEvent.coverImageUrl ? coverPath : undefined,
           eventDate: datetime.toISOString(),
           eventEndDate: endDatetime ? endDatetime.toISOString() : null,
+          videoUrl: videoUrl.trim() || null,
           location: location.trim(),
         });
       } else {
@@ -221,6 +225,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           coverImageUrl: coverPath,
           eventDate: datetime.toISOString(),
           eventEndDate: endDatetime ? endDatetime.toISOString() : null,
+          videoUrl: videoUrl.trim() || null,
           location: location.trim(),
         });
       }
@@ -436,6 +441,21 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           )}
 
           <TextInput
+            style={[cStyles.input, { marginTop: 10 }]}
+            placeholder="Video YouTube (opcional)"
+            placeholderTextColor="#444"
+            value={videoUrl}
+            onChangeText={(t) => { setVideoUrl(t); setFormError(null); }}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+          {videoUrl.trim() !== "" && (
+            <View style={{ marginTop: 8 }}>
+              <YouTubePlayer videoUrl={videoUrl.trim()} />
+            </View>
+          )}
+
+          <TextInput
             style={[cStyles.input, { marginTop: 10 }]} placeholder="Lugar" placeholderTextColor="#444"
             value={location} onChangeText={(t) => { setLocation(t); setFormError(null); }}
           />
@@ -524,6 +544,11 @@ function EventCard({ event, canManage, onAttendToggle, onDelete, onEdit, onViewA
           <CardContent event={event} attending={attending} canManage={canManage} onAttendToggle={onAttendToggle} onDelete={onDelete} onEdit={onEdit} onViewAttendees={onViewAttendees} />
         </View>
       )}
+      {event.videoUrl && (
+        <View style={eStyles.videoWrapper}>
+          <YouTubePlayer videoUrl={event.videoUrl} />
+        </View>
+      )}
     </View>
   );
 }
@@ -609,6 +634,7 @@ const eStyles = StyleSheet.create({
   attendBtnActive: { backgroundColor: "#D4AF37", borderColor: "#D4AF37" },
   attendBtnText: { color: "#999", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 0.5 },
   attendBtnTextActive: { color: "#000" },
+  videoWrapper: { backgroundColor: "#0a0a0a", paddingHorizontal: 0 },
 });
 
 function EventosTab({ canManage, extraEvents }: {

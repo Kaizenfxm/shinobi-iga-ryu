@@ -90,6 +90,7 @@ eventsRouter.get("/events", requireAuth, async (req, res) => {
         coverImageUrl: e.coverImageUrl,
         eventDate: e.eventDate.toISOString(),
         eventEndDate: e.eventEndDate ? e.eventEndDate.toISOString() : null,
+        videoUrl: e.videoUrl ?? null,
         location: e.location,
         createdByUserId: e.createdByUserId,
         attendeeCount: attendeeCounts.get(e.id) ?? 0,
@@ -109,7 +110,7 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
       res.status(403).json({ error: "Solo admins y profesores pueden crear eventos" });
       return;
     }
-    const { title, coverImageUrl, eventDate, eventEndDate, location } = req.body;
+    const { title, coverImageUrl, eventDate, eventEndDate, videoUrl, location } = req.body;
     if (!title?.trim() || !eventDate || !location?.trim()) {
       res.status(400).json({ error: "Título, fecha y lugar son requeridos" });
       return;
@@ -121,6 +122,7 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
         coverImageUrl: coverImageUrl || null,
         eventDate: new Date(eventDate),
         eventEndDate: eventEndDate ? new Date(eventEndDate) : null,
+        videoUrl: videoUrl?.trim() || null,
         location: location.trim(),
         createdByUserId: userId,
       })
@@ -139,6 +141,7 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
         ...event,
         eventDate: event.eventDate.toISOString(),
         eventEndDate: event.eventEndDate ? event.eventEndDate.toISOString() : null,
+        videoUrl: event.videoUrl ?? null,
         attendeeCount: 0,
         userWillAttend: null,
       },
@@ -159,14 +162,15 @@ eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
     const eventId = parseInt(String(req.params.id), 10);
     if (isNaN(eventId)) { res.status(400).json({ error: "ID inválido" }); return; }
 
-    const { title, coverImageUrl, eventDate, eventEndDate, location } = req.body as {
-      title?: string; coverImageUrl?: string | null; eventDate?: string; eventEndDate?: string | null; location?: string;
+    const { title, coverImageUrl, eventDate, eventEndDate, videoUrl, location } = req.body as {
+      title?: string; coverImageUrl?: string | null; eventDate?: string; eventEndDate?: string | null; videoUrl?: string | null; location?: string;
     };
 
     const updates: Record<string, unknown> = {};
     if (title?.trim()) updates.title = title.trim();
     if (eventDate) updates.eventDate = new Date(eventDate);
     if (eventEndDate !== undefined) updates.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
+    if (videoUrl !== undefined) updates.videoUrl = videoUrl?.trim() || null;
     if (location?.trim()) updates.location = location.trim();
     if (coverImageUrl !== undefined) updates.coverImageUrl = coverImageUrl;
 
@@ -211,6 +215,7 @@ eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
         ...updated,
         eventDate: updated.eventDate.toISOString(),
         eventEndDate: updated.eventEndDate ? updated.eventEndDate.toISOString() : null,
+        videoUrl: updated.videoUrl ?? null,
       },
     });
   } catch (error) {

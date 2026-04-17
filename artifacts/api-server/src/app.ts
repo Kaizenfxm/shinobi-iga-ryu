@@ -99,6 +99,9 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE events ADD COLUMN IF NOT EXISTS event_end_date TIMESTAMPTZ;"
     );
+    await client.query(
+      "ALTER TABLE events ADD COLUMN IF NOT EXISTS video_url TEXT;"
+    );
 
     console.log("[migrations] startup migrations complete");
   } catch (err) {
