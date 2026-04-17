@@ -96,6 +96,9 @@ async function runMigrations() {
     await client.query(
       "ALTER TABLE payment_history ADD COLUMN IF NOT EXISTS paid_by_user_id INTEGER REFERENCES users(id);"
     );
+    await client.query(
+      "ALTER TABLE events ADD COLUMN IF NOT EXISTS event_end_date TIMESTAMPTZ;"
+    );
 
     console.log("[migrations] startup migrations complete");
   } catch (err) {

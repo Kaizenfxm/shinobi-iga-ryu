@@ -4,6 +4,7 @@ import { eventsTable, eventAttendeesTable, usersTable, userRolesTable } from "@w
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { notifyTarget, notifyUsers } from "../lib/push";
 
 const objectStorageService = new ObjectStorageService();
 const eventsRouter = Router();
@@ -88,6 +89,7 @@ eventsRouter.get("/events", requireAuth, async (req, res) => {
         title: e.title,
         coverImageUrl: e.coverImageUrl,
         eventDate: e.eventDate.toISOString(),
+        eventEndDate: e.eventEndDate ? e.eventEndDate.toISOString() : null,
         location: e.location,
         createdByUserId: e.createdByUserId,
         attendeeCount: attendeeCounts.get(e.id) ?? 0,
@@ -107,7 +109,7 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
       res.status(403).json({ error: "Solo admins y profesores pueden crear eventos" });
       return;
     }
-    const { title, coverImageUrl, eventDate, location } = req.body;
+    const { title, coverImageUrl, eventDate, eventEndDate, location } = req.body;
     if (!title?.trim() || !eventDate || !location?.trim()) {
       res.status(400).json({ error: "Título, fecha y lugar son requeridos" });
       return;
@@ -118,14 +120,25 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
         title: title.trim(),
         coverImageUrl: coverImageUrl || null,
         eventDate: new Date(eventDate),
+        eventEndDate: eventEndDate ? new Date(eventEndDate) : null,
         location: location.trim(),
         createdByUserId: userId,
       })
       .returning();
+
+    // Notify all users about the new event
+    const dateStr = new Date(eventDate).toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
+    notifyTarget(["todas"],
+      `🥷 Nuevo evento: ${title.trim()}`,
+      `${dateStr} · ${location.trim()} — toca para ver los detalles`,
+      { type: "new_event", eventId: event.id }
+    ).catch(() => {});
+
     res.json({
       event: {
         ...event,
         eventDate: event.eventDate.toISOString(),
+        eventEndDate: event.eventEndDate ? event.eventEndDate.toISOString() : null,
         attendeeCount: 0,
         userWillAttend: null,
       },
@@ -146,13 +159,14 @@ eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
     const eventId = parseInt(String(req.params.id), 10);
     if (isNaN(eventId)) { res.status(400).json({ error: "ID inválido" }); return; }
 
-    const { title, coverImageUrl, eventDate, location } = req.body as {
-      title?: string; coverImageUrl?: string | null; eventDate?: string; location?: string;
+    const { title, coverImageUrl, eventDate, eventEndDate, location } = req.body as {
+      title?: string; coverImageUrl?: string | null; eventDate?: string; eventEndDate?: string | null; location?: string;
     };
 
     const updates: Record<string, unknown> = {};
     if (title?.trim()) updates.title = title.trim();
     if (eventDate) updates.eventDate = new Date(eventDate);
+    if (eventEndDate !== undefined) updates.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
     if (location?.trim()) updates.location = location.trim();
     if (coverImageUrl !== undefined) updates.coverImageUrl = coverImageUrl;
 
@@ -174,7 +188,31 @@ eventsRouter.patch("/events/:id", requireAuth, async (req, res) => {
       await objectStorageService.deleteObject(oldCoverImageUrl);
     }
 
-    res.json({ event: { ...updated, eventDate: updated.eventDate.toISOString() } });
+    // Notify attendees who confirmed attendance
+    const attendeeRows = await db
+      .select({ userId: eventAttendeesTable.userId })
+      .from(eventAttendeesTable)
+      .where(and(
+        eq(eventAttendeesTable.eventId, eventId),
+        eq(eventAttendeesTable.willAttend, true)
+      ));
+    const attendeeIds = attendeeRows.map((r) => r.userId).filter((id) => id !== userId);
+    if (attendeeIds.length > 0) {
+      notifyUsers(
+        attendeeIds,
+        `🗓 Evento modificado`,
+        `El evento ${updated.title} ha sido modificado, toca para revisarlo`,
+        { type: "event_updated", eventId }
+      ).catch(() => {});
+    }
+
+    res.json({
+      event: {
+        ...updated,
+        eventDate: updated.eventDate.toISOString(),
+        eventEndDate: updated.eventEndDate ? updated.eventEndDate.toISOString() : null,
+      },
+    });
   } catch (error) {
     console.error("Update event error:", error);
     res.status(500).json({ error: "Error interno del servidor" });

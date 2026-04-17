@@ -134,13 +134,14 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
   const isEdit = !!editEvent;
   const [title, setTitle] = useState("");
   const [datetime, setDatetime] = useState<Date | null>(null);
+  const [endDatetime, setEndDatetime] = useState<Date | null>(null);
   const [location, setLocation] = useState("");
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const [coverPath, setCoverPath] = useState<string | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | null>(null);
+  const [showNativePicker, setShowNativePicker] = useState<"date" | "time" | "endDate" | "endTime" | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
   const [kbHeight, setKbHeight] = useState(0);
 
@@ -160,19 +161,20 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
     if (visible && editEvent) {
       setTitle(editEvent.title);
       setDatetime(new Date(editEvent.eventDate));
+      setEndDatetime(editEvent.eventEndDate ? new Date(editEvent.eventEndDate) : null);
       setLocation(editEvent.location);
       setCoverUri(editEvent.coverImageUrl ?? null);
       setCoverPath(editEvent.coverImageUrl ?? null);
       setFormError(null);
     }
     if (!visible) {
-      setTitle(""); setDatetime(null); setLocation("");
+      setTitle(""); setDatetime(null); setEndDatetime(null); setLocation("");
       setCoverUri(null); setCoverPath(null); setFormError(null);
     }
   }, [visible, editEvent]);
 
   const reset = () => {
-    setTitle(""); setDatetime(null); setLocation("");
+    setTitle(""); setDatetime(null); setEndDatetime(null); setLocation("");
     setCoverUri(null); setCoverPath(null); setFormError(null);
   };
 
@@ -210,6 +212,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           title: title.trim(),
           coverImageUrl: coverPath !== editEvent.coverImageUrl ? coverPath : undefined,
           eventDate: datetime.toISOString(),
+          eventEndDate: endDatetime ? endDatetime.toISOString() : null,
           location: location.trim(),
         });
       } else {
@@ -217,6 +220,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
           title: title.trim(),
           coverImageUrl: coverPath,
           eventDate: datetime.toISOString(),
+          eventEndDate: endDatetime ? endDatetime.toISOString() : null,
           location: location.trim(),
         });
       }
@@ -317,20 +321,35 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
                           <Text style={cStyles.pickerCancel}>CANCELAR</Text>
                         </Pressable>
                         <Text style={cStyles.pickerTitle}>
-                          {showNativePicker === "date" ? "SELECCIONAR FECHA" : "SELECCIONAR HORA"}
+                          {showNativePicker === "date" ? "SELECCIONAR FECHA" :
+                           showNativePicker === "time" ? "SELECCIONAR HORA" :
+                           showNativePicker === "endDate" ? "FECHA FIN" : "HORA FIN"}
                         </Text>
                         <Pressable onPress={() => {
                           const mode = showNativePicker;
-                          setDatetime((prev) => {
-                            const base = prev ?? new Date();
-                            if (mode === "date") {
-                              return new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate(),
-                                base.getHours(), base.getMinutes());
-                            } else {
-                              return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
-                                tempDate.getHours(), tempDate.getMinutes());
-                            }
-                          });
+                          if (mode === "date" || mode === "time") {
+                            setDatetime((prev) => {
+                              const base = prev ?? new Date();
+                              if (mode === "date") {
+                                return new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate(),
+                                  base.getHours(), base.getMinutes());
+                              } else {
+                                return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+                                  tempDate.getHours(), tempDate.getMinutes());
+                              }
+                            });
+                          } else {
+                            setEndDatetime((prev) => {
+                              const base = prev ?? datetime ?? new Date();
+                              if (mode === "endDate") {
+                                return new Date(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate(),
+                                  base.getHours(), base.getMinutes());
+                              } else {
+                                return new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+                                  tempDate.getHours(), tempDate.getMinutes());
+                              }
+                            });
+                          }
                           setFormError(null);
                           setShowNativePicker(null);
                         }}>
@@ -339,7 +358,7 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
                       </View>
                       <DateTimePicker
                         value={tempDate}
-                        mode={showNativePicker}
+                        mode={showNativePicker === "date" || showNativePicker === "endDate" ? "date" : "time"}
                         display="spinner"
                         onChange={(_, selected) => { if (selected) setTempDate(selected); }}
                         textColor="#FFFFFF"
@@ -350,7 +369,70 @@ function CreateEventModal({ visible, onClose, onCreated, editEvent }: {
                   </Pressable>
                 </Modal>
               )}
+
+              {/* Fecha hasta (opcional) */}
+              <View style={{ marginTop: 10 }}>
+                <Text style={cStyles.sectionLabel}>HASTA (opcional)</Text>
+                <Pressable
+                  style={cStyles.dateBtn}
+                  onPress={() => { setTempDate(endDatetime ?? datetime ?? new Date()); setShowNativePicker("endDate"); }}
+                >
+                  <Ionicons name="calendar-outline" size={14} color="#555" />
+                  <Text style={endDatetime ? cStyles.dateBtnText : cStyles.dateBtnPlaceholder}>
+                    {endDatetime
+                      ? endDatetime.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+                      : "Fecha fin..."}
+                  </Text>
+                  {endDatetime && (
+                    <Pressable onPress={() => setEndDatetime(null)} style={{ marginLeft: "auto" }}>
+                      <Ionicons name="close-circle" size={14} color="#555" />
+                    </Pressable>
+                  )}
+                </Pressable>
+                {endDatetime && (
+                  <Pressable
+                    style={[cStyles.dateBtn, { marginTop: 8 }]}
+                    onPress={() => { setTempDate(endDatetime); setShowNativePicker("endTime"); }}
+                  >
+                    <Ionicons name="time-outline" size={14} color="#555" />
+                    <Text style={cStyles.dateBtnText}>
+                      {endDatetime.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
             </>
+          )}
+
+          {/* Web: fecha hasta */}
+          {isWeb && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={cStyles.sectionLabel}>HASTA (opcional)</Text>
+              <View style={cStyles.webDateWrapper}>
+                <Ionicons name="calendar-outline" size={14} color="#555" style={{ marginRight: 6 }} />
+                {React.createElement("input", {
+                  type: "datetime-local",
+                  value: endDatetime ? endDatetime.toISOString().slice(0, 16) : "",
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  onChange: (e: any) => {
+                    if (e.target?.value) setEndDatetime(new Date(e.target.value));
+                    else setEndDatetime(null);
+                  },
+                  style: {
+                    flex: 1,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: endDatetime ? "#888" : "#444",
+                    fontSize: "13px",
+                    colorScheme: "dark",
+                    cursor: "pointer",
+                    width: "100%",
+                    padding: 0,
+                  },
+                })}
+              </View>
+            </View>
           )}
 
           <TextInput
@@ -416,6 +498,7 @@ const cStyles = StyleSheet.create({
   pickerTitle: { color: "#888", fontFamily: "NotoSansJP_400Regular", fontSize: 11, letterSpacing: 1 },
   pickerCancel: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
   pickerConfirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1 },
+  sectionLabel: { color: "#555", fontFamily: "NotoSansJP_700Bold", fontSize: 9, letterSpacing: 1.5, marginBottom: 6 },
 });
 
 function EventCard({ event, canManage, onAttendToggle, onDelete, onEdit, onViewAttendees }: {
@@ -464,6 +547,15 @@ function CardContent({ event, attending, canManage, onAttendToggle, onDelete, on
           <Text style={eStyles.metaSep}>·</Text>
           <Ionicons name="time-outline" size={11} color="#D4AF37" />
           <Text style={eStyles.metaGold}>{formatEventTime(event.eventDate)}</Text>
+          {event.eventEndDate && (
+            <>
+              <Text style={eStyles.metaSep}>→</Text>
+              {formatEventDate(event.eventEndDate) !== formatEventDate(event.eventDate) && (
+                <Text style={eStyles.metaGold}>{formatEventDate(event.eventEndDate)}</Text>
+              )}
+              <Text style={eStyles.metaGold}>{formatEventTime(event.eventEndDate)}</Text>
+            </>
+          )}
         </View>
         <View style={eStyles.metaRow}>
           <Ionicons name="location-outline" size={11} color="#888" />
