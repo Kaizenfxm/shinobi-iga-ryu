@@ -1037,8 +1037,13 @@ function UsersPanel({
   const togglePaymentHistory = (userId: number) => {
     const opening = !paymentHistoryOpen[userId];
     setPaymentHistoryOpen((prev) => ({ ...prev, [userId]: opening }));
-    if (opening && !paymentHistory[userId]) {
-      loadPaymentHistory(userId);
+    if (opening) {
+      if (!paymentHistory[userId]) loadPaymentHistory(userId);
+      // Also load children's payment histories
+      const children = users.filter((c) => c.parentId === userId);
+      for (const child of children) {
+        if (!paymentHistory[child.id]) loadPaymentHistory(child.id);
+      }
     }
   };
 
@@ -1663,8 +1668,17 @@ function UsersPanel({
                       <ActivityIndicator color="#D4AF37" style={{ margin: 12 }} />
                     ) : (
                       <>
-                        {/* Existing payments list */}
-                        {(paymentHistory[u.id] ?? []).map((p) => (
+                        {/* Existing payments list — merged with children's payments */}
+                        {(() => {
+                          const children = users.filter((c) => c.parentId === u.id);
+                          type MobilePayment = PaymentRecord & { forChildName?: string };
+                          const allMerged: MobilePayment[] = [
+                            ...(paymentHistory[u.id] ?? []).map((p) => ({ ...p })),
+                            ...children.flatMap((child) =>
+                              (paymentHistory[child.id] ?? []).map((p) => ({ ...p, forChildName: child.displayName }))
+                            ),
+                          ].sort((a, b) => b.paymentDate.localeCompare(a.paymentDate));
+                          return allMerged.map((p) => (
                           <View key={p.id} style={styles.paymentRecord}>
                             <View style={styles.paymentRecordHeader}>
                               <View style={styles.paymentMethodBadge}>
@@ -1731,10 +1745,18 @@ function UsersPanel({
                             {p.notes ? (
                               <Text style={styles.paymentRecordNotes}>{p.notes}</Text>
                             ) : null}
+                            {(p as { forChildName?: string }).forChildName ? (
+                              <View style={{ marginTop: 4 }}>
+                                <Text style={{ color: "#3b82f6", fontSize: 10, backgroundColor: "#1e3a5f22", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: "flex-start" }}>
+                                  👦 por {(p as { forChildName?: string }).forChildName}
+                                </Text>
+                              </View>
+                            ) : null}
                           </View>
-                        ))}
+                          ));
+                        })()}
 
-                        {(paymentHistory[u.id] ?? []).length === 0 && !paymentForms[u.id] && (
+                        {(paymentHistory[u.id] ?? []).length === 0 && users.filter(c => c.parentId === u.id).every(c => (paymentHistory[c.id] ?? []).length === 0) && !paymentForms[u.id] && (
                           <Text style={styles.paymentEmptyText}>Sin pagos registrados</Text>
                         )}
 

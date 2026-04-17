@@ -787,13 +787,23 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
   }, 0);
   const combinedTotal = ownTotal + childrenTotal;
 
-  // Filter payments by date range
+  // Merge parent's own payments + all children's payments into one sorted list
+  type FamilyPayment = Payment & { forChildName?: string };
+  const allFamilyPayments = useMemo<FamilyPayment[]>(() => {
+    const own: FamilyPayment[] = payments.map((p) => ({ ...p }));
+    const childPs: FamilyPayment[] = children.flatMap((child) =>
+      (userPayments[child.id] ?? []).map((p) => ({ ...p, forChildName: child.displayName }))
+    );
+    return [...own, ...childPs].sort((a, b) => b.paymentDate.localeCompare(a.paymentDate));
+  }, [payments, children, userPayments]);
+
+  // Filter by date range
   const filteredPayments = useMemo(() => {
-    let list = payments;
+    let list = allFamilyPayments;
     if (dateFrom) list = list.filter((p) => p.paymentDate >= dateFrom);
     if (dateTo) list = list.filter((p) => p.paymentDate <= dateTo);
     return list;
-  }, [payments, dateFrom, dateTo]);
+  }, [allFamilyPayments, dateFrom, dateTo]);
 
   return (
     <div className="border-b border-zinc-800/50">
@@ -985,11 +995,19 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
                   const expColor = days < 0 ? "text-red-400" : days <= 7 ? "text-amber-400" : "text-green-400";
                   const expLabel = days < 0 ? `Venció hace ${Math.abs(days)}d` : days <= 7 ? `Vence en ${days}d` : `${days}d`;
 
+                  const fp = p as Payment & { forChildName?: string };
                   return (
-                    <tr key={p.id} className={`border-t border-zinc-800/30 hover:bg-zinc-800/20 transition ${i === 0 ? "bg-zinc-900/30" : ""}`}>
+                    <tr key={`${p.id}-${fp.forChildName ?? "own"}`} className={`border-t border-zinc-800/30 hover:bg-zinc-800/20 transition ${i === 0 ? "bg-zinc-900/30" : ""} ${fp.forChildName ? "opacity-90" : ""}`}>
                       <td className="pl-12 pr-4 py-2 text-sm text-white">
-                        {fmtDate(p.paymentDate)}
-                        {i === 0 && <span className="ml-2 text-[10px] text-gold uppercase">último</span>}
+                        <div>
+                          {fmtDate(p.paymentDate)}
+                          {i === 0 && <span className="ml-2 text-[10px] text-gold uppercase">último</span>}
+                        </div>
+                        {fp.forChildName && (
+                          <span className="text-[10px] text-blue-400 bg-blue-900/20 border border-blue-800/40 px-1.5 py-0.5 rounded mt-0.5 inline-block">
+                            👦 por {fp.forChildName}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-2 text-sm">
                         <span className="text-zinc-300">{fmtDate(expDate)}</span>
@@ -1186,10 +1204,21 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
       else if (ingresosPeriod === "año") desde.setFullYear(desde.getFullYear() - 1);
     }
     const desdeStr = desde.toISOString().slice(0, 10);
-    return allPayments
-      .filter((p) => p.paymentDate >= desdeStr)
-      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  }, [allPayments, ingresosPeriod]);
+    // Sum root-user family totals to avoid double-counting:
+    // if Cata paid 200k for Emma, that 200k only counts once (under Cata's family group)
+    return users
+      .filter((u) => !u.parentId)
+      .reduce((total, rootUser) => {
+        const children = users.filter((c) => c.parentId === rootUser.id);
+        const familyPayments = [
+          ...(userPayments[rootUser.id] ?? []),
+          ...children.flatMap((c) => userPayments[c.id] ?? []),
+        ];
+        return total + familyPayments
+          .filter((p) => p.paymentDate >= desdeStr)
+          .reduce((s, p) => s + (p.amount ?? 0), 0);
+      }, 0);
+  }, [users, userPayments, ingresosPeriod]);
 
   const periodLabels: Record<string, string> = {
     mes: "Ingresos del mes",
