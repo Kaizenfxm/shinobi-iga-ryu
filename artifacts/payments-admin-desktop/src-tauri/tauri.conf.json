@@ -10,7 +10,6 @@
     "beforeBuildCommand": "pnpm build"
   },
   "app": {
-    "title": "Shinobi Iga Ryu — Admin Pagos",
     "windows": [
       {
         "title": "Shinobi Iga Ryu — Admin Pagos",
@@ -21,7 +20,6 @@
       }
     ],
     "security": {
-      "dangerousRemoteDomainIpcAccess": [],
       "csp": null
     }
   }
