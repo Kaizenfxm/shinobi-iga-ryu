@@ -1100,8 +1100,9 @@ function UsersPanel({
 
   const openAddPaymentForm = (userId: number) => {
     const user = users.find(u => u.id === userId);
+    const defaultPaidBy = user?.parentId ?? null;
     setPaymentForms((prev) => ({ ...prev, [userId]: makeBlankPaymentForm(user?.subscriptionLevel) }));
-    setPaymentFormPaidBy((prev) => ({ ...prev, [userId]: null }));
+    setPaymentFormPaidBy((prev) => ({ ...prev, [userId]: defaultPaidBy }));
   };
 
   const openEditPaymentForm = (userId: number, p: PaymentRecord) => {

@@ -110,7 +110,12 @@ function PaymentModal({
   const [subLevel, setSubLevel] = useState(payment?.subscriptionLevel ?? preselectedUser?.subscriptionLevel ?? "basico");
   const [amount, setAmount] = useState(payment?.amount?.toString() ?? "");
   const [notes, setNotes] = useState(payment?.notes ?? "");
-  const [paidBy, setPaidBy] = useState<number | null>(payment?.paidByUserId ?? null);
+  const [paidBy, setPaidBy] = useState<number | null>(() => {
+    if (payment) return payment.paidByUserId ?? null;
+    // New payment for a child → default to parent
+    const user = preselectedUserId ? users.find(u => u.id === preselectedUserId) : null;
+    return user?.parentId ?? null;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [userSearch, setUserSearch] = useState("");
