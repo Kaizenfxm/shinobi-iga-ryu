@@ -39,6 +39,9 @@ async function apiFetch<T>(path: string, opts?: { method?: string; body?: unknow
     credentials: "include",
   });
   if (!res.ok) {
+    // If the server rejects our token (expired/invalid), drop it so the
+    // next startup cleanly shows the login screen instead of looping.
+    if (res.status === 401 && token) setAuthToken(null);
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || `Error ${res.status}`);
   }
