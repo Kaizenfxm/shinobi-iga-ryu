@@ -1,6 +1,6 @@
 [package]
 name = "shinobi-payments-admin"
-version = "1.0.3"
+version = "1.0.4"
 description = "Shinobi Iga Ryu - Admin de Pagos"
 edition = "2021"
 
