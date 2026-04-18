@@ -29,8 +29,7 @@ function UpdateButton({ onInfo }: { onInfo: (msg: string) => void }) {
     try {
       const version = await invoke<string>("check_and_install_update");
       if (version) {
-        onInfo(`Versión ${version} instalada. Reiniciando...`);
-        // El reinicio lo gestiona Rust; este mensaje es sólo por si hay demora
+        onInfo(`Versión ${version} instalada. Vuelve a abrir la app.`);
       } else {
         onInfo("Ya tienes la última versión.");
       }
