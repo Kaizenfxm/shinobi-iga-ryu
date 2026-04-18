@@ -148,8 +148,11 @@ app.use(
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       httpOnly: true,
+      // In production the desktop app (Tauri) runs on a different origin
+      // (tauri://localhost or https://tauri.localhost), so the session cookie
+      // must be SameSite=None + Secure to be sent cross-site.
       secure: isProduction,
-      sameSite: "lax",
+      sameSite: isProduction ? "none" : "lax",
     },
   })
 );
