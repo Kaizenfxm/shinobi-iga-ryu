@@ -1101,6 +1101,13 @@ function UserRow({ user, payments, allUsers, userPayments, dateFrom, dateTo, onA
 
 // ─── Main Panel ───────────────────────────────────────────────
 
+// Tauri's webview blocks native window.confirm / window.alert, so we use
+// state-driven modals that work inside any webview including Tauri/WebKit.
+type DialogState =
+  | { type: "confirm"; message: string; resolve: (ok: boolean) => void }
+  | { type: "alert"; message: string; resolve: () => void }
+  | null;
+
 function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
   const [userPayments, setUserPayments] = useState<Record<number, Payment[]>>({});
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -1113,6 +1120,14 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
   const [userModal, setUserModal] = useState<{ user: AdminUser | null; prefilledParentId?: number } | null>(null);
   const [ingresosPeriod, setIngresosPeriod] = useState<"mes" | "trimestre" | "semestre" | "año" | "global">("mes");
   const [sortBy, setSortBy] = useState<"reciente" | "nombre_asc" | "nombre_desc" | "total_desc" | "total_asc">("reciente");
+  const [dialog, setDialog] = useState<DialogState>(null);
+
+  const askConfirm = useCallback((message: string): Promise<boolean> => {
+    return new Promise((resolve) => setDialog({ type: "confirm", message, resolve }));
+  }, []);
+  const showAlert = useCallback((message: string): Promise<void> => {
+    return new Promise((resolve) => setDialog({ type: "alert", message, resolve }));
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -1290,12 +1305,15 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleDelete = async (p: Payment) => {
-    if (!window.confirm(`¿Eliminar pago de ${p.userName ?? "usuario"} del ${fmtDate(p.paymentDate)}?`)) return;
+    const ok = await askConfirm(
+      `¿Eliminar pago de ${p.userName ?? "usuario"} del ${fmtDate(p.paymentDate)}?`
+    );
+    if (!ok) return;
     try {
       await adminApi.deletePayment(p.id);
       await load();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al eliminar");
+      await showAlert(err instanceof Error ? err.message : "Error al eliminar");
     }
   };
 
@@ -1471,6 +1489,39 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
           onSave={load}
           onClose={() => setUserModal(null)}
         />
+      )}
+
+      {dialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md">
+            <p className="text-white text-sm mb-6 whitespace-pre-line">{dialog.message}</p>
+            <div className="flex justify-end gap-2">
+              {dialog.type === "confirm" && (
+                <button
+                  onClick={() => { const d = dialog; setDialog(null); d.resolve(false); }}
+                  className="px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded transition"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  const d = dialog;
+                  setDialog(null);
+                  if (d.type === "confirm") d.resolve(true);
+                  else d.resolve();
+                }}
+                className={
+                  dialog.type === "confirm"
+                    ? "px-4 py-2 text-sm bg-red-600 hover:bg-red-500 text-white font-semibold rounded transition"
+                    : "px-4 py-2 text-sm bg-gold hover:bg-gold-dark text-black font-semibold rounded transition"
+                }
+              >
+                {dialog.type === "confirm" ? "Eliminar" : "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
