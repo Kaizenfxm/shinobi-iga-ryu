@@ -1131,30 +1131,19 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
 
   const load = useCallback(async () => {
     try {
-      const uRes = await adminApi.getUsers();
+      // Fetch users + all payments in parallel — a single round-trip instead
+      // of the old N+1 pattern that made every action take several seconds.
+      const [uRes, pRes] = await Promise.all([
+        adminApi.getUsers(),
+        adminApi.getAllPayments(),
+      ]);
       setUsers(uRes.users);
-      // Fetch payments for all users in parallel (batched)
+      // Group payments by userId client-side. The endpoint already returns
+      // them sorted by paymentDate desc, so we preserve that order.
       const paymentsMap: Record<number, Payment[]> = {};
-      const batchSize = 10;
-      for (let i = 0; i < uRes.users.length; i += batchSize) {
-        const batch = uRes.users.slice(i, i + batchSize);
-        const results = await Promise.all(
-          batch.map((u) =>
-            adminApi.getUserPayments(u.id).then((r) => ({
-              userId: u.id,
-              payments: r.payments.map((p) => ({
-                ...p,
-                userName: u.displayName,
-                userNickname: u.nickname,
-              })),
-            })).catch(() => ({ userId: u.id, payments: [] as Payment[] }))
-          )
-        );
-        for (const r of results) {
-          // Sort by paymentDate desc
-          r.payments.sort((a, b) => (b.paymentDate > a.paymentDate ? 1 : -1));
-          paymentsMap[r.userId] = r.payments;
-        }
+      for (const u of uRes.users) paymentsMap[u.id] = [];
+      for (const p of pRes.payments) {
+        (paymentsMap[p.userId] ??= []).push(p);
       }
       setUserPayments(paymentsMap);
     } catch (err) {
