@@ -1,10 +1,21 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+// @ts-ignore - cookie-signature has no bundled types
+import signature from "cookie-signature";
 import { db, usersTable, userRolesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 
 const authRouter = Router();
+
+const SESSION_SECRET =
+  process.env.SESSION_SECRET || "shinobi-iga-ryu-dev-only-secret";
+
+// Build the same signed value express-session uses as the cookie payload
+// so desktop clients can send it back via Authorization: Bearer <token>.
+function buildAuthToken(sessionID: string): string {
+  return "s:" + signature.sign(sessionID, SESSION_SECRET);
+}
 
 const MEMBERSHIP_FIELDS = {
   id: usersTable.id,
@@ -112,11 +123,19 @@ authRouter.post("/auth/register", async (req, res) => {
       .from(userRolesTable)
       .where(eq(userRolesTable.userId, user.id));
 
-    res.status(201).json({
-      user: {
-        ...user,
-        roles: roles.map((r) => r.role),
-      },
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        res.status(500).json({ error: "Error interno del servidor" });
+        return;
+      }
+      res.status(201).json({
+        user: {
+          ...user,
+          roles: roles.map((r) => r.role),
+        },
+        token: buildAuthToken(req.sessionID),
+      });
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -170,26 +189,34 @@ authRouter.post("/auth/login", async (req, res) => {
 
     req.session.userId = user.id;
 
-    res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        nickname: user.nickname,
-        avatarUrl: user.avatarUrl,
-        subscriptionLevel: user.subscriptionLevel,
-        phone: user.phone,
-        isFighter: user.isFighter,
-        sedes: user.sedes,
-        membershipStatus: user.membershipStatus,
-        membershipExpiresAt: user.membershipExpiresAt,
-        membershipPausedAt: user.membershipPausedAt,
-        trialEndsAt: user.trialEndsAt,
-        lastPaymentAt: user.lastPaymentAt,
-        membershipNotes: user.membershipNotes,
-        createdAt: user.createdAt,
-        roles: roleNames,
-      },
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        res.status(500).json({ error: "Error interno del servidor" });
+        return;
+      }
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          nickname: user.nickname,
+          avatarUrl: user.avatarUrl,
+          subscriptionLevel: user.subscriptionLevel,
+          phone: user.phone,
+          isFighter: user.isFighter,
+          sedes: user.sedes,
+          membershipStatus: user.membershipStatus,
+          membershipExpiresAt: user.membershipExpiresAt,
+          membershipPausedAt: user.membershipPausedAt,
+          trialEndsAt: user.trialEndsAt,
+          lastPaymentAt: user.lastPaymentAt,
+          membershipNotes: user.membershipNotes,
+          createdAt: user.createdAt,
+          roles: roleNames,
+        },
+        token: buildAuthToken(req.sessionID),
+      });
     });
   } catch (error) {
     console.error("Login error:", error);

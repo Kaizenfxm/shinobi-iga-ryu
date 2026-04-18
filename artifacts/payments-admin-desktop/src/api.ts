@@ -14,11 +14,27 @@ export function setApiUrl(url: string) {
   localStorage.setItem("api_url", url.replace(/\/+$/, ""));
 }
 
+// Auth token: issued by the server on /auth/login and sent back via
+// Authorization: Bearer <token>. We use a header (not cookies) because
+// WebKit-based Tauri on macOS blocks cross-site cookies via ITP.
+const TOKEN_KEY = "auth_token";
+export function getAuthToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+export function setAuthToken(token: string | null) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
+
 async function apiFetch<T>(path: string, opts?: { method?: string; body?: unknown }): Promise<T> {
   const base = getBaseUrl();
+  const headers: Record<string, string> = {};
+  if (opts?.body) headers["Content-Type"] = "application/json";
+  const token = getAuthToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${base}/api${path}`, {
     method: opts?.method || "GET",
-    headers: opts?.body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: opts?.body ? JSON.stringify(opts.body) : undefined,
     credentials: "include",
   });
@@ -93,12 +109,20 @@ export const METHOD_LABELS: Record<string, string> = {
 // --- API calls ---
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    apiFetch<{ user: { id: number; roles: string[] } }>("/auth/login", { method: "POST", body: { email, password } }),
+  login: async (email: string, password: string) => {
+    const res = await apiFetch<{ user: { id: number; roles: string[] }; token?: string }>(
+      "/auth/login",
+      { method: "POST", body: { email, password } }
+    );
+    if (res.token) setAuthToken(res.token);
+    return res;
+  },
   me: () =>
     apiFetch<{ user: { id: number; roles: string[] } }>("/auth/me"),
-  logout: () =>
-    apiFetch<void>("/auth/logout", { method: "POST" }).catch(() => {}),
+  logout: async () => {
+    await apiFetch<void>("/auth/logout", { method: "POST" }).catch(() => {});
+    setAuthToken(null);
+  },
 };
 
 export const adminApi = {

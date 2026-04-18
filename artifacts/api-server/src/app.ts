@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -130,9 +130,29 @@ if (isProduction) {
 app.use(cors({
   origin: true,
   credentials: true,
+  exposedHeaders: ["X-Auth-Token"],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Bearer-to-cookie shim:
+// Desktop clients (Tauri) can't rely on cross-site cookies because WebKit's
+// Intelligent Tracking Prevention blocks them. This shim lets those clients
+// pass the signed session ID via `Authorization: Bearer <token>` and we
+// inject it as a cookie so the existing express-session flow works transparently.
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith("Bearer ")) {
+    const token = auth.slice(7).trim();
+    if (token) {
+      const injected = `sid=${encodeURIComponent(token)}`;
+      req.headers.cookie = req.headers.cookie
+        ? `${req.headers.cookie}; ${injected}`
+        : injected;
+    }
+  }
+  next();
+});
 
 app.use(
   session({
