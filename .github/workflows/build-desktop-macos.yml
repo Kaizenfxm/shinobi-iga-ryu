@@ -1,58 +1,34 @@
 name: Build Desktop (macOS)
-
 on:
-  workflow_dispatch:
   push:
-    tags:
-      - 'desktop-v*'
+    tags: ['desktop-v*']
+  workflow_dispatch:
 
 jobs:
-  build-macos:
+  build:
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: artifacts/payments-admin-desktop
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.26.1
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Setup Rust (universal-apple-darwin)
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
+      - run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - run: pnpm install --no-frozen-lockfile
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: artifacts/payments-admin-desktop/src-tauri -> target
-
-      - name: Install workspace dependencies
-        working-directory: .
-        run: pnpm install --frozen-lockfile=false
-
-      - name: Build Tauri app (universal DMG)
-        run: pnpm exec tauri build --target universal-apple-darwin
-
-      - name: Upload installers
-        uses: actions/upload-artifact@v4
-        with:
-          name: shinobi-payments-admin-macos-universal
-          path: |
-            artifacts/payments-admin-desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-            artifacts/payments-admin-desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
-          if-no-files-found: error
-          retention-days: 30
+          projectPath: artifacts/payments-admin-desktop
+          tagName: desktop-v__VERSION__
+          releaseName: "Shinobi Pagos Admin v__VERSION__"
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          args: --target universal-apple-darwin

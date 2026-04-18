@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   authApi,
   adminApi,
@@ -16,6 +18,45 @@ import {
   getApiUrl,
   setApiUrl,
 } from "./api";
+
+// ─── Update Button ────────────────────────────────────────────
+
+function UpdateButton({ onInfo }: { onInfo: (msg: string) => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleCheck = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const update = await check();
+      if (update) {
+        onInfo(`Descargando versión ${update.version}...`);
+        await update.downloadAndInstall();
+        onInfo("Actualización instalada. La app se reiniciará.");
+        await relaunch();
+      } else {
+        onInfo("Ya tienes la última versión.");
+      }
+    } catch (err) {
+      onInfo(
+        "Error al buscar actualización: " +
+          (err instanceof Error ? err.message : String(err))
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCheck}
+      disabled={loading}
+      className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm"
+    >
+      {loading ? "Buscando..." : "⬇ Actualizar"}
+    </button>
+  );
+}
 
 // ─── Login Screen ─────────────────────────────────────────────
 
@@ -1369,6 +1410,7 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
           <button onClick={load} className="text-zinc-500 hover:text-white text-sm px-2 py-1 rounded hover:bg-zinc-800 transition">
             ↻ Refrescar
           </button>
+          <UpdateButton onInfo={showAlert} />
           <button onClick={onLogout} className="text-zinc-500 hover:text-red-400 text-sm px-2 py-1 rounded hover:bg-zinc-800 transition">
             Cerrar sesión
           </button>
