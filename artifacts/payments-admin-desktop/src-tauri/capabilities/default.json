@@ -4,11 +4,6 @@
   "description": "Default permissions for the desktop app",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "updater:default",
-    "updater:allow-check",
-    "updater:allow-download-and-install",
-    "process:default",
-    "process:allow-restart"
+    "core:default"
   ]
 }

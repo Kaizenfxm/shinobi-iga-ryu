@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { check } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
+import { invoke } from "@tauri-apps/api/core";
 import {
   authApi,
   adminApi,
@@ -28,12 +27,10 @@ function UpdateButton({ onInfo }: { onInfo: (msg: string) => void }) {
     if (loading) return;
     setLoading(true);
     try {
-      const update = await check();
-      if (update) {
-        onInfo(`Descargando versión ${update.version}...`);
-        await update.downloadAndInstall();
-        onInfo("Actualización instalada. La app se reiniciará.");
-        await relaunch();
+      const version = await invoke<string>("check_and_install_update");
+      if (version) {
+        onInfo(`Versión ${version} instalada. Reiniciando...`);
+        // El reinicio lo gestiona Rust; este mensaje es sólo por si hay demora
       } else {
         onInfo("Ya tienes la última versión.");
       }
