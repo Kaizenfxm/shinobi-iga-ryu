@@ -65,6 +65,7 @@ export interface AdminUser {
   sedes?: string[];
   parentId?: number | null;
   internalName?: string | null;
+  createdAt?: string;
 }
 
 export type SubscriptionLevel = "basico" | "medio" | "avanzado" | "personalizado";

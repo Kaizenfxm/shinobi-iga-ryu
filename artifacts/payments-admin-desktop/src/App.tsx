@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   authApi,
   adminApi,
@@ -747,27 +748,69 @@ function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, onAddChild, latestPay
   phone: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number; openUp: boolean } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Compute position (and flip above the button if there's no room below).
+  // Using position: fixed via a portal keeps the menu free from any parent
+  // `overflow: auto` clipping — a common source of cut-off dropdowns.
+  const computePos = useCallback(() => {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const menuH = 220; // approx max menu height
+    const spaceBelow = window.innerHeight - r.bottom;
+    const openUp = spaceBelow < menuH && r.top > menuH;
+    setPos({
+      top: openUp ? r.top - 4 : r.bottom + 4,
+      right: window.innerWidth - r.right,
+      openUp,
+    });
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    computePos();
+    const onDown = (e: MouseEvent) => {
+      if (
+        menuRef.current?.contains(e.target as Node) ||
+        btnRef.current?.contains(e.target as Node)
+      ) return;
+      setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+    const onScrollOrResize = () => computePos();
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open, computePos]);
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
+        ref={btnRef}
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         className="text-zinc-500 hover:text-white px-2 py-1 rounded hover:bg-zinc-700 transition text-lg leading-none"
       >
         ⋮
       </button>
-      {open && (
-        <div className="absolute right-0 top-8 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 z-40 min-w-[180px]">
+      {open && pos && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: "fixed",
+            top: pos.openUp ? undefined : pos.top,
+            bottom: pos.openUp ? window.innerHeight - pos.top : undefined,
+            right: pos.right,
+            zIndex: 1000,
+          }}
+          className="bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 min-w-[180px]"
+        >
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onEditUser(); }}
             className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-700 transition flex items-center gap-2"
@@ -795,9 +838,10 @@ function ActionMenu({ onAdd, onEdit, onDelete, onEditUser, onAddChild, latestPay
           >
             <span className="text-blue-400">👦</span> Agregar hijo
           </button>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
 
@@ -1219,15 +1263,12 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
         };
         return sortBy === "total_desc" ? getCombined(b) - getCombined(a) : getCombined(a) - getCombined(b);
       }
-      // Default: most recent payment first
-      const aPayments = userPayments[a.id] ?? [];
-      const bPayments = userPayments[b.id] ?? [];
-      const aLatest = aPayments.length > 0 ? aPayments[0].paymentDate : "";
-      const bLatest = bPayments.length > 0 ? bPayments[0].paymentDate : "";
-      if (!aLatest && !bLatest) return 0;
-      if (!aLatest) return 1;
-      if (!bLatest) return -1;
-      return bLatest > aLatest ? 1 : bLatest < aLatest ? -1 : 0;
+      // Default: most recently created user first (chronological desc).
+      // Prefer createdAt when available, fall back to id (serial, higher = newer).
+      if (a.createdAt && b.createdAt) {
+        return b.createdAt.localeCompare(a.createdAt);
+      }
+      return b.id - a.id;
     });
 
     return list;
