@@ -27,6 +27,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           projectPath: artifacts/payments-admin-desktop
+          tauriScript: pnpm tauri
           tagName: desktop-v__VERSION__
           releaseName: "Shinobi Pagos Admin v__VERSION__"
           releaseDraft: false
