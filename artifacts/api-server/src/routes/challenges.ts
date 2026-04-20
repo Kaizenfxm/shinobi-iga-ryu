@@ -254,6 +254,46 @@ challengesRouter.get("/challenges/community-active", requireAuth, async (req, re
   }
 });
 
+challengesRouter.get("/challenges/community-past", requireAuth, async (req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: challengesTable.id,
+        challengerId: challengesTable.challengerId,
+        challengedId: challengesTable.challengedId,
+        trainingSystemId: challengesTable.trainingSystemId,
+        scheduledAt: challengesTable.scheduledAt,
+        notes: challengesTable.notes,
+        status: challengesTable.status,
+        winnerId: challengesTable.winnerId,
+        videoUrl: challengesTable.videoUrl,
+        cancelRequestedBy: challengesTable.cancelRequestedBy,
+        respondedAt: challengesTable.respondedAt,
+        createdAt: challengesTable.createdAt,
+        trainingSystemName: trainingSystemsTable.name,
+        challengerName: sql<string>`COALESCE(${challengerUsers.nickname}, ${challengerUsers.displayName})`.as("challenger_name"),
+        challengerAvatar: challengerUsers.avatarUrl,
+        challengedName: sql<string>`COALESCE(${challengedUsers.nickname}, ${challengedUsers.displayName})`.as("challenged_name"),
+        challengedAvatar: challengedUsers.avatarUrl,
+      })
+      .from(challengesTable)
+      .innerJoin(trainingSystemsTable, eq(challengesTable.trainingSystemId, trainingSystemsTable.id))
+      .innerJoin(challengerUsers, eq(challengesTable.challengerId, challengerUsers.id))
+      .innerJoin(challengedUsers, eq(challengesTable.challengedId, challengedUsers.id))
+      .where(or(
+        eq(challengesTable.status, "completed"),
+        eq(challengesTable.status, "declined"),
+        eq(challengesTable.status, "cancelled"),
+      ))
+      .orderBy(desc(challengesTable.createdAt))
+      .limit(100);
+    res.json({ challenges: rows });
+  } catch (error) {
+    console.error("Community past error:", error);
+    res.status(500).json({ error: "Error interno" });
+  }
+});
+
 challengesRouter.post("/challenges", requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;

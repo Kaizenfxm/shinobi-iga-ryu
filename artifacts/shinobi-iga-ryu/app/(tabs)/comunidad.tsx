@@ -1308,6 +1308,7 @@ function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: bool
   const [challenges, setChallenges] = useState<{ pending: ChallengeItem[]; sent: ChallengeItem[]; active: ChallengeItem[]; past: ChallengeItem[] }>({ pending: [], sent: [], active: [], past: [] });
   const [communityPending, setCommunityPending] = useState<ChallengeItem[]>([]);
   const [communityActive, setCommunityActive] = useState<ChallengeItem[]>([]);
+  const [communityPast, setCommunityPast] = useState<ChallengeItem[]>([]);
   const [communityExpanded, setCommunityExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1322,12 +1323,13 @@ function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: bool
 
   const load = useCallback(async () => {
     try {
-      const [usersRes, systemsRes, challengesRes, communityRes, communityActiveRes] = await Promise.all([
+      const [usersRes, systemsRes, challengesRes, communityRes, communityActiveRes, communityPastRes] = await Promise.all([
         challengesApi.getUsers(),
         trainingApi.getSystems(),
         challengesApi.getAll(),
         challengesApi.getCommunityPending(),
         challengesApi.getCommunityActive(),
+        challengesApi.getCommunityPast(),
       ]);
       setUsers(usersRes.users);
       setSystems(systemsRes.systems);
@@ -1339,8 +1341,10 @@ function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: bool
       });
       setCommunityPending(communityRes.challenges ?? []);
       setCommunityActive(communityActiveRes.challenges ?? []);
+      setCommunityPast(communityPastRes.challenges ?? []);
       await refreshBadge();
-    } catch {
+    } catch (e) {
+      console.warn("[RetosTab] error cargando retos:", e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1545,15 +1549,15 @@ function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: bool
           ) : null;
         })()}
 
-        {challenges.past.length > 0 && (
+        {communityPast.length > 0 && (
           <View style={rStyles.section}>
             <Pressable style={rStyles.sectionHeader} onPress={() => setPastExpanded((p) => !p)}>
               <View style={[rStyles.sectionDot, { backgroundColor: "#333" }]} />
               <Text style={rStyles.sectionTitle}>HISTORIAL</Text>
-              <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{challenges.past.length}</Text></View>
+              <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{communityPast.length}</Text></View>
               <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
             </Pressable>
-            {pastExpanded && challenges.past.map((ch) => (
+            {pastExpanded && communityPast.map((ch) => (
               <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} userCreatedAt={userCreatedAt} />
             ))}
           </View>

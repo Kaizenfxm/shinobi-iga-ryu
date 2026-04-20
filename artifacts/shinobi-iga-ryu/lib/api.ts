@@ -984,6 +984,9 @@ export const challengesApi = {
   getCommunityActive: () =>
     apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-active"),
 
+  getCommunityPast: () =>
+    apiFetch<{ challenges: ChallengeItem[] }>("/challenges/community-past"),
+
   adminGetAll: () =>
     apiFetch<{ challenges: ChallengeItem[] }>("/admin/challenges"),
 
