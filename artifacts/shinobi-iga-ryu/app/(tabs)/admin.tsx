@@ -25,7 +25,7 @@ import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { BeltStrip } from "@/components/BeltStrip";
-import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, suggestionsApi, challengesApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee, type SuggestionItem, type ChallengeItem } from "@/lib/api";
+import { adminApi, beltsApi, fightsApi, notificationsApi, trainingApi, classesApi, suggestionsApi, challengesApi, ratingsApi, rouletteApi, getAvatarServingUrl, type UserData, type FightData, type FightStats, type AddFightData, type CatalogDiscipline, type CatalogBelt, type CatalogRequirement, type AdminBeltUser, type PendingBeltApplication, type NotificationData, type TrainingSystem, type ExerciseData, type KnowledgeItemData, type ExerciseCategoryData, type KnowledgeCategoryData, type PaymentRecord, type PaymentMethod, type ClassData, type ClassAttendee, type SuggestionItem, type ChallengeItem, type RatingsSummary, type ProfessorRating, type MartialArtRating, type RoulettePunishment } from "@/lib/api";
 
 const ROLES = ["admin", "profesor", "alumno"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -62,7 +62,7 @@ const DISCIPLINE_SUBTITLE: Record<string, string> = {
   jiujitsu: "El arte suave",
 };
 
-type AdminTab = "usuarios" | "cinturones" | "peleas" | "retos" | "notificaciones" | "entrenamiento" | "clases" | "configuracion" | "sugerencias";
+type AdminTab = "usuarios" | "cinturones" | "peleas" | "retos" | "notificaciones" | "entrenamiento" | "clases" | "calificaciones" | "configuracion" | "sugerencias";
 
 const TRAINING_SYSTEM_LABELS: Record<string, string> = {
   ninjutsu: "Ninjutsu",
@@ -715,8 +715,8 @@ function UsersPanel({
 }: {
   users: UserData[];
   currentUser: UserData | null;
-  expandedUser: number | null;
-  setExpandedUser: (id: number | null) => void;
+  expandedUser: Set<number>;
+  setExpandedUser: React.Dispatch<React.SetStateAction<Set<number>>>;
   setUsers: React.Dispatch<React.SetStateAction<UserData[]>>;
 }) {
   const [formVisible, setFormVisible] = useState(false);
@@ -859,7 +859,7 @@ function UsersPanel({
       try {
         await adminApi.deleteUser(user.id);
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-        setExpandedUser(null);
+        setExpandedUser((prev) => { const n = new Set(prev); n.delete(user.id); return n; });
       } catch (e: unknown) {
         Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
       }
@@ -1400,7 +1400,12 @@ function UsersPanel({
       {filteredUsers.map((u) => {
         // eslint-disable-next-line no-shadow
         const renderCard = (u: UserData, isNested = false): React.ReactElement => {
-        const isExpanded = expandedUser === u.id;
+        const isExpanded = expandedUser.has(u.id);
+        const toggleExpanded = () => setExpandedUser((prev) => {
+          const n = new Set(prev);
+          if (n.has(u.id)) n.delete(u.id); else n.add(u.id);
+          return n;
+        });
         const isCurrentUser = u.id === currentUser?.id;
 
         return (
@@ -1411,7 +1416,7 @@ function UsersPanel({
             <View style={styles.userHeader}>
               <Pressable
                 style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }}
-                onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+                onPress={toggleExpanded}
               >
                 <View style={styles.userAvatar}>
                   {getAvatarServingUrl(u.avatarUrl ?? null) ? (
@@ -1500,7 +1505,7 @@ function UsersPanel({
               )}
               <Pressable
                 style={{ paddingLeft: 4 }}
-                onPress={() => setExpandedUser(isExpanded ? null : u.id)}
+                onPress={toggleExpanded}
               >
                 <Ionicons
                   name={isExpanded ? "chevron-up" : "chevron-down"}
@@ -4545,9 +4550,18 @@ function SettingsPanel() {
         chia_address: chiaAddress.trim(),
         privacy_policy_url: privacyPolicyUrl.trim(),
       });
+      await adminApi.getSettings().then(({ settings }) => {
+        setWhatsapp(settings["whatsapp_admin_number"] || "");
+        setPaymentLink(settings["payment_link_url"] || "");
+        setBogotaVideo(settings["bogota_video_url"] || "");
+        setChiaVideo(settings["chia_video_url"] || "");
+        setBogotaAddress(settings["bogota_address"] || "");
+        setChiaAddress(settings["chia_address"] || "");
+        setPrivacyPolicyUrl(settings["privacy_policy_url"] || "");
+      });
       Alert.alert("Guardado", "Configuración actualizada");
-    } catch {
-      Alert.alert("Error", "No se pudo guardar");
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
     } finally {
       setSaving(false);
     }
@@ -4871,6 +4885,8 @@ export function ClassesPanel({ users }: { users: UserData[] }) {
 
   return (
     <View>
+      <RuletaAdminSection />
+
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 1.5 }}>
           CLASES ({classes.length})
@@ -5250,7 +5266,7 @@ export default function AdminScreen() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [expandedUser, setExpandedUser] = useState<number | null>(null);
+  const [expandedUser, setExpandedUser] = useState<Set<number>>(new Set());
   const [unreviewedCount, setUnreviewedCount] = useState(0);
 
   const fetchData = useCallback(async () => {
@@ -5375,6 +5391,16 @@ export default function AdminScreen() {
           />
         </Pressable>
         <Pressable
+          style={[styles.tabButton, activeTab === "calificaciones" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("calificaciones")}
+        >
+          <MaterialCommunityIcons
+            name="star"
+            size={20}
+            color={activeTab === "calificaciones" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
           style={[styles.tabButton, activeTab === "configuracion" && styles.tabButtonActive]}
           onPress={() => setActiveTab("configuracion")}
         >
@@ -5438,6 +5464,8 @@ export default function AdminScreen() {
           <EntrenamientoPanel />
         ) : activeTab === "clases" ? (
           <ClassesPanel users={users} />
+        ) : activeTab === "calificaciones" ? (
+          <CalificacionesPanel />
         ) : activeTab === "configuracion" ? (
           <SettingsPanel />
         ) : activeTab === "sugerencias" ? (
@@ -6078,6 +6106,618 @@ export function SuggestionsPanel({ reloadKey, onCountChange, readOnly = false }:
     </View>
   );
 }
+
+function RuletaAdminSection() {
+  const [items, setItems] = useState<RoulettePunishment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(true);
+  const [editing, setEditing] = useState<RoulettePunishment | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editIconUrl, setEditIconUrl] = useState<string | null>(null);
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const MAX = 20;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await rouletteApi.list();
+      setItems(r.punishments);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openCreate = () => {
+    if (items.length >= MAX) {
+      Alert.alert("Límite", `Máximo ${MAX} castigos`);
+      return;
+    }
+    setEditing({ id: 0, label: "", iconUrl: null, sortOrder: items.length, isActive: true });
+    setEditLabel("");
+    setEditIconUrl(null);
+    setEditIsActive(true);
+  };
+
+  const openEdit = (p: RoulettePunishment) => {
+    setEditing(p);
+    setEditLabel(p.label);
+    setEditIconUrl(p.iconUrl);
+    setEditIsActive(p.isActive);
+  };
+
+  const closeEdit = () => {
+    if (saving || uploading) return;
+    setEditing(null);
+  };
+
+  const pickIcon = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permiso requerido", "Necesitamos acceso a tu galería.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? "image/png";
+    setUploading(true);
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      if (blob.size > 300 * 1024) {
+        Alert.alert("Imagen muy pesada", "El icono debe pesar menos de 300 KB. Usa un PNG ligero.");
+        setUploading(false);
+        return;
+      }
+      const objectPath = await rouletteApi.uploadIconDirect(blob, mimeType);
+      setEditIconUrl(objectPath);
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo subir la imagen");
+    }
+    setUploading(false);
+  };
+
+  const save = async () => {
+    if (!editing) return;
+    const label = editLabel.trim();
+    if (!label) {
+      Alert.alert("Error", "El texto es requerido");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editing.id === 0) {
+        await rouletteApi.create({ label, iconUrl: editIconUrl });
+      } else {
+        await rouletteApi.update(editing.id, { label, iconUrl: editIconUrl, isActive: editIsActive });
+      }
+      setEditing(null);
+      await load();
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "No se pudo guardar");
+    }
+    setSaving(false);
+  };
+
+  const remove = (p: RoulettePunishment) => {
+    Alert.alert("Eliminar castigo", `¿Eliminar "${p.label}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await rouletteApi.remove(p.id);
+            await load();
+          } catch (e) {
+            Alert.alert("Error", e instanceof Error ? e.message : "No se pudo eliminar");
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={{ marginBottom: 24, borderWidth: 1, borderColor: "#1a1a1a", borderRadius: 4, padding: 12, backgroundColor: "#070707" }}>
+      <Pressable
+        onPress={() => setCollapsed((c) => !c)}
+        style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <MaterialCommunityIcons name="dharmachakra" size={18} color="#D4AF37" />
+          <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1.5 }}>
+            RULETA DE CASTIGOS ({items.length}/{MAX})
+          </Text>
+        </View>
+        <Ionicons name={collapsed ? "chevron-down" : "chevron-up"} size={18} color="#666" />
+      </Pressable>
+
+      {!collapsed && (
+        <View style={{ marginTop: 12 }}>
+          {loading ? (
+            <ActivityIndicator color="#D4AF37" />
+          ) : (
+            <>
+              {items.length === 0 ? (
+                <Text style={{ color: "#555", fontFamily: "NotoSansJP_400Regular", fontSize: 11, paddingVertical: 8 }}>
+                  Aún no hay castigos. Agrega el primero.
+                </Text>
+              ) : (
+                items.map((p) => (
+                  <View
+                    key={p.id}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      paddingVertical: 6,
+                      paddingHorizontal: 8,
+                      backgroundColor: "#0a0a0a",
+                      borderRadius: 2,
+                      marginBottom: 4,
+                      opacity: p.isActive ? 1 : 0.5,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 2,
+                        backgroundColor: "#111",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {p.iconUrl ? (
+                        <Image
+                          source={{ uri: getAvatarServingUrl(p.iconUrl) || undefined }}
+                          style={{ width: 28, height: 28 }}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <MaterialCommunityIcons name="image-off-outline" size={14} color="#444" />
+                      )}
+                    </View>
+                    <Text style={{ flex: 1, color: "#DDD", fontFamily: "NotoSansJP_500Medium", fontSize: 12 }} numberOfLines={1}>
+                      {p.label}
+                    </Text>
+                    {!p.isActive && (
+                      <Text style={{ color: "#666", fontFamily: "NotoSansJP_400Regular", fontSize: 9 }}>OFF</Text>
+                    )}
+                    <Pressable onPress={() => openEdit(p)} style={{ padding: 6 }}>
+                      <Ionicons name="create-outline" size={16} color="#888" />
+                    </Pressable>
+                    <Pressable onPress={() => remove(p)} style={{ padding: 6 }}>
+                      <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+
+              <Pressable
+                style={{
+                  marginTop: 8,
+                  backgroundColor: items.length >= MAX ? "#222" : "#D4AF37",
+                  paddingVertical: 8,
+                  borderRadius: 4,
+                  alignItems: "center",
+                }}
+                onPress={openCreate}
+                disabled={items.length >= MAX}
+              >
+                <Text style={{ color: items.length >= MAX ? "#555" : "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1.5 }}>
+                  + AGREGAR CASTIGO
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )}
+
+      <Modal visible={editing !== null} animationType="fade" transparent onRequestClose={closeEdit}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ backgroundColor: "#111", borderRadius: 8, padding: 20, width: "100%", maxWidth: 340, borderTopWidth: 2, borderTopColor: "#D4AF37" }}>
+            <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 12, letterSpacing: 1.5, marginBottom: 12 }}>
+              {editing?.id === 0 ? "NUEVO CASTIGO" : "EDITAR CASTIGO"}
+            </Text>
+
+            <Text style={cpStyles.label}>TEXTO *</Text>
+            <TextInput
+              value={editLabel}
+              onChangeText={setEditLabel}
+              maxLength={100}
+              placeholder="ej: 100 burpees"
+              placeholderTextColor="#444"
+              style={{
+                backgroundColor: "#0a0a0a",
+                borderWidth: 1,
+                borderColor: "#222",
+                borderRadius: 4,
+                color: "#FFF",
+                fontFamily: "NotoSansJP_400Regular",
+                fontSize: 13,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                marginBottom: 10,
+              }}
+            />
+
+            <Text style={cpStyles.label}>ICONO (PNG &lt; 300 KB)</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  backgroundColor: "#0a0a0a",
+                  borderWidth: 1,
+                  borderColor: "#222",
+                  borderRadius: 4,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                }}
+              >
+                {editIconUrl ? (
+                  <Image
+                    source={{ uri: getAvatarServingUrl(editIconUrl) || undefined }}
+                    style={{ width: 56, height: 56 }}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <MaterialCommunityIcons name="image-plus" size={22} color="#444" />
+                )}
+              </View>
+              <Pressable
+                onPress={pickIcon}
+                disabled={uploading}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#1a1a1a",
+                  borderWidth: 1,
+                  borderColor: "#2a2a2a",
+                  borderRadius: 4,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                }}
+              >
+                {uploading ? (
+                  <ActivityIndicator color="#D4AF37" size="small" />
+                ) : (
+                  <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_500Medium", fontSize: 11, letterSpacing: 1.5 }}>
+                    {editIconUrl ? "CAMBIAR" : "SUBIR PNG"}
+                  </Text>
+                )}
+              </Pressable>
+              {editIconUrl && (
+                <Pressable
+                  onPress={() => setEditIconUrl(null)}
+                  style={{ padding: 8 }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                </Pressable>
+              )}
+            </View>
+
+            {editing && editing.id !== 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <Text style={{ color: "#CCC", fontFamily: "NotoSansJP_500Medium", fontSize: 12 }}>Activo en la ruleta</Text>
+                <Switch
+                  value={editIsActive}
+                  onValueChange={setEditIsActive}
+                  trackColor={{ false: "#333", true: "#D4AF3766" }}
+                  thumbColor={editIsActive ? "#D4AF37" : "#666"}
+                />
+              </View>
+            )}
+
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable
+                onPress={closeEdit}
+                disabled={saving || uploading}
+                style={{ flex: 1, backgroundColor: "#1a1a1a", paddingVertical: 10, borderRadius: 4, alignItems: "center", borderWidth: 1, borderColor: "#2a2a2a" }}
+              >
+                <Text style={{ color: "#CCC", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1.5 }}>CANCELAR</Text>
+              </Pressable>
+              <Pressable
+                onPress={save}
+                disabled={saving || uploading}
+                style={{ flex: 1, backgroundColor: "#D4AF37", paddingVertical: 10, borderRadius: 4, alignItems: "center", opacity: saving || uploading ? 0.5 : 1 }}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : (
+                  <Text style={{ color: "#000", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1.5 }}>GUARDAR</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+export function CalificacionesPanel() {
+  const [summary, setSummary] = useState<RatingsSummary | null>(null);
+  const [professors, setProfessors] = useState<ProfessorRating[]>([]);
+  const [martialArts, setMartialArts] = useState<MartialArtRating[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, p, m] = await Promise.all([
+        ratingsApi.summary(),
+        ratingsApi.professors(),
+        ratingsApi.martialArts(),
+      ]);
+      setSummary(s);
+      setProfessors(p.professors);
+      setMartialArts(m.martialArts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cargar calificaciones");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <View style={{ paddingVertical: 40, alignItems: "center" }}>
+        <ActivityIndicator color="#D4AF37" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={ratingsStyles.errorBox}>
+        <Ionicons name="warning-outline" size={18} color="#FF3B30" />
+        <Text style={ratingsStyles.errorText}>{error}</Text>
+        <Pressable style={ratingsStyles.retryBtn} onPress={load}>
+          <Text style={ratingsStyles.retryBtnText}>Reintentar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <View style={ratingsStyles.summaryRow}>
+        <View style={ratingsStyles.summaryCard}>
+          <Text style={ratingsStyles.summaryLabel}>TOTAL</Text>
+          <Text style={ratingsStyles.summaryValue}>{summary?.totalRatings ?? 0}</Text>
+          <Text style={ratingsStyles.summarySub}>calificaciones</Text>
+        </View>
+        <View style={ratingsStyles.summaryCard}>
+          <Text style={ratingsStyles.summaryLabel}>PROMEDIO</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={ratingsStyles.summaryValue}>
+              {summary?.avgGlobal != null ? summary.avgGlobal.toFixed(2) : "—"}
+            </Text>
+            <MaterialCommunityIcons name="star" size={20} color="#D4AF37" />
+          </View>
+          <Text style={ratingsStyles.summarySub}>de 5</Text>
+        </View>
+      </View>
+
+      <Text style={ratingsStyles.sectionTitle}>PROFESORES</Text>
+      {professors.length === 0 ? (
+        <Text style={ratingsStyles.emptyText}>Sin calificaciones todavía</Text>
+      ) : (
+        professors.map((p, idx) => (
+          <View key={p.professorId} style={ratingsStyles.row}>
+            <Text style={ratingsStyles.rank}>{idx + 1}</Text>
+            <View style={ratingsStyles.avatar}>
+              {p.avatarUrl ? (
+                <Image
+                  source={{ uri: getAvatarServingUrl(p.avatarUrl) || undefined }}
+                  style={ratingsStyles.avatarImg}
+                />
+              ) : (
+                <MaterialCommunityIcons name="account" size={18} color="#555" />
+              )}
+            </View>
+            <Text style={ratingsStyles.rowName} numberOfLines={1}>
+              {p.displayName}
+            </Text>
+            <Stars value={p.avgRating} />
+            <Text style={ratingsStyles.rowAvg}>{p.avgRating.toFixed(2)}</Text>
+            <Text style={ratingsStyles.rowCount}>({p.totalRatings})</Text>
+          </View>
+        ))
+      )}
+
+      <Text style={[ratingsStyles.sectionTitle, { marginTop: 20 }]}>ARTES MARCIALES</Text>
+      {martialArts.length === 0 ? (
+        <Text style={ratingsStyles.emptyText}>Sin calificaciones todavía</Text>
+      ) : (
+        martialArts.map((m, idx) => (
+          <View key={m.systemId} style={ratingsStyles.row}>
+            <Text style={ratingsStyles.rank}>{idx + 1}</Text>
+            <View style={ratingsStyles.avatar}>
+              <Text style={{ color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 14 }}>
+                {TRAINING_SYSTEM_KANJI[m.key] || "·"}
+              </Text>
+            </View>
+            <Text style={ratingsStyles.rowName} numberOfLines={1}>
+              {m.name}
+            </Text>
+            <Stars value={m.avgRating} />
+            <Text style={ratingsStyles.rowAvg}>{m.avgRating.toFixed(2)}</Text>
+            <Text style={ratingsStyles.rowCount}>({m.totalRatings})</Text>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
+function Stars({ value }: { value: number }) {
+  const rounded = Math.round(value);
+  return (
+    <View style={{ flexDirection: "row", gap: 1 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <MaterialCommunityIcons
+          key={i}
+          name={i <= rounded ? "star" : "star-outline"}
+          size={12}
+          color={i <= rounded ? "#D4AF37" : "#444"}
+        />
+      ))}
+    </View>
+  );
+}
+
+const ratingsStyles = StyleSheet.create({
+  summaryRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: "#070707",
+    borderWidth: 1,
+    borderColor: "#1A1A1A",
+    borderTopColor: "#D4AF3722",
+    borderRadius: 4,
+    padding: 14,
+    alignItems: "center",
+    gap: 4,
+  },
+  summaryLabel: {
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 9,
+    color: "#888",
+    letterSpacing: 1.5,
+  },
+  summaryValue: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 26,
+    color: "#FFF",
+  },
+  summarySub: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#555",
+  },
+  sectionTitle: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#D4AF37",
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#555",
+    paddingVertical: 12,
+    textAlign: "center",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#070707",
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  rank: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#666",
+    width: 18,
+  },
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 2,
+    backgroundColor: "#111",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  avatarImg: {
+    width: 26,
+    height: 26,
+    borderRadius: 2,
+  },
+  rowName: {
+    flex: 1,
+    fontFamily: "NotoSansJP_500Medium",
+    fontSize: 12,
+    color: "#DDD",
+  },
+  rowAvg: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 12,
+    color: "#FFF",
+    minWidth: 32,
+    textAlign: "right",
+  },
+  rowCount: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 10,
+    color: "#666",
+    minWidth: 30,
+    textAlign: "right",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#1A0000",
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+    borderRadius: 4,
+    padding: 12,
+    marginVertical: 8,
+  },
+  errorText: {
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 12,
+    color: "#FF3B30",
+    flex: 1,
+  },
+  retryBtn: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  retryBtnText: {
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    color: "#FFF",
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -891,6 +891,82 @@ export const classesApi = {
     apiFetch<{ attendees: ClassAttendee[] }>(`/classes/${classId}/attendees`),
 };
 
+export interface RatingsSummary {
+  totalRatings: number;
+  avgGlobal: number | null;
+}
+
+export interface ProfessorRating {
+  professorId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  avgRating: number;
+  totalRatings: number;
+}
+
+export interface MartialArtRating {
+  systemId: number;
+  key: string;
+  name: string;
+  avgRating: number;
+  totalRatings: number;
+}
+
+export interface RoulettePunishment {
+  id: number;
+  label: string;
+  iconUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface SpinResult {
+  winnerId: number;
+  winnerIndex: number;
+  total: number;
+  label: string;
+  iconUrl: string | null;
+}
+
+export const rouletteApi = {
+  list: () => apiFetch<{ punishments: RoulettePunishment[] }>("/roulette/punishments"),
+  create: (data: { label: string; iconUrl?: string | null }) =>
+    apiFetch<{ punishment: RoulettePunishment }>("/roulette/punishments", {
+      method: "POST",
+      body: data,
+    }),
+  update: (id: number, data: { label?: string; iconUrl?: string | null; isActive?: boolean }) =>
+    apiFetch<{ punishment: RoulettePunishment }>(`/roulette/punishments/${id}`, {
+      method: "PUT",
+      body: data,
+    }),
+  remove: (id: number) =>
+    apiFetch<{ success: boolean }>(`/roulette/punishments/${id}`, { method: "DELETE" }),
+  spin: () => apiFetch<SpinResult>("/roulette/spin", { method: "POST" }),
+  uploadIconDirect: async (blob: Blob, mimeType: string): Promise<string> => {
+    const res = await fetch(`${BASE_URL}/api/roulette/icon-upload`, {
+      method: "POST",
+      headers: { "Content-Type": mimeType },
+      body: blob,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error ?? "Upload failed");
+    }
+    const data = (await res.json()) as { objectPath: string };
+    return data.objectPath;
+  },
+};
+
+export const ratingsApi = {
+  summary: () => apiFetch<RatingsSummary>("/ratings/summary"),
+  professors: () =>
+    apiFetch<{ professors: ProfessorRating[] }>("/ratings/professors"),
+  martialArts: () =>
+    apiFetch<{ martialArts: MartialArtRating[] }>("/ratings/martial-arts"),
+};
+
 export interface EventItem {
   id: number;
   title: string;

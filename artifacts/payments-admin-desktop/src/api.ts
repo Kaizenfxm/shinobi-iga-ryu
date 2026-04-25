@@ -129,6 +129,35 @@ export const authApi = {
   },
 };
 
+export interface RatingsSummary {
+  totalRatings: number;
+  avgGlobal: number | null;
+}
+
+export interface ProfessorRating {
+  professorId: number;
+  displayName: string;
+  avatarUrl: string | null;
+  avgRating: number;
+  totalRatings: number;
+}
+
+export interface MartialArtRating {
+  systemId: number;
+  key: string;
+  name: string;
+  avgRating: number;
+  totalRatings: number;
+}
+
+export const ratingsApi = {
+  summary: () => apiFetch<RatingsSummary>("/ratings/summary"),
+  professors: () =>
+    apiFetch<{ professors: ProfessorRating[] }>("/ratings/professors"),
+  martialArts: () =>
+    apiFetch<{ martialArts: MartialArtRating[] }>("/ratings/martial-arts"),
+};
+
 export const adminApi = {
   getUsers: () =>
     apiFetch<{ users: AdminUser[] }>("/admin/users"),

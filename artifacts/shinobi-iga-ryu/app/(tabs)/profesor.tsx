@@ -19,9 +19,10 @@ import {
   EntrenamientoPanel,
   ClassesPanel,
   SuggestionsPanel,
+  CalificacionesPanel,
 } from "./admin";
 
-type ProfesorTab = "peleas" | "notificaciones" | "entrenamiento" | "clases" | "sugerencias";
+type ProfesorTab = "peleas" | "notificaciones" | "entrenamiento" | "clases" | "calificaciones" | "sugerencias";
 
 export default function ProfesorScreen() {
   const insets = useSafeAreaInsets();
@@ -85,6 +86,8 @@ export default function ProfesorScreen() {
         return <EntrenamientoPanel />;
       case "clases":
         return <ClassesPanel users={users} />;
+      case "calificaciones":
+        return <CalificacionesPanel />;
       case "sugerencias":
         return (
           <SuggestionsPanel
@@ -146,6 +149,16 @@ export default function ProfesorScreen() {
             name="calendar-clock"
             size={20}
             color={activeTab === "clases" ? "#000" : "#666"}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.tabButton, activeTab === "calificaciones" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("calificaciones")}
+        >
+          <MaterialCommunityIcons
+            name="star"
+            size={20}
+            color={activeTab === "calificaciones" ? "#000" : "#666"}
           />
         </Pressable>
         <Pressable

@@ -9,6 +9,7 @@ import { MembershipGate } from "@/components/MembershipGate";
 import { useMembership } from "@/hooks/useMembership";
 import { useChallenges } from "@/contexts/ChallengesContext";
 import QrScannerButton from "@/components/QrScanner";
+import RouletteWheelButton from "@/components/RouletteWheel";
 import { suggestionsApi } from "@/lib/api";
 
 function CountdownBadge() {
@@ -90,6 +91,7 @@ export default function TabLayout() {
       <View style={{ flex: 1 }}>
         <CountdownBadge />
         <QrScannerButton />
+        <RouletteWheelButton />
         <Tabs
           screenOptions={{
             headerShown: false,

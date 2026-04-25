@@ -4,8 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   authApi,
   adminApi,
+  ratingsApi,
   type Payment,
   type AdminUser,
+  type RatingsSummary,
+  type ProfessorRating,
+  type MartialArtRating,
   PAYMENT_METHODS,
   METHOD_LABELS,
   ROLES,
@@ -1189,7 +1193,162 @@ type DialogState =
   | { type: "alert"; message: string; resolve: () => void }
   | null;
 
+function RatingsView() {
+  const [summary, setSummary] = useState<RatingsSummary | null>(null);
+  const [professors, setProfessors] = useState<ProfessorRating[]>([]);
+  const [martialArts, setMartialArts] = useState<MartialArtRating[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, p, m] = await Promise.all([
+        ratingsApi.summary(),
+        ratingsApi.professors(),
+        ratingsApi.martialArts(),
+      ]);
+      setSummary(s);
+      setProfessors(p.professors);
+      setMartialArts(m.martialArts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cargar");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const renderStars = (value: number) => {
+    const r = Math.round(value);
+    return (
+      <span className="text-gold tracking-tight">
+        {"★".repeat(r)}
+        <span className="text-zinc-700">{"★".repeat(5 - r)}</span>
+      </span>
+    );
+  };
+
+  return (
+    <div className="px-6 py-4 flex-1 overflow-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-white text-lg font-semibold">Calificaciones</h2>
+        <button
+          onClick={load}
+          className="text-zinc-500 hover:text-white text-sm px-2 py-1 rounded hover:bg-zinc-800 transition"
+        >
+          ↻ Refrescar
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="text-zinc-500 text-sm py-10 text-center">Cargando...</div>
+      ) : error ? (
+        <div className="bg-red-900/30 border border-red-800 text-red-400 px-4 py-3 rounded">
+          {error}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider">Total</div>
+              <div className="text-3xl font-bold text-white mt-1">
+                {summary?.totalRatings ?? 0}
+              </div>
+              <div className="text-xs text-zinc-600">calificaciones</div>
+            </div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider">Promedio</div>
+              <div className="text-3xl font-bold text-gold mt-1">
+                {summary?.avgGlobal != null ? summary.avgGlobal.toFixed(2) : "—"}
+                <span className="text-base text-zinc-600 ml-1">/ 5</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden mb-6">
+            <div className="px-4 py-2 border-b border-zinc-800 text-xs text-gold uppercase tracking-wider font-semibold">
+              Profesores
+            </div>
+            {professors.length === 0 ? (
+              <div className="px-4 py-6 text-center text-zinc-500 text-sm">
+                Sin calificaciones todavía
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="text-zinc-500 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th className="px-4 py-2 text-left w-10">#</th>
+                    <th className="px-4 py-2 text-left">Profesor</th>
+                    <th className="px-4 py-2 text-left">Estrellas</th>
+                    <th className="px-4 py-2 text-right">Promedio</th>
+                    <th className="px-4 py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {professors.map((p, i) => (
+                    <tr key={p.professorId} className="border-t border-zinc-800">
+                      <td className="px-4 py-2 text-zinc-500">{i + 1}</td>
+                      <td className="px-4 py-2 text-white">{p.displayName}</td>
+                      <td className="px-4 py-2">{renderStars(p.avgRating)}</td>
+                      <td className="px-4 py-2 text-right text-white font-semibold">
+                        {p.avgRating.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-right text-zinc-500">{p.totalRatings}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="px-4 py-2 border-b border-zinc-800 text-xs text-gold uppercase tracking-wider font-semibold">
+              Artes Marciales
+            </div>
+            {martialArts.length === 0 ? (
+              <div className="px-4 py-6 text-center text-zinc-500 text-sm">
+                Sin calificaciones todavía
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="text-zinc-500 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th className="px-4 py-2 text-left w-10">#</th>
+                    <th className="px-4 py-2 text-left">Arte marcial</th>
+                    <th className="px-4 py-2 text-left">Estrellas</th>
+                    <th className="px-4 py-2 text-right">Promedio</th>
+                    <th className="px-4 py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {martialArts.map((m, i) => (
+                    <tr key={m.systemId} className="border-t border-zinc-800">
+                      <td className="px-4 py-2 text-zinc-500">{i + 1}</td>
+                      <td className="px-4 py-2 text-white">{m.name}</td>
+                      <td className="px-4 py-2">{renderStars(m.avgRating)}</td>
+                      <td className="px-4 py-2 text-right text-white font-semibold">
+                        {m.avgRating.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-right text-zinc-500">{m.totalRatings}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
+  const [view, setView] = useState<"pagos" | "calificaciones">("pagos");
   const [userPayments, setUserPayments] = useState<Record<number, Payment[]>>({});
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1403,9 +1562,25 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
           <span className="text-zinc-400 text-sm">Gestión de Pagos</span>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={load} className="text-zinc-500 hover:text-white text-sm px-2 py-1 rounded hover:bg-zinc-800 transition">
-            ↻ Refrescar
-          </button>
+          <div className="flex items-center bg-zinc-800 rounded-md p-0.5">
+            <button
+              onClick={() => setView("pagos")}
+              className={`text-sm px-3 py-1 rounded transition ${view === "pagos" ? "bg-gold text-black font-semibold" : "text-zinc-400 hover:text-white"}`}
+            >
+              Pagos
+            </button>
+            <button
+              onClick={() => setView("calificaciones")}
+              className={`text-sm px-3 py-1 rounded transition ${view === "calificaciones" ? "bg-gold text-black font-semibold" : "text-zinc-400 hover:text-white"}`}
+            >
+              ★ Calificaciones
+            </button>
+          </div>
+          {view === "pagos" && (
+            <button onClick={load} className="text-zinc-500 hover:text-white text-sm px-2 py-1 rounded hover:bg-zinc-800 transition">
+              ↻ Refrescar
+            </button>
+          )}
           <UpdateButton onInfo={showAlert} />
           <button onClick={onLogout} className="text-zinc-500 hover:text-red-400 text-sm px-2 py-1 rounded hover:bg-zinc-800 transition">
             Cerrar sesión
@@ -1413,6 +1588,10 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
+      {view === "calificaciones" ? (
+        <RatingsView />
+      ) : (
+      <>
       {/* Stats */}
       <div className="px-6 py-4 flex gap-4">
         <button
@@ -1538,6 +1717,8 @@ function PaymentsPanel({ onLogout }: { onLogout: () => void }) {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {modal && (
         <PaymentModal
