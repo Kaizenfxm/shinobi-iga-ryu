@@ -2049,6 +2049,7 @@ function RankingSection({
   empty,
   count,
   children,
+  header,
 }: {
   title: string;
   color: string;
@@ -2056,6 +2057,7 @@ function RankingSection({
   empty: boolean;
   count: number;
   children: React.ReactNode;
+  header?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -2077,6 +2079,7 @@ function RankingSection({
       </Pressable>
       {expanded && (
         <View style={rkStyles.sectionBody}>
+          {header}
           {loading ? (
             <ActivityIndicator size="small" color="#D4AF37" style={{ marginVertical: 18 }} />
           ) : empty ? (
@@ -2093,25 +2096,56 @@ function RankingTab() {
   const [fighters, setFighters] = useState<RankingFighterEntry[]>([]);
   const [attendance, setAttendance] = useState<RankingAttendanceEntry[]>([]);
   const [challenges, setChallenges] = useState<RankingChallengeEntry[]>([]);
-  const [attendanceMonth, setAttendanceMonth] = useState("");
+  const [attendanceLabel, setAttendanceLabel] = useState("");
+  const [attPeriod, setAttPeriod] = useState<"month" | "year">("month");
+  const now = new Date();
+  const [attMonth, setAttMonth] = useState<string>(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [attYear, setAttYear] = useState<number>(now.getFullYear());
   const [loadingF, setLoadingF] = useState(true);
   const [loadingA, setLoadingA] = useState(true);
   const [loadingC, setLoadingC] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedChallenger, setExpandedChallenger] = useState<number | null>(null);
 
+  const loadAttendance = useCallback(() => {
+    setLoadingA(true);
+    return rankingApi
+      .getAttendance(
+        attPeriod === "year"
+          ? { period: "year", year: attYear }
+          : { period: "month", month: attMonth },
+      )
+      .then((r) => {
+        setAttendance(r.ranking);
+        setAttendanceLabel(r.label || r.month);
+        setLoadingA(false);
+      })
+      .catch(() => setLoadingA(false));
+  }, [attPeriod, attMonth, attYear]);
+
   const load = useCallback(async () => {
     await Promise.allSettled([
       rankingApi.getFighters().then((r) => { setFighters(r.ranking); setLoadingF(false); }).catch(() => setLoadingF(false)),
-      rankingApi.getAttendance().then((r) => { setAttendance(r.ranking); setAttendanceMonth(r.month); setLoadingA(false); }).catch(() => setLoadingA(false)),
+      loadAttendance(),
       rankingApi.getChallenges().then((r) => { setChallenges(r.ranking); setLoadingC(false); }).catch(() => setLoadingC(false)),
     ]);
     setRefreshing(false);
-  }, []);
+  }, [loadAttendance]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadAttendance(); }, [loadAttendance]);
 
   const onRefresh = () => { setRefreshing(true); load(); };
+
+  const shiftPeriod = (dir: -1 | 1) => {
+    if (attPeriod === "year") {
+      setAttYear((y) => y + dir);
+    } else {
+      const [yy, mm] = attMonth.split("-").map(Number);
+      const d = new Date(yy, mm - 1 + dir, 1);
+      setAttMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+  };
 
   return (
     <ScrollView style={rkStyles.scroll} contentContainerStyle={[rkStyles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}
@@ -2124,11 +2158,40 @@ function RankingTab() {
       </RankingSection>
 
       <RankingSection
-        title={`🏯 ASISTENCIA${attendanceMonth ? ` · ${attendanceMonth.toUpperCase()}` : ""}`}
+        title={`🏯 ASISTENCIA${attendanceLabel ? ` · ${attendanceLabel.toUpperCase()}` : ""}`}
         color="#D4AF37"
         loading={loadingA}
         empty={attendance.length === 0}
         count={attendance.length}
+        header={
+          <View style={rkStyles.periodBar}>
+            <View style={rkStyles.periodToggle}>
+              <Pressable
+                onPress={() => setAttPeriod("month")}
+                style={[rkStyles.periodBtn, attPeriod === "month" && rkStyles.periodBtnActive]}
+              >
+                <Text style={[rkStyles.periodBtnText, attPeriod === "month" && rkStyles.periodBtnTextActive]}>MES</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setAttPeriod("year")}
+                style={[rkStyles.periodBtn, attPeriod === "year" && rkStyles.periodBtnActive]}
+              >
+                <Text style={[rkStyles.periodBtnText, attPeriod === "year" && rkStyles.periodBtnTextActive]}>AÑO</Text>
+              </Pressable>
+            </View>
+            <View style={rkStyles.periodNav}>
+              <Pressable onPress={() => shiftPeriod(-1)} style={rkStyles.periodArrow} hitSlop={8}>
+                <Ionicons name="chevron-back" size={16} color="#D4AF37" />
+              </Pressable>
+              <Text style={rkStyles.periodLabel} numberOfLines={1}>
+                {attendanceLabel || "—"}
+              </Text>
+              <Pressable onPress={() => shiftPeriod(1)} style={rkStyles.periodArrow} hitSlop={8}>
+                <Ionicons name="chevron-forward" size={16} color="#D4AF37" />
+              </Pressable>
+            </View>
+          </View>
+        }
       >
         {attendance.map((u, i) => (
           <RankingRow
@@ -2226,6 +2289,25 @@ const rkStyles = StyleSheet.create({
   challengeRight: { alignItems: "flex-end", gap: 2 },
   challengeArt: { fontFamily: "NotoSansJP_400Regular", fontSize: 10, color: "#6A5ACD" },
   challengeDate: { fontFamily: "NotoSansJP_400Regular", fontSize: 9, color: "#444" },
+  periodBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 14, paddingVertical: 10, gap: 10,
+    borderBottomWidth: 1, borderBottomColor: "#0d0d0d",
+    backgroundColor: "#040404",
+  },
+  periodToggle: {
+    flexDirection: "row", borderWidth: 1, borderColor: "#1f1f1f", borderRadius: 2,
+  },
+  periodBtn: { paddingHorizontal: 10, paddingVertical: 5 },
+  periodBtnActive: { backgroundColor: "#D4AF3722" },
+  periodBtnText: { color: "#666", fontFamily: "NotoSansJP_700Bold", fontSize: 10, letterSpacing: 2 },
+  periodBtnTextActive: { color: "#D4AF37" },
+  periodNav: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
+  periodArrow: { padding: 4 },
+  periodLabel: {
+    color: "#CCC", fontFamily: "NotoSansJP_500Medium", fontSize: 11,
+    letterSpacing: 1, textTransform: "uppercase", minWidth: 110, textAlign: "center",
+  },
 });
 
 export default function ComunidadScreen() {

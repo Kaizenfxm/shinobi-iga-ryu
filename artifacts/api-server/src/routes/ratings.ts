@@ -78,6 +78,28 @@ ratingsRouter.get("/ratings/professors", requireAuth, async (req, res) => {
       .groupBy(classesTable.professorUserId, usersTable.displayName, usersTable.avatarUrl)
       .orderBy(sql`avg(${classAttendancesTable.rating}) desc nulls last`);
 
+    const professorIds = rows
+      .map((r) => r.professorId)
+      .filter((id): id is number => id != null);
+
+    const classesCounts = professorIds.length
+      ? await db
+          .select({
+            professorId: classesTable.professorUserId,
+            classesCount: sql<number>`count(*)::int`,
+          })
+          .from(classesTable)
+          .where(isNotNull(classesTable.professorUserId))
+          .groupBy(classesTable.professorUserId)
+      : [];
+
+    const classesByProfessor = new Map<number, number>();
+    for (const row of classesCounts) {
+      if (row.professorId != null) {
+        classesByProfessor.set(row.professorId, row.classesCount);
+      }
+    }
+
     res.json({
       professors: rows.map((r) => ({
         professorId: r.professorId,
@@ -85,6 +107,7 @@ ratingsRouter.get("/ratings/professors", requireAuth, async (req, res) => {
         avatarUrl: r.avatarUrl,
         avgRating: r.avgRating,
         totalRatings: r.totalRatings,
+        classesCount: r.professorId != null ? classesByProfessor.get(r.professorId) ?? 0 : 0,
       })),
     });
   } catch (error) {

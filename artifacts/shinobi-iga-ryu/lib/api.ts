@@ -902,6 +902,7 @@ export interface ProfessorRating {
   avatarUrl: string | null;
   avgRating: number;
   totalRatings: number;
+  classesCount: number;
 }
 
 export interface MartialArtRating {
@@ -1152,8 +1153,21 @@ export const rankingApi = {
   getFighters: () =>
     apiFetch<{ ranking: RankingFighterEntry[] }>("/ranking/fighters"),
 
-  getAttendance: () =>
-    apiFetch<{ ranking: RankingAttendanceEntry[]; month: string }>("/ranking/attendance"),
+  getAttendance: (opts?: { period?: "month" | "year"; month?: string; year?: number }) => {
+    const params = new URLSearchParams();
+    if (opts?.period) params.set("period", opts.period);
+    if (opts?.month) params.set("month", opts.month);
+    if (opts?.year != null) params.set("year", String(opts.year));
+    const qs = params.toString();
+    return apiFetch<{
+      ranking: RankingAttendanceEntry[];
+      month: string;
+      period: "month" | "year";
+      monthValue: string;
+      yearValue: number;
+      label: string;
+    }>(`/ranking/attendance${qs ? `?${qs}` : ""}`);
+  },
 
   getChallenges: () =>
     apiFetch<{ ranking: RankingChallengeEntry[] }>("/ranking/challenges"),

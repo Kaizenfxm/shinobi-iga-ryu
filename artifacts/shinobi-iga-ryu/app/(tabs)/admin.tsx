@@ -6544,7 +6544,7 @@ export function CalificacionesPanel() {
             </Text>
             <Stars value={p.avgRating} />
             <Text style={ratingsStyles.rowAvg}>{p.avgRating.toFixed(2)}</Text>
-            <Text style={ratingsStyles.rowCount}>({p.totalRatings})</Text>
+            <Text style={ratingsStyles.rowCount}>({p.classesCount})</Text>
           </View>
         ))
       )}

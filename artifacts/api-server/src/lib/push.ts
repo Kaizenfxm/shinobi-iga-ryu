@@ -46,7 +46,8 @@ export async function notifyUser(
       .select({ token: pushTokensTable.token })
       .from(pushTokensTable)
       .where(eq(pushTokensTable.userId, targetUserId));
-    await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
+    const uniqueTokens = [...new Set(tokens.map((t) => t.token))];
+    await Promise.all(uniqueTokens.map((t) => sendExpoPush(t, title, body, data)));
   } catch {}
 }
 
@@ -62,7 +63,8 @@ export async function notifyUsers(
       .select({ token: pushTokensTable.token })
       .from(pushTokensTable)
       .where(inArray(pushTokensTable.userId, userIds));
-    await Promise.all(tokens.map((t) => sendExpoPush(t.token, title, body, data)));
+    const uniqueTokens = [...new Set(tokens.map((t) => t.token))];
+    await Promise.all(uniqueTokens.map((t) => sendExpoPush(t, title, body, data)));
   } catch {}
 }
 

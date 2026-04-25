@@ -90,20 +90,53 @@ rankingRouter.get("/ranking/fighters", requireAuth, async (req, res) => {
 
 rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
   const activeIds = await getActiveAlumnoIds();
-  if (activeIds.length === 0) { res.json({ ranking: [], month: "" }); return; }
+
+  const periodParam = String(req.query["period"] ?? "month") === "year" ? "year" : "month";
+  const monthParam = typeof req.query["month"] === "string" ? (req.query["month"] as string) : null;
+  const yearParam = typeof req.query["year"] === "string" ? Number(req.query["year"]) : NaN;
 
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const monthLabel = now.toLocaleString("es-CO", { month: "long", year: "numeric" });
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  let label: string;
+  let monthValue = "";
+  let yearValue = 0;
+
+  if (periodParam === "year") {
+    const y = Number.isFinite(yearParam) && yearParam > 1970 ? yearParam : now.getFullYear();
+    rangeStart = new Date(y, 0, 1);
+    rangeEnd = new Date(y + 1, 0, 1);
+    yearValue = y;
+    label = String(y);
+  } else {
+    let y = now.getFullYear();
+    let m = now.getMonth();
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [yy, mm] = monthParam.split("-").map(Number);
+      if (yy > 1970 && mm >= 1 && mm <= 12) {
+        y = yy;
+        m = mm - 1;
+      }
+    }
+    rangeStart = new Date(y, m, 1);
+    rangeEnd = new Date(y, m + 1, 1);
+    monthValue = `${y}-${String(m + 1).padStart(2, "0")}`;
+    yearValue = y;
+    label = rangeStart.toLocaleString("es-CO", { month: "long", year: "numeric" });
+  }
+
+  if (activeIds.length === 0) {
+    res.json({ ranking: [], month: label, period: periodParam, monthValue, yearValue, label });
+    return;
+  }
 
   const stats = await db
     .select({ userId: classAttendancesTable.userId, total: count(classAttendancesTable.id) })
     .from(classAttendancesTable)
     .where(and(
       inArray(classAttendancesTable.userId, activeIds),
-      sql`${classAttendancesTable.attendedAt} >= ${monthStart.toISOString()}`,
-      sql`${classAttendancesTable.attendedAt} < ${monthEnd.toISOString()}`
+      sql`${classAttendancesTable.attendedAt} >= ${rangeStart.toISOString()}`,
+      sql`${classAttendancesTable.attendedAt} < ${rangeEnd.toISOString()}`
     ))
     .groupBy(classAttendancesTable.userId);
 
@@ -131,7 +164,7 @@ rankingRouter.get("/ranking/attendance", requireAuth, async (req, res) => {
     .sort((a, b) => b.attendances - a.attendances)
     .filter((u) => u.attendances > 0);
 
-  res.json({ ranking, month: monthLabel });
+  res.json({ ranking, month: label, period: periodParam, monthValue, yearValue, label });
 });
 
 rankingRouter.get("/ranking/challenges", requireAuth, async (req, res) => {

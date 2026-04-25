@@ -140,6 +140,7 @@ export interface ProfessorRating {
   avatarUrl: string | null;
   avgRating: number;
   totalRatings: number;
+  classesCount: number;
 }
 
 export interface MartialArtRating {

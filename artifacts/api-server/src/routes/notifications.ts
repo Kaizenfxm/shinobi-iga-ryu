@@ -1,10 +1,115 @@
 import { Router } from "express";
-import { db, notificationsTable, notificationReadsTable, usersTable, userRolesTable } from "@workspace/db";
-import { eq, desc, and, or, gte, isNull, inArray, sql } from "drizzle-orm";
+import {
+  db,
+  notificationsTable,
+  notificationReadsTable,
+  usersTable,
+  userRolesTable,
+  appSettingsTable,
+  classAttendancesTable,
+} from "@workspace/db";
+import { eq, desc, and, or, gte, isNull, inArray, sql, count } from "drizzle-orm";
 import { requireAuth, requireProfesorOrAdmin } from "../middlewares/auth";
 import { notifyTarget } from "../lib/push";
 
 const notificationsRouter = Router();
+
+const TOP_ATTENDANCE_KEY = "last_top_attendance_notified_month";
+let topAttendanceCheckInFlight = false;
+
+async function maybeNotifyTopAttendance(): Promise<void> {
+  if (topAttendanceCheckInFlight) return;
+  topAttendanceCheckInFlight = true;
+  try {
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    const [setting] = await db
+      .select()
+      .from(appSettingsTable)
+      .where(eq(appSettingsTable.key, TOP_ATTENDANCE_KEY))
+      .limit(1);
+
+    const lastNotified = setting?.value ?? "";
+    if (lastNotified === currentMonthKey) return;
+
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevStart = new Date(prev.getFullYear(), prev.getMonth(), 1);
+    const prevEnd = new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+    const prevLabel = prev.toLocaleString("es-CO", { month: "long", year: "numeric" });
+
+    const activeUsers = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.membershipStatus, "activo"),
+          eq(usersTable.hiddenFromCommunity, false),
+          eq(usersTable.isDeleted, false),
+        ),
+      );
+    const activeIds = activeUsers.map((u) => u.id);
+
+    let topRow: { userId: number; total: number } | null = null;
+    if (activeIds.length > 0) {
+      const stats = await db
+        .select({ userId: classAttendancesTable.userId, total: count(classAttendancesTable.id) })
+        .from(classAttendancesTable)
+        .where(
+          and(
+            inArray(classAttendancesTable.userId, activeIds),
+            sql`${classAttendancesTable.attendedAt} >= ${prevStart.toISOString()}`,
+            sql`${classAttendancesTable.attendedAt} < ${prevEnd.toISOString()}`,
+          ),
+        )
+        .groupBy(classAttendancesTable.userId)
+        .orderBy(desc(count(classAttendancesTable.id)))
+        .limit(1);
+      const top = stats[0];
+      if (top && Number(top.total) > 0) {
+        topRow = { userId: top.userId, total: Number(top.total) };
+      }
+    }
+
+    const [admin] = await db
+      .select({ userId: userRolesTable.userId })
+      .from(userRolesTable)
+      .where(eq(userRolesTable.role, "admin"))
+      .limit(1);
+
+    if (topRow && admin) {
+      const [winner] = await db
+        .select({ displayName: usersTable.displayName })
+        .from(usersTable)
+        .where(eq(usersTable.id, topRow.userId))
+        .limit(1);
+      const name = winner?.displayName ?? "Un alumno";
+      const title = `🏯 Top asistencia · ${prevLabel}`;
+      const body = `${name} fue el alumno con más asistencias en ${prevLabel} (${topRow.total} clases). 🥷`;
+
+      await db.insert(notificationsTable).values({
+        title,
+        body,
+        target: JSON.stringify(["todas"]),
+        createdByUserId: admin.userId,
+      });
+
+      void notifyTarget(["todas"], title, body);
+    }
+
+    await db
+      .insert(appSettingsTable)
+      .values({ key: TOP_ATTENDANCE_KEY, value: currentMonthKey })
+      .onConflictDoUpdate({
+        target: appSettingsTable.key,
+        set: { value: currentMonthKey, updatedAt: new Date() },
+      });
+  } catch (e) {
+    console.error("[TopAttendance] check failed:", e);
+  } finally {
+    topAttendanceCheckInFlight = false;
+  }
+}
 
 const VALID_TARGETS = ["todas", "bogota", "chia", "luchadores", "admins", "profesores"] as const;
 
@@ -76,6 +181,7 @@ function parseTargets(raw: string): string[] {
 
 notificationsRouter.get("/notifications", requireAuth, async (req, res) => {
   try {
+    void maybeNotifyTopAttendance();
     const userId = req.session.userId!;
     const { isFighter, sedes, createdAt: userCreatedAt, isAdmin, isProfesor } = await getUserTargetInfo(userId);
     const targetCond = buildTargetCondition(isFighter, sedes as string[], isAdmin, isProfesor, userId);

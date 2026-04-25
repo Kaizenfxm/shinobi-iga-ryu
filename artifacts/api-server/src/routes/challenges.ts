@@ -37,6 +37,10 @@ challengesRouter.post("/push-token", requireAuth, async (req, res) => {
     const { token, platform } = req.body as { token: string; platform?: string };
     if (!token) { res.status(400).json({ error: "Token requerido" }); return; }
 
+    await db
+      .delete(pushTokensTable)
+      .where(and(eq(pushTokensTable.token, token), ne(pushTokensTable.userId, userId)));
+
     const existing = await db
       .select({ id: pushTokensTable.id })
       .from(pushTokensTable)

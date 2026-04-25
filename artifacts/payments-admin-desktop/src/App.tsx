@@ -1286,7 +1286,7 @@ function RatingsView() {
                     <th className="px-4 py-2 text-left">Profesor</th>
                     <th className="px-4 py-2 text-left">Estrellas</th>
                     <th className="px-4 py-2 text-right">Promedio</th>
-                    <th className="px-4 py-2 text-right">Total</th>
+                    <th className="px-4 py-2 text-right">Clases</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1298,7 +1298,7 @@ function RatingsView() {
                       <td className="px-4 py-2 text-right text-white font-semibold">
                         {p.avgRating.toFixed(2)}
                       </td>
-                      <td className="px-4 py-2 text-right text-zinc-500">{p.totalRatings}</td>
+                      <td className="px-4 py-2 text-right text-zinc-500">{p.classesCount}</td>
                     </tr>
                   ))}
                 </tbody>
