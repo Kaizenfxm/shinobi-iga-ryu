@@ -926,16 +926,25 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
     : item.status === "pending" ? "#4a3000"
     : "#1a1a1a";
 
+  const [showVideo, setShowVideo] = useState(false);
+
   return (
     <View style={[rStyles.fightCard, { borderLeftColor: borderColor }]}>
       <View style={rStyles.fightCardInner}>
         <View style={rStyles.fightCardFighters}>
           <View style={rStyles.fightCardFighterCol}>
-            <View style={rStyles.fightCardAvatarWrap}>
-              {item.challengerAvatar ? (
-                <Image source={{ uri: getAvatarServingUrl(item.challengerAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
-              ) : (
-                <Text style={rStyles.fightCardAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+            <View style={{ position: "relative" }}>
+              <View style={rStyles.fightCardAvatarWrap}>
+                {item.challengerAvatar ? (
+                  <Image source={{ uri: getAvatarServingUrl(item.challengerAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
+                ) : (
+                  <Text style={rStyles.fightCardAvatarLetter}>{(item.challengerName[0] ?? "?").toUpperCase()}</Text>
+                )}
+              </View>
+              {isCompleted && item.winnerId === item.challengerId && (
+                <View style={rStyles.fightCardTrophy}>
+                  <Ionicons name="trophy" size={12} color="#1a1200" />
+                </View>
               )}
             </View>
             <Text style={[rStyles.fightCardName, { color: p1Color, textAlign: "left" }]} numberOfLines={2}>
@@ -950,11 +959,18 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
           </View>
 
           <View style={[rStyles.fightCardFighterCol, { alignItems: "flex-end" }]}>
-            <View style={rStyles.fightCardAvatarWrap}>
-              {item.challengedAvatar ? (
-                <Image source={{ uri: getAvatarServingUrl(item.challengedAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
-              ) : (
-                <Text style={rStyles.fightCardAvatarLetter}>{(item.challengedName[0] ?? "?").toUpperCase()}</Text>
+            <View style={{ position: "relative" }}>
+              <View style={rStyles.fightCardAvatarWrap}>
+                {item.challengedAvatar ? (
+                  <Image source={{ uri: getAvatarServingUrl(item.challengedAvatar) ?? undefined }} style={rStyles.fightCardAvatarImg} />
+                ) : (
+                  <Text style={rStyles.fightCardAvatarLetter}>{(item.challengedName[0] ?? "?").toUpperCase()}</Text>
+                )}
+              </View>
+              {isCompleted && item.winnerId === item.challengedId && (
+                <View style={rStyles.fightCardTrophy}>
+                  <Ionicons name="trophy" size={12} color="#1a1200" />
+                </View>
               )}
             </View>
             <Text style={[rStyles.fightCardName, { color: p2Color, textAlign: "right" }]} numberOfLines={2}>
@@ -998,11 +1014,6 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
       {item.status === "cancelled" && (
         <Text style={[rStyles.fightCardStatus, { color: "#444" }]}>— CANCELADO</Text>
       )}
-      {isCompleted && item.winnerId && (
-        <Text style={[rStyles.fightCardStatus, { color: "#D4AF37" }]}>
-          ★ GANADOR: {item.winnerId === item.challengerId ? item.challengerName : item.challengedName}
-        </Text>
-      )}
 
       {isCompleted && item.videoUrl && (() => {
         const hasThreeDays = userCreatedAt
@@ -1010,15 +1021,12 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
           : false;
         return hasThreeDays ? (
           <Pressable
-            style={{
-              flexDirection: "row", alignItems: "center", justifyContent: "center",
-              gap: 8, marginTop: 8, paddingVertical: 10, paddingHorizontal: 16,
-              backgroundColor: "#C41E3A", borderRadius: 8,
-            }}
-            onPress={() => Linking.openURL(item.videoUrl!)}
+            onPress={() => setShowVideo(true)}
+            hitSlop={8}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 6 }}
           >
-            <Ionicons name="play-circle" size={22} color="#FFF" />
-            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 13, letterSpacing: 1 }}>VER REPETICIÓN</Text>
+            <Ionicons name="play-circle-outline" size={13} color="#888" />
+            <Text style={{ color: "#888", fontSize: 11, textDecorationLine: "underline" }}>Ver repetición</Text>
           </Pressable>
         ) : (
           <View
@@ -1033,6 +1041,23 @@ function ChallengeRow({ item, currentUserId, canManage, onSetResult, onCancel, o
           </View>
         );
       })()}
+
+      {item.videoUrl && (
+        <Modal visible={showVideo} transparent animationType="fade" onRequestClose={() => setShowVideo(false)}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", padding: 16 }}>
+            <Pressable
+              onPress={() => setShowVideo(false)}
+              hitSlop={12}
+              style={{ position: "absolute", top: 48, right: 20, zIndex: 10, padding: 8 }}
+            >
+              <Ionicons name="close" size={28} color="#FFF" />
+            </Pressable>
+            <View style={{ width: "100%" }}>
+              <YouTubePlayer videoUrl={item.videoUrl} />
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {iRequestedCancel && (
         <Text style={[rStyles.fightCardStatus, { color: "#555" }]}>⏸ CANCELACIÓN SOLICITADA — ESPERANDO RESPUESTA</Text>
@@ -1552,10 +1577,10 @@ function RetosTab({ canManage, currentUserId, userCreatedAt }: { canManage: bool
         {communityPast.length > 0 && (
           <View style={rStyles.section}>
             <Pressable style={rStyles.sectionHeader} onPress={() => setPastExpanded((p) => !p)}>
-              <View style={[rStyles.sectionDot, { backgroundColor: "#333" }]} />
-              <Text style={rStyles.sectionTitle}>HISTORIAL</Text>
-              <View style={rStyles.sectionBadge}><Text style={rStyles.sectionBadgeText}>{communityPast.length}</Text></View>
-              <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={12} color="#333" style={{ marginLeft: "auto" }} />
+              <View style={[rStyles.sectionDot, { backgroundColor: "#D4AF37" }]} />
+              <Text style={[rStyles.sectionTitle, { color: "#D4AF37" }]}>HISTORIAL</Text>
+              <View style={[rStyles.sectionBadge, { borderColor: "#D4AF37" }]}><Text style={[rStyles.sectionBadgeText, { color: "#D4AF37" }]}>{communityPast.length}</Text></View>
+              <Ionicons name={pastExpanded ? "chevron-up" : "chevron-down"} size={12} color="#D4AF37" style={{ marginLeft: "auto" }} />
             </Pressable>
             {pastExpanded && communityPast.map((ch) => (
               <ChallengeRow key={ch.id} item={ch} currentUserId={currentUserId} canManage={canManage} onSetResult={setResultChallenge} userCreatedAt={userCreatedAt} />
@@ -1770,6 +1795,12 @@ const rStyles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   fightCardAvatarImg: { width: 38, height: 38, borderRadius: 19 },
+  fightCardTrophy: {
+    position: "absolute", top: -8, right: -6,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: "#D4AF37", borderWidth: 2, borderColor: "#0d0d0d",
+    alignItems: "center", justifyContent: "center",
+  },
   fightCardAvatarLetter: {
     color: "#444", fontFamily: "NotoSansJP_700Bold", fontSize: 14,
   },

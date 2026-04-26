@@ -5504,13 +5504,15 @@ export function RetosPanel() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editScheduledAt, setEditScheduledAt] = useState("");
+  const [editScheduledDate, setEditScheduledDate] = useState<Date | null>(null);
   const [editSystemId, setEditSystemId] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editVideoUrl, setEditVideoUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<Set<number>>(new Set());
+  const [showPickerMode, setShowPickerMode] = useState<"date" | "time" | null>(null);
+  const [tempPickerDate, setTempPickerDate] = useState<Date>(new Date());
 
   const load = useCallback(async () => {
     try {
@@ -5531,11 +5533,7 @@ export function RetosPanel() {
 
   const openEdit = (c: ChallengeItem) => {
     setEditingId(c.id);
-    const d = new Date(c.scheduledAt);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    setEditScheduledAt(
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-    );
+    setEditScheduledDate(new Date(c.scheduledAt));
     setEditSystemId(c.trainingSystemId);
     setEditNotes(c.notes ?? "");
     setEditStatus(c.status);
@@ -5549,7 +5547,7 @@ export function RetosPanel() {
     setSaving(true);
     try {
       await challengesApi.adminUpdate(editingId, {
-        scheduledAt: editScheduledAt ? new Date(editScheduledAt).toISOString() : undefined,
+        scheduledAt: editScheduledDate ? editScheduledDate.toISOString() : undefined,
         trainingSystemId: editSystemId || undefined,
         notes: editNotes.trim() || null,
         status: editStatus || undefined,
@@ -5702,13 +5700,86 @@ export function RetosPanel() {
             </ScrollView>
 
             <Text style={retosStyles.fieldLabel}>FECHA Y HORA</Text>
-            <TextInput
-              style={retosStyles.input}
-              value={editScheduledAt}
-              onChangeText={setEditScheduledAt}
-              placeholder="YYYY-MM-DDTHH:MM"
-              placeholderTextColor="#444"
-            />
+            {Platform.OS === "web" ? (
+              <View style={retosStyles.dateBtn}>
+                <Ionicons name="calendar-outline" size={14} color="#D4AF37" style={{ marginRight: 6 }} />
+                {React.createElement("input", {
+                  type: "datetime-local",
+                  value: editScheduledDate
+                    ? (() => {
+                        const pad = (n: number) => String(n).padStart(2, "0");
+                        const d = editScheduledDate;
+                        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                      })()
+                    : "",
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                    if (e.target?.value) setEditScheduledDate(new Date(e.target.value));
+                  },
+                  style: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#FFF", fontSize: "13px", colorScheme: "dark", cursor: "pointer", width: "100%", padding: 0 },
+                })}
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                <Pressable
+                  style={[retosStyles.dateBtn, { flex: 1 }]}
+                  onPress={() => { setTempPickerDate(editScheduledDate ?? new Date()); setShowPickerMode("date"); }}
+                >
+                  <Ionicons name="calendar-outline" size={13} color="#D4AF37" />
+                  <Text style={retosStyles.dateBtnText}>
+                    {editScheduledDate
+                      ? editScheduledDate.toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+                      : "Fecha..."}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[retosStyles.dateBtn, { flex: 1 }]}
+                  onPress={() => { setTempPickerDate(editScheduledDate ?? new Date()); setShowPickerMode("time"); }}
+                >
+                  <Ionicons name="time-outline" size={13} color="#D4AF37" />
+                  <Text style={retosStyles.dateBtnText}>
+                    {editScheduledDate
+                      ? editScheduledDate.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+                      : "Hora..."}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+            {showPickerMode !== null && (
+              <Modal visible transparent animationType="slide" onRequestClose={() => setShowPickerMode(null)}>
+                <Pressable style={retosStyles.pickerBackdrop} onPress={() => setShowPickerMode(null)}>
+                  <Pressable onPress={() => {}} style={retosStyles.pickerSheet}>
+                    <View style={retosStyles.pickerHeader}>
+                      <Pressable onPress={() => setShowPickerMode(null)}>
+                        <Text style={retosStyles.pickerCancel}>CANCELAR</Text>
+                      </Pressable>
+                      <Text style={retosStyles.pickerTitle}>
+                        {showPickerMode === "date" ? "SELECCIONAR FECHA" : "SELECCIONAR HORA"}
+                      </Text>
+                      <Pressable onPress={() => {
+                        const mode = showPickerMode;
+                        setEditScheduledDate((prev) => {
+                          const base = prev ?? new Date();
+                          if (mode === "date") return new Date(tempPickerDate.getFullYear(), tempPickerDate.getMonth(), tempPickerDate.getDate(), base.getHours(), base.getMinutes());
+                          return new Date(base.getFullYear(), base.getMonth(), base.getDate(), tempPickerDate.getHours(), tempPickerDate.getMinutes());
+                        });
+                        setShowPickerMode(null);
+                      }}>
+                        <Text style={retosStyles.pickerConfirm}>CONFIRMAR</Text>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={tempPickerDate}
+                      mode={showPickerMode}
+                      display="spinner"
+                      onChange={(_, s) => { if (s) setTempPickerDate(s); }}
+                      textColor="#FFFFFF"
+                      themeVariant="dark"
+                      style={{ width: "100%" }}
+                    />
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
 
             <Text style={retosStyles.fieldLabel}>ESTADO</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
@@ -5941,6 +6012,51 @@ const retosStyles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
   },
+  dateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#0A0A0A",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+    borderRadius: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  dateBtnText: {
+    color: "#FFF",
+    fontFamily: "NotoSansJP_400Regular",
+    fontSize: 13,
+  },
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  pickerSheet: {
+    backgroundColor: "#111",
+    paddingTop: 8,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#2a2a2a",
+  },
+  pickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1a1a1a",
+  },
+  pickerTitle: {
+    color: "#D4AF37",
+    fontFamily: "NotoSansJP_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.5,
+  },
+  pickerCancel: { color: "#888", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1 },
+  pickerConfirm: { color: "#D4AF37", fontFamily: "NotoSansJP_700Bold", fontSize: 11, letterSpacing: 1 },
   cancelModalBtn: {
     flex: 1,
     paddingVertical: 12,

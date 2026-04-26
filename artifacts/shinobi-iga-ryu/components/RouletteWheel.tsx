@@ -20,6 +20,7 @@ import Svg, {
   Path,
   G,
   Text as SvgText,
+  TSpan,
   Defs,
   LinearGradient,
   Stop,
@@ -54,6 +55,29 @@ function truncate(s: string, n: number): string {
   return s.slice(0, n - 1) + "…";
 }
 
+function wrapTwoLines(label: string, maxPerLine: number): string[] {
+  const text = label.trim();
+  if (text.length <= maxPerLine) return [text];
+  const words = text.split(/\s+/);
+  if (words.length === 1) {
+    return [text.slice(0, maxPerLine), truncate(text.slice(maxPerLine), maxPerLine)];
+  }
+  let line1 = "";
+  let i = 0;
+  for (; i < words.length; i++) {
+    const next = line1 ? line1 + " " + words[i] : words[i];
+    if (next.length > maxPerLine) break;
+    line1 = next;
+  }
+  if (!line1) {
+    line1 = words[0].slice(0, maxPerLine);
+    const rest = (words[0].slice(maxPerLine) + " " + words.slice(1).join(" ")).trim();
+    return [line1, truncate(rest, maxPerLine)];
+  }
+  const line2 = words.slice(i).join(" ");
+  return [line1, truncate(line2, maxPerLine)];
+}
+
 function Wheel({
   punishments,
   rotation,
@@ -81,9 +105,9 @@ function Wheel({
     ],
   };
 
-  // Texto radial: más caracteres permitidos porque ahora va en línea radial
-  const labelMaxLen = n <= 6 ? 22 : n <= 10 ? 18 : n <= 14 ? 14 : 11;
-  const fontSize = n <= 6 ? 13 : n <= 10 ? 11 : n <= 14 ? 9.5 : 8.5;
+  // Texto radial en 2 líneas: cap por línea calculado para entrar en la banda radial
+  const lineMaxLen = n <= 6 ? 10 : n <= 10 ? 9 : n <= 14 ? 7 : 6;
+  const fontSize = n <= 6 ? 15 : n <= 10 ? 13 : n <= 14 ? 11 : 10;
   const iconSize = n <= 8 ? size * 0.09 : n <= 14 ? size * 0.07 : size * 0.055;
 
   // Posiciones radiales para cada icono (en coordenadas relativas al wheel)
@@ -134,9 +158,9 @@ function Wheel({
               const path = describeSector(cx, cy, outerR - 2, startAngle, endAngle);
               const midAngle = startAngle + sweep / 2;
 
-              // Texto radial — empieza cerca del centro y va hacia afuera
-              const textInnerR = outerR * 0.36;
-              const textOuterR = outerR * 0.66;
+              // Texto radial — banda extendida desde borde del hub hasta cerca de iconos
+              const textInnerR = outerR * 0.30;
+              const textOuterR = outerR * 0.68;
               const textStart = polarToCartesian(cx, cy, textInnerR, midAngle);
               const textEnd = polarToCartesian(cx, cy, textOuterR, midAngle);
               // Ángulo para que el texto quede legible (perpendicular al radio)
@@ -149,19 +173,27 @@ function Wheel({
               const flip = midAngle > 90 && midAngle < 270;
               const finalTextRot = flip ? textRot + 180 : textRot;
 
+              const lines = wrapTwoLines(p.label, lineMaxLen);
+              const lineHeight = fontSize * 1.05;
+              const baseY = textCenter.y + fontSize * 0.35 - (lines.length - 1) * lineHeight * 0.5;
+
               return (
                 <G key={p.id}>
                   <Path d={path} fill={fill} stroke={GOLD_DIM} strokeWidth={0.6} />
                   <G rotation={finalTextRot} origin={`${textCenter.x}, ${textCenter.y}`}>
                     <SvgText
                       x={textCenter.x}
-                      y={textCenter.y + fontSize * 0.35}
+                      y={baseY}
                       fontSize={fontSize}
-                      fontWeight="700"
+                      fontWeight="900"
                       fill={BLACK}
                       textAnchor="middle"
                     >
-                      {truncate(p.label, labelMaxLen)}
+                      {lines.map((ln, idx) => (
+                        <TSpan key={idx} x={textCenter.x} dy={idx === 0 ? 0 : lineHeight}>
+                          {ln}
+                        </TSpan>
+                      ))}
                     </SvgText>
                   </G>
                 </G>
