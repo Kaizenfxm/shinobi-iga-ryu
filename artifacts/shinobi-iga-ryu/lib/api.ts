@@ -910,7 +910,7 @@ export interface MartialArtRating {
   key: string;
   name: string;
   avgRating: number;
-  totalRatings: number;
+  classesCount: number;
 }
 
 export interface RoulettePunishment {

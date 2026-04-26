@@ -6682,7 +6682,7 @@ export function CalificacionesPanel() {
             </Text>
             <Stars value={m.avgRating} />
             <Text style={ratingsStyles.rowAvg}>{m.avgRating.toFixed(2)}</Text>
-            <Text style={ratingsStyles.rowCount}>({m.totalRatings})</Text>
+            <Text style={ratingsStyles.rowCount}>({m.classesCount})</Text>
           </View>
         ))
       )}

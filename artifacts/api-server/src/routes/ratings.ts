@@ -127,18 +127,20 @@ ratingsRouter.get("/ratings/martial-arts", requireAuth, async (req, res) => {
         key: trainingSystemsTable.key,
         name: trainingSystemsTable.name,
         avgRating: sql<number>`avg(${classAttendancesTable.rating})::float`,
-        totalRatings: sql<number>`count(${classAttendancesTable.rating})::int`,
+        classesCount: sql<number>`count(distinct ${classTrainingSystemsTable.classId})::int`,
       })
-      .from(classAttendancesTable)
-      .innerJoin(
-        classTrainingSystemsTable,
-        eq(classAttendancesTable.classId, classTrainingSystemsTable.classId)
-      )
+      .from(classTrainingSystemsTable)
       .innerJoin(
         trainingSystemsTable,
         eq(classTrainingSystemsTable.trainingSystemId, trainingSystemsTable.id)
       )
-      .where(isNotNull(classAttendancesTable.rating))
+      .leftJoin(
+        classAttendancesTable,
+        and(
+          eq(classAttendancesTable.classId, classTrainingSystemsTable.classId),
+          isNotNull(classAttendancesTable.rating)
+        )
+      )
       .groupBy(trainingSystemsTable.id, trainingSystemsTable.key, trainingSystemsTable.name)
       .orderBy(sql`avg(${classAttendancesTable.rating}) desc nulls last`);
 
@@ -147,8 +149,8 @@ ratingsRouter.get("/ratings/martial-arts", requireAuth, async (req, res) => {
         systemId: r.systemId,
         key: r.key,
         name: r.name,
-        avgRating: r.avgRating,
-        totalRatings: r.totalRatings,
+        avgRating: r.avgRating ?? 0,
+        classesCount: r.classesCount,
       })),
     });
   } catch (error) {
