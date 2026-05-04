@@ -359,6 +359,7 @@ challengesRouter.post("/challenges", requireAuth, async (req, res) => {
     const dateStr = new Date(scheduledAt).toLocaleDateString("es-CO", {
       day: "numeric", month: "long", year: "numeric",
       hour: "2-digit", minute: "2-digit",
+      timeZone: "America/Bogota",
     });
     const communityTitle = "⚔️ ¡Nuevo reto en la comunidad!";
     const communityBody = `${challengerLabel} retó a ${challengedLabel} en ${system.name} el ${dateStr}. ¿Aceptará?`;

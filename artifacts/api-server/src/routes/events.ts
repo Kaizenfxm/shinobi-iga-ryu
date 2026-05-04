@@ -129,7 +129,7 @@ eventsRouter.post("/events", requireAuth, async (req, res) => {
       .returning();
 
     // Notify all users about the new event
-    const dateStr = new Date(eventDate).toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
+    const dateStr = new Date(eventDate).toLocaleDateString("es-CO", { day: "2-digit", month: "short", timeZone: "America/Bogota" });
     notifyTarget(["todas"],
       `🥷 Nuevo evento: ${title.trim()}`,
       `${dateStr} · ${location.trim()} — toca para ver los detalles`,
